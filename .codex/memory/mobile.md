@@ -61,3 +61,4 @@
 - The rounded-pixel variant exports to `mobile/Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel.fbx`
 - The rounded-pixel atlas lives at `mobile/Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel-texture.png`
 - The rounded-pixel preview was rendered, visually validated and reopened in Blender at `mobile/Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel-preview.png`
+- The rounded-pixel variant was refined on `2026-03-24` with more rounded bevels and a denser pixel atlas for higher visible detail

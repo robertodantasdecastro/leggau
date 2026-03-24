@@ -62,7 +62,7 @@ The Roblox-style pixel variant changes the silhouette more aggressively and adds
 The rounded-pixel variant keeps a softer silhouette and adds:
 
 - heavier bevels and smoother forms for the body, head and limbs
-- a dedicated pixel atlas with more visible per-surface detail
+- a dedicated higher-density pixel atlas with more visible per-surface detail
 - separate idle, celebrate and prompt actions exported in the `.fbx`
 - an alternate `.blend`, `.fbx` and preview for comparing soft vs. blocky styles
 

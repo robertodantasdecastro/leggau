@@ -33,20 +33,20 @@ def save_image(image, filepath):
 
 
 def create_pixel_atlas(filepath):
-    size = 32
-    tile_size = 8
+    size = 64
+    tile_size = 16
     image = bpy.data.images.new("GauRoundedPixelAtlas", width=size, height=size, alpha=True)
     pixels = [(0.0, 0.0, 0.0, 1.0)] * (size * size)
 
     tile_colors = {
-        (0, 0): (rgba("#4CA7F4"), rgba("#8ED1FF"), rgba("#2E71B1")),
-        (1, 0): (rgba("#73BEF7"), rgba("#B2E3FF"), rgba("#4F96D2")),
-        (2, 0): (rgba("#7DDBB2"), rgba("#BEF5DD"), rgba("#4E9E78")),
-        (3, 0): (rgba("#F3C861"), rgba("#FFE49A"), rgba("#C98F2A")),
-        (0, 1): (rgba("#F58F49"), rgba("#FFBB85"), rgba("#D16A25")),
-        (1, 1): (rgba("#F7F3EC"), rgba("#FFFFFF"), rgba("#D4C8B8")),
-        (2, 1): (rgba("#1F2530"), rgba("#59657A"), rgba("#0B1018")),
-        (3, 1): (rgba("#E6D2A3"), rgba("#F7E8C2"), rgba("#C19C62")),
+        (0, 0): (rgba("#47A4F2"), rgba("#A1D8FF"), rgba("#2A6CA9")),
+        (1, 0): (rgba("#70BFF8"), rgba("#C1E8FF"), rgba("#4B95CF")),
+        (2, 0): (rgba("#7AD8B0"), rgba("#CAF5E0"), rgba("#4D9B75")),
+        (3, 0): (rgba("#F3C55A"), rgba("#FFEAA9"), rgba("#C78922")),
+        (0, 1): (rgba("#F28D45"), rgba("#FFC695"), rgba("#CD6621")),
+        (1, 1): (rgba("#F6F1E8"), rgba("#FFFFFF"), rgba("#CFC5B8")),
+        (2, 1): (rgba("#1F2530"), rgba("#66748D"), rgba("#0A0F17")),
+        (3, 1): (rgba("#E6D2A5"), rgba("#F9EACC"), rgba("#C09B61")),
     }
 
     for tile_y in range(4):
@@ -54,11 +54,16 @@ def create_pixel_atlas(filepath):
             colors = tile_colors.get((tile_x, tile_y), (rgba("#000000"), rgba("#111111"), rgba("#222222")))
             for local_y in range(tile_size):
                 for local_x in range(tile_size):
-                    if local_x in {0, tile_size - 1} or local_y in {0, tile_size - 1}:
+                    edge = local_x in {0, 1, tile_size - 2, tile_size - 1} or local_y in {0, 1, tile_size - 2, tile_size - 1}
+                    center_band = abs(local_x - (tile_size / 2)) < 2 or abs(local_y - (tile_size / 2)) < 2
+                    diagonal = local_x == local_y or local_x == tile_size - local_y - 1
+                    sparkle = ((local_x + local_y) % 7 == 0) or ((local_x * 2 + local_y) % 11 == 0)
+
+                    if edge:
                         color = colors[2]
-                    elif (local_x + local_y) % 5 == 0:
+                    elif diagonal or sparkle:
                         color = colors[1]
-                    elif local_x == local_y or local_x == tile_size - local_y - 1:
+                    elif center_band:
                         color = colors[1]
                     else:
                         color = colors[0]
@@ -119,6 +124,7 @@ def create_rounded_block(name, location, scale, rotation=(0.0, 0.0, 0.0), bevel=
     modifier = obj.modifiers.new(name="Bevel", type="BEVEL")
     modifier.width = bevel
     modifier.segments = segments
+    modifier.profile = 0.85
     return obj
 
 
@@ -195,44 +201,44 @@ def build_materials(atlas_image):
 
 
 def build_character(armature, materials):
-    body = create_rounded_block("GauBodyRounded", location=(0.0, 0.02, 1.14), scale=(0.56, 0.46, 0.78), bevel=0.08, segments=6)
+    body = create_rounded_block("GauBodyRounded", location=(0.0, 0.02, 1.14), scale=(0.56, 0.46, 0.78), bevel=0.1, segments=8)
     body.data.materials.append(materials["body"])
     bind_to_bone(body, armature, "Spine")
 
-    belly = create_rounded_block("GauBellyRounded", location=(0.0, -0.34, 1.05), scale=(0.28, 0.1, 0.44), bevel=0.04, segments=5)
+    belly = create_rounded_block("GauBellyRounded", location=(0.0, -0.34, 1.05), scale=(0.29, 0.1, 0.45), bevel=0.05, segments=6)
     belly.data.materials.append(materials["belly"])
     bind_to_bone(belly, armature, "Spine")
 
-    chest = create_rounded_block("GauChestRounded", location=(0.0, -0.31, 1.5), scale=(0.22, 0.08, 0.14), bevel=0.03, segments=5)
+    chest = create_rounded_block("GauChestRounded", location=(0.0, -0.31, 1.5), scale=(0.23, 0.085, 0.15), bevel=0.04, segments=6)
     chest.data.materials.append(materials["belly"])
     bind_to_bone(chest, armature, "Spine")
 
-    head = create_rounded_block("GauHeadRounded", location=(0.0, -0.04, 2.06), scale=(0.48, 0.42, 0.4), bevel=0.07, segments=6)
+    head = create_rounded_block("GauHeadRounded", location=(0.0, -0.04, 2.06), scale=(0.49, 0.43, 0.41), bevel=0.09, segments=8)
     head.data.materials.append(materials["body_light"])
     bind_to_bone(head, armature, "Head")
 
-    cheek_left = create_rounded_block("GauCheekLRounded", location=(0.24, -0.32, 1.92), scale=(0.09, 0.05, 0.08), rotation=(0.0, 0.0, math.radians(14.0)), bevel=0.02, segments=4)
+    cheek_left = create_rounded_block("GauCheekLRounded", location=(0.25, -0.32, 1.92), scale=(0.095, 0.055, 0.085), rotation=(0.0, 0.0, math.radians(14.0)), bevel=0.025, segments=5)
     cheek_left.data.materials.append(materials["orange"])
     bind_to_bone(cheek_left, armature, "Head")
 
-    cheek_right = create_rounded_block("GauCheekRRounded", location=(-0.24, -0.32, 1.92), scale=(0.09, 0.05, 0.08), rotation=(0.0, 0.0, math.radians(-14.0)), bevel=0.02, segments=4)
+    cheek_right = create_rounded_block("GauCheekRRounded", location=(-0.25, -0.32, 1.92), scale=(0.095, 0.055, 0.085), rotation=(0.0, 0.0, math.radians(-14.0)), bevel=0.025, segments=5)
     cheek_right.data.materials.append(materials["orange"])
     bind_to_bone(cheek_right, armature, "Head")
 
-    beak_top = create_rounded_block("GauBeakTopRounded", location=(0.0, -0.48, 1.95), scale=(0.16, 0.12, 0.1), rotation=(math.radians(12.0), 0.0, 0.0), bevel=0.03, segments=5)
+    beak_top = create_rounded_block("GauBeakTopRounded", location=(0.0, -0.485, 1.95), scale=(0.165, 0.125, 0.105), rotation=(math.radians(12.0), 0.0, 0.0), bevel=0.035, segments=6)
     beak_top.data.materials.append(materials["gold"])
     bind_to_bone(beak_top, armature, "Head")
 
-    beak_bottom = create_rounded_block("GauBeakBottomRounded", location=(0.0, -0.45, 1.84), scale=(0.1, 0.08, 0.06), rotation=(math.radians(-8.0), 0.0, 0.0), bevel=0.02, segments=4)
+    beak_bottom = create_rounded_block("GauBeakBottomRounded", location=(0.0, -0.45, 1.84), scale=(0.105, 0.085, 0.062), rotation=(math.radians(-8.0), 0.0, 0.0), bevel=0.024, segments=5)
     beak_bottom.data.materials.append(materials["orange"])
     bind_to_bone(beak_bottom, armature, "Head")
 
     for side, x_value in (("L", 0.21), ("R", -0.21)):
-        eye = create_rounded_block(f"GauEyeWhite{side}Rounded", location=(x_value, -0.44, 2.11), scale=(0.09, 0.03, 0.11), bevel=0.02, segments=4)
+        eye = create_rounded_block(f"GauEyeWhite{side}Rounded", location=(x_value, -0.445, 2.11), scale=(0.095, 0.032, 0.115), bevel=0.022, segments=5)
         eye.data.materials.append(materials["white"])
         bind_to_bone(eye, armature, "Head")
 
-        pupil = create_rounded_block(f"GauPupil{side}Rounded", location=(x_value, -0.47, 2.1), scale=(0.038, 0.016, 0.046), bevel=0.01, segments=3)
+        pupil = create_rounded_block(f"GauPupil{side}Rounded", location=(x_value, -0.472, 2.1), scale=(0.04, 0.017, 0.05), bevel=0.012, segments=4)
         pupil.data.materials.append(materials["dark"])
         bind_to_bone(pupil, armature, "Head")
 
@@ -256,15 +262,15 @@ def build_character(armature, materials):
     tuft_right.data.materials.append(materials["orange"])
     bind_to_bone(tuft_right, armature, "Head")
 
-    wing_left = create_rounded_block("GauWingLRounded", location=(0.86, -0.02, 1.34), scale=(0.14, 0.09, 0.28), rotation=(0.0, math.radians(-10.0), math.radians(15.0)), bevel=0.03, segments=5)
+    wing_left = create_rounded_block("GauWingLRounded", location=(0.86, -0.02, 1.34), scale=(0.14, 0.095, 0.3), rotation=(0.0, math.radians(-10.0), math.radians(15.0)), bevel=0.04, segments=6)
     wing_left.data.materials.append(materials["body_light"])
     bind_to_bone(wing_left, armature, "Wing.L")
 
-    wing_right = create_rounded_block("GauWingRRounded", location=(-0.86, -0.02, 1.34), scale=(0.14, 0.09, 0.28), rotation=(0.0, math.radians(10.0), math.radians(-15.0)), bevel=0.03, segments=5)
+    wing_right = create_rounded_block("GauWingRRounded", location=(-0.86, -0.02, 1.34), scale=(0.14, 0.095, 0.3), rotation=(0.0, math.radians(10.0), math.radians(-15.0)), bevel=0.04, segments=6)
     wing_right.data.materials.append(materials["body_light"])
     bind_to_bone(wing_right, armature, "Wing.R")
 
-    tail = create_rounded_block("GauTailRounded", location=(0.0, 0.42, 1.02), scale=(0.14, 0.1, 0.18), rotation=(math.radians(-12.0), 0.0, 0.0), bevel=0.03, segments=4)
+    tail = create_rounded_block("GauTailRounded", location=(0.0, 0.42, 1.02), scale=(0.15, 0.1, 0.19), rotation=(math.radians(-12.0), 0.0, 0.0), bevel=0.04, segments=5)
     tail.data.materials.append(materials["body"])
     bind_to_bone(tail, armature, "Spine")
 
@@ -276,11 +282,11 @@ def build_character(armature, materials):
     leg_right.data.materials.append(materials["gold"])
     bind_to_bone(leg_right, armature, "Leg.R")
 
-    foot_left = create_rounded_block("GauFootLRounded", location=(0.28, -0.08, 0.05), scale=(0.2, 0.22, 0.055), bevel=0.02, segments=4)
+    foot_left = create_rounded_block("GauFootLRounded", location=(0.28, -0.08, 0.05), scale=(0.2, 0.22, 0.06), bevel=0.026, segments=5)
     foot_left.data.materials.append(materials["feet"])
     bind_to_bone(foot_left, armature, "Leg.L")
 
-    foot_right = create_rounded_block("GauFootRRounded", location=(-0.28, -0.08, 0.05), scale=(0.2, 0.22, 0.055), bevel=0.02, segments=4)
+    foot_right = create_rounded_block("GauFootRRounded", location=(-0.28, -0.08, 0.05), scale=(0.2, 0.22, 0.06), bevel=0.026, segments=5)
     foot_right.data.materials.append(materials["feet"])
     bind_to_bone(foot_right, armature, "Leg.R")
 

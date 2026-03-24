@@ -71,6 +71,7 @@ Date checked: `2026-03-24`
   - `mobile/Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel-texture.png`
   - `mobile/Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel-preview.png`
 - The rounded-pixel Gau variant was rendered and reopened in Blender for verification on `2026-03-24`
+- The rounded-pixel Gau variant was refined with softer bevels and a higher-density pixel atlas on `2026-03-24`
 
 ## Current Conclusion
 
