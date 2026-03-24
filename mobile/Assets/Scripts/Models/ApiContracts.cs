@@ -102,6 +102,64 @@ namespace Leggau.Models
     }
 
     [Serializable]
+    public class AssetPalette
+    {
+        public string primary;
+        public string success;
+        public string accent;
+        public string outline;
+    }
+
+    [Serializable]
+    public class MascotDescriptor
+    {
+        public string name;
+        public string brand;
+        public string visualStyle;
+        public AssetPalette palette;
+    }
+
+    [Serializable]
+    public class ApiDescriptor
+    {
+        public string devBaseUrl;
+        public string prodBaseUrl;
+    }
+
+    [Serializable]
+    public class SceneDescriptor
+    {
+        public string key;
+        public string mode;
+        public string objective;
+    }
+
+    [Serializable]
+    public class OverlayDescriptor
+    {
+        public string key;
+        public string mode;
+        public string objective;
+    }
+
+    [Serializable]
+    public class AudioCueDescriptor
+    {
+        public string success;
+        public string reminder;
+    }
+
+    [Serializable]
+    public class AssetsCatalogResponse
+    {
+        public MascotDescriptor mascot;
+        public ApiDescriptor api;
+        public SceneDescriptor[] scenes;
+        public OverlayDescriptor[] overlays;
+        public AudioCueDescriptor audioCues;
+    }
+
+    [Serializable]
     public class CreateCheckinRequest
     {
         public string childId;

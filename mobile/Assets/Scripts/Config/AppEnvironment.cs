@@ -8,6 +8,7 @@ namespace Leggau.Config
     {
         public string environmentName;
         public string apiBaseUrl;
+        public string fallbackApiBaseUrl;
         public string devLoginEmail;
         public string devLoginName;
     }

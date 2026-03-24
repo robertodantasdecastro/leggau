@@ -15,6 +15,8 @@ Base do app mobile do Leggau.
 - `Assets/Scripts/Networking`: cliente HTTP para a API
 - `Assets/Scripts/Gameplay`: modelos de progresso e atividades
 - `Assets/Scripts/UI`: presenters de HUD e recompensas
+- `Assets/Editor`: scripts para gerar a cena bootstrap
+- `Assets/Art/Characters/Gau`: fonte `.blend` e export `.fbx` do mascote
 - `Assets/StreamingAssets/config`: ambientes do app
 
 ## Abrindo no Unity
@@ -28,9 +30,15 @@ Base do app mobile do Leggau.
 - `StreamingAssets/config/dev-api.json`
 - `StreamingAssets/config/prod-api.json`
 
+## Backend de desenvolvimento
+
+- principal: `http://10.211.55.22:8080/api`
+- fallback local: `http://localhost:8080/api`
+
 ## Primeiro fluxo funcional
 
 - Carregar configuracao de ambiente
 - Executar `dev-login`
-- Buscar familia, atividades e recompensas
+- Buscar familia, atividades, progresso, recompensas e catalogo de assets
 - Renderizar um dashboard textual inicial dentro da cena Unity
+- Exibir o Gau 3D importado do Blender

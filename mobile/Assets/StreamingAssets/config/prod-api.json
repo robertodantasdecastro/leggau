@@ -1,6 +1,7 @@
 {
   "environmentName": "production",
   "apiBaseUrl": "https://api.leggau.com",
+  "fallbackApiBaseUrl": "",
   "devLoginEmail": "",
   "devLoginName": ""
 }

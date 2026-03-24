@@ -12,8 +12,10 @@ Prepare the MacBook to build and iterate on the Unity frontend for:
 - Docker: available
 - Java 17: available
 - `adb`: available
+- Unity Hub: installed
+- Unity Editor `6000.0.71f1`: installed directory detected, but binary validation still pending
+- Blender `4.5.1 LTS`: installed
 - Xcode: missing
-- Unity / Unity Hub: missing or not detected
 
 ## Required Tooling
 
@@ -42,6 +44,8 @@ Prepare the MacBook to build and iterate on the Unity frontend for:
 ## Project Entry Point
 
 - Open Unity with the project root at `/Volumes/SSDExterno/Desenvolvimento/Leggau/mobile`
+- Development should prefer the VM backend at `http://10.211.55.22:8080/api`
+- Local fallback remains `http://localhost:8080/api`
 
 ## Runtime Config
 
@@ -54,4 +58,5 @@ Prepare the MacBook to build and iterate on the Unity frontend for:
 - Unity generates `.meta`, `Library/` and local derived files
 - Android target can be selected in Build Settings
 - iOS target becomes available after Xcode is installed
-- Frontend reads `DEV_API_BASE_URL=http://localhost:8080/api`
+- Frontend reads `DEV_API_BASE_URL=http://10.211.55.22:8080/api`
+- Frontend falls back to `http://localhost:8080/api` when the VM is unavailable

@@ -30,7 +30,8 @@ npm run start:local
 
 3. Endpoints principais:
 
-- API root: `http://localhost:8080/api`
+- API root local de fallback: `http://localhost:8080/api`
+- API de desenvolvimento oficial na VM: `http://10.211.55.22:8080/api`
 - Health: `http://localhost:8080/api/health`
 - Activities: `http://localhost:8080/api/activities`
 
@@ -52,6 +53,6 @@ npm run start:local
 - Arquivos grandes do projeto devem ficar no SSD externo em `/Volumes/SSDExterno/Desenvolvimento/Leggau`.
 - A stack Docker local foi configurada para usar bind mounts em `./.data/`, evitando deixar Postgres, Redis, uploads e backups no disco interno.
 - Builds mobile, cache local do Unity e artefatos 3D/Blender devem usar as raizes definidas em `.env`.
+- O mobile deve preferir a VM `10.211.55.22` como backend de desenvolvimento e usar localhost apenas como fallback.
 - O acesso SSH para `vm2` ainda precisa estar autorizado com a chave correta para executar o deploy remoto automatizado.
 - O alias `leggau` para a futura EC2 ainda nao esta configurado nesta maquina.
-- O Unity nao esta instalado nesta estacao, entao a base mobile foi estruturada para abrir no editor e gerar os arquivos derivados quando o Unity for iniciado.

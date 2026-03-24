@@ -25,7 +25,8 @@
 
 ## Convencoes
 
-- `DEV_API_BASE_URL` aponta para a stack da `vm2` ou para o gateway local.
+- `DEV_API_BASE_URL` aponta para `http://10.211.55.22:8080/api`.
+- O frontend mobile deve usar localhost apenas como fallback quando a `vm2` estiver indisponivel.
 - Uploads ficam fora do codigo-fonte e sao servidos por `/uploads/`.
 - Arquivos pesados de desenvolvimento devem permanecer no SSD externo, dentro de `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/`.
 - Postgres e Redis locais usam bind mounts em `./.data/docker/` para evitar consumo do disco interno.

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -7,46 +8,105 @@ namespace Leggau.Networking
     public class ApiClient : MonoBehaviour
     {
         [SerializeField] private string apiBaseUrl = "http://localhost:8080/api";
+        [SerializeField] private string fallbackApiBaseUrl = "";
+        [SerializeField] private int requestTimeoutSeconds = 5;
+
+        public string ActiveBaseUrl => apiBaseUrl;
 
         public void SetBaseUrl(string baseUrl)
         {
             apiBaseUrl = baseUrl.TrimEnd('/');
         }
 
+        public void SetBaseUrls(string primaryBaseUrl, string secondaryBaseUrl)
+        {
+            apiBaseUrl = Sanitize(primaryBaseUrl);
+            fallbackApiBaseUrl = Sanitize(secondaryBaseUrl);
+        }
+
         public IEnumerator GetJson(string path, System.Action<string> onSuccess, System.Action<string> onError)
         {
-            using var request = UnityWebRequest.Get($"{apiBaseUrl}/{path.TrimStart('/')}");
-            request.downloadHandler = new DownloadHandlerBuffer();
-            yield return request.SendWebRequest();
-
-            if (request.result == UnityWebRequest.Result.Success)
-            {
-                onSuccess?.Invoke(request.downloadHandler.text);
-            }
-            else
-            {
-                onError?.Invoke(request.error);
-            }
+            yield return SendWithFallback(
+                path,
+                null,
+                UnityWebRequest.kHttpVerbGET,
+                onSuccess,
+                onError);
         }
 
         public IEnumerator PostJson(string path, string jsonPayload, System.Action<string> onSuccess, System.Action<string> onError)
         {
-            using var request = new UnityWebRequest($"{apiBaseUrl}/{path.TrimStart('/')}", UnityWebRequest.kHttpVerbPOST);
-            var payloadBytes = System.Text.Encoding.UTF8.GetBytes(jsonPayload);
+            yield return SendWithFallback(
+                path,
+                jsonPayload,
+                UnityWebRequest.kHttpVerbPOST,
+                onSuccess,
+                onError);
+        }
+
+        private IEnumerator SendWithFallback(
+            string path,
+            string jsonPayload,
+            string method,
+            System.Action<string> onSuccess,
+            System.Action<string> onError)
+        {
+            string lastError = null;
+
+            foreach (var baseUrl in EnumerateBaseUrls())
+            {
+                using var request = BuildRequest(baseUrl, path, jsonPayload, method);
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    apiBaseUrl = baseUrl;
+                    onSuccess?.Invoke(request.downloadHandler.text);
+                    yield break;
+                }
+
+                lastError = $"[{baseUrl}] {request.error}";
+            }
+
+            onError?.Invoke(lastError ?? "Falha de conexao com a API.");
+        }
+
+        private UnityWebRequest BuildRequest(string baseUrl, string path, string jsonPayload, string method)
+        {
+            if (method == UnityWebRequest.kHttpVerbGET)
+            {
+                var getRequest = UnityWebRequest.Get($"{baseUrl}/{path.TrimStart('/')}");
+                getRequest.timeout = requestTimeoutSeconds;
+                return getRequest;
+            }
+
+            var request = new UnityWebRequest($"{baseUrl}/{path.TrimStart('/')}", method)
+            {
+                downloadHandler = new DownloadHandlerBuffer(),
+                timeout = requestTimeoutSeconds,
+            };
+            var payloadBytes = System.Text.Encoding.UTF8.GetBytes(jsonPayload ?? "{}");
             request.uploadHandler = new UploadHandlerRaw(payloadBytes);
-            request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
+            return request;
+        }
 
-            yield return request.SendWebRequest();
+        private IEnumerable<string> EnumerateBaseUrls()
+        {
+            if (!string.IsNullOrWhiteSpace(apiBaseUrl))
+            {
+                yield return apiBaseUrl;
+            }
 
-            if (request.result == UnityWebRequest.Result.Success)
+            if (!string.IsNullOrWhiteSpace(fallbackApiBaseUrl) && fallbackApiBaseUrl != apiBaseUrl)
             {
-                onSuccess?.Invoke(request.downloadHandler.text);
+                yield return fallbackApiBaseUrl;
             }
-            else
-            {
-                onError?.Invoke(request.error);
-            }
+        }
+
+        private static string Sanitize(string baseUrl)
+        {
+            return string.IsNullOrWhiteSpace(baseUrl) ? string.Empty : baseUrl.TrimEnd('/');
         }
     }
 }

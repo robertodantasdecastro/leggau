@@ -54,7 +54,7 @@ Use `.env.example` as the non-sensitive source of truth.
 - `MOBILE_BUILD_ROOT=./.data/mobile/builds`
 - `UNITY_CACHE_ROOT=./.data/mobile/cache`
 - `BLENDER_ASSET_ROOT=./.data/art/blender`
-- `DEV_API_BASE_URL=http://localhost:8080/api`
+- `DEV_API_BASE_URL=http://10.211.55.22:8080/api`
 - `PROD_API_BASE_URL=https://api.leggau.com`
 - `DEFAULT_PARENT_EMAIL=parent@leggau.local`
 - `DEFAULT_PARENT_NAME=Responsavel Demo`
@@ -66,6 +66,8 @@ Use `.env.example` as the non-sensitive source of truth.
 - Local stack stop: `docker compose down`
 - Backend build: `cd backend && npm run build`
 - Backend local no-containers fallback: `cd backend && npm run start:local`
+- Gau asset generation: `./scripts/build-gau-asset.sh`
+- Unity bootstrap scene: `./scripts/build-unity-bootstrap.sh`
 
 ## Backend Modules
 
@@ -83,19 +85,21 @@ Use `.env.example` as the non-sensitive source of truth.
 
 As of `2026-03-24`:
 
-- Local Docker stack on Mac is validated and running.
-- Gateway responds on `http://localhost:8080/`.
-- API responds on `http://localhost:8080/api`.
-- Postgres and Redis are healthy in Docker.
-- Progress data survives `docker compose down` / `up` because named volumes persist.
+- Official dev backend target is `vm2` at `10.211.55.22`.
+- Local backend remains a fallback path at `http://localhost:8080/api`.
 - `vm2` resolves to `10.211.55.22`, but SSH authentication is currently blocked for all known local keys.
 - `leggau` production alias is still reserved as future target, not validated here.
 - Mac toolchain status:
   - Docker: ready
   - Java 17: present
   - `adb`: present
+  - Unity Hub: installed
+  - Unity Editor `6000.0.71f1`: install directory present and repair/revalidation in progress
+  - Blender `4.5.1 LTS`: installed
   - `xcodebuild`: missing
-  - Unity / Unity Hub: not detected
+- Gau asset pipeline is now versioned:
+  - `mobile/Assets/Art/Characters/Gau/Source/Gau.blend`
+  - `mobile/Assets/Art/Characters/Gau/Exports/Gau.fbx`
 - Heavy project files must stay on the external SSD under `/Volumes/SSDExterno/Desenvolvimento/Leggau`.
 - Local Docker persistence must stay under `./.data/docker/`, not Docker named volumes on the internal disk.
 
@@ -110,7 +114,7 @@ As of `2026-03-24`:
 - Treat `mobile/` as the authoritative Unity root.
 - Treat `backend/` as the authoritative API root.
 - Treat `/Volumes/SSDExterno/Desenvolvimento/Leggau` as the canonical storage root for all large project files.
-- Route mobile development traffic through `http://localhost:8080/api`.
+- Route mobile development traffic through `http://10.211.55.22:8080/api`, with localhost only as fallback.
 - Keep uploads outside source code and serve them through `/uploads/`.
 - Keep VM bootstrap rooted at `~/leggau`.
 - Treat `.codex/AGENTS.md` and `.codex/memory/*.md` as the primary agent memory for this repository.

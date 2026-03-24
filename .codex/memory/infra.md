@@ -6,6 +6,8 @@
 - Status: `docker compose ps`
 - Stop: `docker compose down`
 - Local API gateway: `http://localhost:8080/api`
+- Official dev backend target: `http://10.211.55.22:8080/api`
+- Backend code build passes with `cd backend && npm run build`
 
 ## Validated Services
 
@@ -37,4 +39,5 @@
 - Alias: `vm2`
 - Host: `10.211.55.22`
 - Root expected: `~/leggau`
+- Backend development should run fully on this VM when SSH is available
 - Current blocker: SSH authentication rejected for all tested local keys

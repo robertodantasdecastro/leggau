@@ -20,10 +20,11 @@
 
 ## Development Focus
 
-- Backend local stack already operational through Docker
-- Unity mobile frontend is still in code-first bootstrap mode until Unity Editor is installed/opened
+- Backend local remains a fallback; official dev backend target is `vm2` at `10.211.55.22`
+- Unity mobile frontend is moving from code-first bootstrap to first imported scene and Gau asset delivery
 - Remote VM development is blocked by SSH authentication
 - Heavy local files must stay on the external SSD, not on the internal disk
+- The current delivery already includes the first Gau `.blend` and `.fbx`
 
 ## Delivery Workflow
 
