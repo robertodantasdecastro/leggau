@@ -58,12 +58,19 @@ Date checked: `2026-03-24`
   - `mobile/Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-texture.png`
   - `mobile/Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-textured-preview.png`
 - The pixel-textured Gau copy was rendered and then opened in Blender for verification on `2026-03-24`
+- Gau now also has a Roblox-style blocky pixel variant:
+  - `mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel.blend`
+  - `mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel.fbx`
+  - `mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel-texture.png`
+  - `mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel-preview.png`
+- The Roblox-style Gau variant was rendered and reopened in Blender for verification on `2026-03-24`
 
 ## Current Conclusion
 
 - Backend local remains a fallback path, but the official development backend on `vm2` is still blocked by SSH access.
 - The mobile repository now has the first Gau 3D asset pipeline in place, including `.blend` and `.fbx`.
 - The Gau pipeline now includes a pixel-textured 3D variant alongside the base `.blend`, `.fbx` and 2D pixel-art copy.
+- The Gau pipeline now also includes a blocky Roblox-style pixel variant for alternate in-game presentation.
 - Unity tooling is much closer, and the editor repair is in progress, but the bootstrap scene still depends on that validation finishing.
 - Remote backend validation on `vm2` remains blocked by SSH authentication.
 - Project memory is now intended to live primarily inside the repository, not in global Codex state.

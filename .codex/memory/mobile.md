@@ -52,3 +52,7 @@
 - The pixel-textured copy exports to `mobile/Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-textured.fbx`
 - The pixel-textured texture atlas lives at `mobile/Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-texture.png`
 - The pixel-textured preview was rendered and visually validated at `mobile/Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-textured-preview.png`
+- Gau now also has a Roblox-style blocky pixel variant at `mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel.blend`
+- The Roblox-style variant exports to `mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel.fbx`
+- The Roblox-style pixel atlas lives at `mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel-texture.png`
+- The Roblox-style preview was rendered, visually validated and reopened in Blender at `mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel-preview.png`

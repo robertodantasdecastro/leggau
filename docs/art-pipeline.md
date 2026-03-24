@@ -13,6 +13,7 @@ Freeze the first Leggau 3D pipeline as:
 - `mobile/Assets/Art/Characters/Gau/Source/`
 - `mobile/Assets/Art/Characters/Gau/Exports/`
 - `mobile/Assets/Art/Characters/Gau/PixelTextured/`
+- `mobile/Assets/Art/Characters/Gau/RobloxPixel/`
 - `mobile/Assets/Art/Animations/Gau/`
 - `mobile/Assets/Art/Materials/`
 
@@ -30,6 +31,8 @@ Freeze the first Leggau 3D pipeline as:
 - Blender source generator: `mobile/Assets/Art/Characters/Gau/Source/generate_gau_asset.py`
 - Pixel-textured copy builder: `scripts/build-gau-pixel-textured.sh`
 - Pixel-textured Blender transformer: `mobile/Assets/Art/Characters/Gau/Source/apply_gau_pixel_texture.py`
+- Roblox-style variant builder: `scripts/build-gau-roblox-style.sh`
+- Roblox-style Blender generator: `mobile/Assets/Art/Characters/Gau/Source/generate_gau_roblox_style.py`
 
 The current generator creates a first mobile-friendly Gau prototype with:
 
@@ -45,6 +48,13 @@ The pixel-textured copy keeps the same rig and silhouette while adding:
 - a small texture atlas with nearest-neighbor sampling
 - UV-projected block color regions for a pixel-art feel
 - a separate `.blend`, `.fbx` and preview render for Unity experimentation
+
+The Roblox-style pixel variant changes the silhouette more aggressively and adds:
+
+- a blocky articulated body inspired by toy/avatar proportions
+- a dedicated pixel atlas for cubic surfaces
+- separate idle, celebrate and prompt actions exported in the `.fbx`
+- an alternate `.blend`, `.fbx` and preview for style exploration in Unity
 
 ## Naming Conventions
 

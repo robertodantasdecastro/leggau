@@ -19,6 +19,7 @@ Base do app mobile do Leggau.
 - `Assets/Art/Characters/Gau`: fonte `.blend` e export `.fbx` do mascote
 - `Assets/Art/Characters/Gau/PixelArt`: copia em pixel art do Gau
 - `Assets/Art/Characters/Gau/PixelTextured`: copia 3D com textura pixel art, atlas e preview
+- `Assets/Art/Characters/Gau/RobloxPixel`: variante 3D blocada, tipo Roblox, com atlas, blend, fbx e preview
 - `Assets/StreamingAssets/config`: ambientes do app
 
 ## Abrindo no Unity
@@ -45,3 +46,4 @@ Base do app mobile do Leggau.
 - Renderizar um dashboard textual inicial dentro da cena Unity
 - Exibir o Gau 3D importado do Blender
 - Permitir variantes de arte do Gau, incluindo a copia 3D com textura pixel art
+- Permitir variantes de arte do Gau, incluindo a copia blocada tipo Roblox para testes de estilo
