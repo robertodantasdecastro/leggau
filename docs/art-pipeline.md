@@ -14,6 +14,7 @@ Freeze the first Leggau 3D pipeline as:
 - `mobile/Assets/Art/Characters/Gau/Exports/`
 - `mobile/Assets/Art/Characters/Gau/PixelTextured/`
 - `mobile/Assets/Art/Characters/Gau/RobloxPixel/`
+- `mobile/Assets/Art/Characters/Gau/RoundedPixel/`
 - `mobile/Assets/Art/Animations/Gau/`
 - `mobile/Assets/Art/Materials/`
 
@@ -33,6 +34,8 @@ Freeze the first Leggau 3D pipeline as:
 - Pixel-textured Blender transformer: `mobile/Assets/Art/Characters/Gau/Source/apply_gau_pixel_texture.py`
 - Roblox-style variant builder: `scripts/build-gau-roblox-style.sh`
 - Roblox-style Blender generator: `mobile/Assets/Art/Characters/Gau/Source/generate_gau_roblox_style.py`
+- Rounded-pixel variant builder: `scripts/build-gau-rounded-pixel-style.sh`
+- Rounded-pixel Blender generator: `mobile/Assets/Art/Characters/Gau/Source/generate_gau_rounded_pixel_style.py`
 
 The current generator creates a first mobile-friendly Gau prototype with:
 
@@ -55,6 +58,13 @@ The Roblox-style pixel variant changes the silhouette more aggressively and adds
 - a dedicated low-resolution pixel atlas for cubic surfaces
 - separate idle, celebrate and prompt actions exported in the `.fbx`
 - an alternate `.blend`, `.fbx` and preview for style exploration in Unity
+
+The rounded-pixel variant keeps a softer silhouette and adds:
+
+- heavier bevels and smoother forms for the body, head and limbs
+- a dedicated pixel atlas with more visible per-surface detail
+- separate idle, celebrate and prompt actions exported in the `.fbx`
+- an alternate `.blend`, `.fbx` and preview for comparing soft vs. blocky styles
 
 ## Naming Conventions
 

@@ -57,3 +57,7 @@
 - The Roblox-style pixel atlas lives at `mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel-texture.png`
 - The Roblox-style preview was rendered, visually validated and reopened in Blender at `mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel-preview.png`
 - The Roblox-style variant was repixelated with a stronger low-resolution atlas on `2026-03-24` to make the block pixels read more clearly on the model
+- Gau now also has a rounded-pixel variant at `mobile/Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel.blend`
+- The rounded-pixel variant exports to `mobile/Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel.fbx`
+- The rounded-pixel atlas lives at `mobile/Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel-texture.png`
+- The rounded-pixel preview was rendered, visually validated and reopened in Blender at `mobile/Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel-preview.png`
