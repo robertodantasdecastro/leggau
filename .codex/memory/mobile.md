@@ -45,3 +45,4 @@
 - Keep builds, exported assets and Unity cache pointed to SSD-backed directories inside the repository.
 - Gau asset source now exists at `mobile/Assets/Art/Characters/Gau/Source/Gau.blend`
 - Gau Unity export now exists at `mobile/Assets/Art/Characters/Gau/Exports/Gau.fbx`
+- Gau source file was opened successfully in Blender on `2026-03-24`
