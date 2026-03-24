@@ -52,7 +52,7 @@ The pixel-textured copy keeps the same rig and silhouette while adding:
 The Roblox-style pixel variant changes the silhouette more aggressively and adds:
 
 - a blocky articulated body inspired by toy/avatar proportions
-- a dedicated pixel atlas for cubic surfaces
+- a dedicated low-resolution pixel atlas for cubic surfaces
 - separate idle, celebrate and prompt actions exported in the `.fbx`
 - an alternate `.blend`, `.fbx` and preview for style exploration in Unity
 

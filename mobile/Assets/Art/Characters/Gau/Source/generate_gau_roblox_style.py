@@ -33,20 +33,20 @@ def save_image(image, filepath):
 
 
 def create_pixel_atlas(filepath):
-    size = 32
-    tile_size = 8
+    size = 16
+    tile_size = 4
     image = bpy.data.images.new("GauRobloxPixelAtlas", width=size, height=size, alpha=True)
     pixels = [(0.0, 0.0, 0.0, 1.0)] * (size * size)
 
     tile_colors = {
-        (0, 0): (rgba("#4D9FF4"), rgba("#7DBCFB"), rgba("#2E6FB6")),
-        (1, 0): (rgba("#69B7F6"), rgba("#9BD1FF"), rgba("#478DCC")),
-        (2, 0): (rgba("#83D9AF"), rgba("#B6F0D3"), rgba("#54A87E")),
-        (3, 0): (rgba("#F5C45D"), rgba("#FFE08D"), rgba("#D5962B")),
-        (0, 1): (rgba("#F3914A"), rgba("#FFB57E"), rgba("#D26A2A")),
-        (1, 1): (rgba("#FFF8F1"), rgba("#FFFFFF"), rgba("#DCCFC0")),
-        (2, 1): (rgba("#202531"), rgba("#505C70"), rgba("#0D1017")),
-        (3, 1): (rgba("#E8D3A8"), rgba("#FAE7BC"), rgba("#C3A26E")),
+        (0, 0): (rgba("#4299F0"), rgba("#8FD0FF"), rgba("#255D9D")),
+        (1, 0): (rgba("#66B7FF"), rgba("#B6E3FF"), rgba("#3E88C8")),
+        (2, 0): (rgba("#72D39F"), rgba("#C4F6DE"), rgba("#47936B")),
+        (3, 0): (rgba("#EDBF54"), rgba("#FFE69B"), rgba("#BF8320")),
+        (0, 1): (rgba("#F08239"), rgba("#FFC18D"), rgba("#C95D1B")),
+        (1, 1): (rgba("#F6F1E7"), rgba("#FFFFFF"), rgba("#CFC4B2")),
+        (2, 1): (rgba("#1B2130"), rgba("#5D6C88"), rgba("#090D14")),
+        (3, 1): (rgba("#E2CB9D"), rgba("#F9E8C4"), rgba("#B9975D")),
     }
 
     for tile_y in range(4):
@@ -54,10 +54,12 @@ def create_pixel_atlas(filepath):
             colors = tile_colors.get((tile_x, tile_y), (rgba("#000000"), rgba("#111111"), rgba("#222222")))
             for local_y in range(tile_size):
                 for local_x in range(tile_size):
-                    if (local_x + local_y) % 6 == 0:
+                    if local_x == local_y:
                         color = colors[1]
-                    elif (local_x + (local_y * 2)) % 7 == 0:
+                    elif local_x == tile_size - local_y - 1:
                         color = colors[2]
+                    elif local_y == 0 or local_x == 0:
+                        color = colors[1]
                     else:
                         color = colors[0]
                     x = tile_x * tile_size + local_x

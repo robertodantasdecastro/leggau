@@ -64,6 +64,7 @@ Date checked: `2026-03-24`
   - `mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel-texture.png`
   - `mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel-preview.png`
 - The Roblox-style Gau variant was rendered and reopened in Blender for verification on `2026-03-24`
+- The Roblox-style Gau variant was updated with a lower-resolution atlas on `2026-03-24` to increase the visible pixel effect
 
 ## Current Conclusion
 
