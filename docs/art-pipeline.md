@@ -12,6 +12,7 @@ Freeze the first Leggau 3D pipeline as:
 
 - `mobile/Assets/Art/Characters/Gau/Source/`
 - `mobile/Assets/Art/Characters/Gau/Exports/`
+- `mobile/Assets/Art/Characters/Gau/PixelTextured/`
 - `mobile/Assets/Art/Animations/Gau/`
 - `mobile/Assets/Art/Materials/`
 
@@ -21,11 +22,14 @@ Freeze the first Leggau 3D pipeline as:
 2. Save the authoritative `.blend` file in `mobile/Assets/Art/Characters/Gau/Source/`.
 3. Export the Unity-facing `.fbx` file to `mobile/Assets/Art/Characters/Gau/Exports/`.
 4. Let Unity import the `.fbx` and keep generated metadata inside the Unity project.
+5. When a stylized pixel variant is needed, generate a separate textured copy under `mobile/Assets/Art/Characters/Gau/PixelTextured/` instead of replacing the canonical source.
 
 ## Current Prototype Automation
 
 - Script: `scripts/build-gau-asset.sh`
 - Blender source generator: `mobile/Assets/Art/Characters/Gau/Source/generate_gau_asset.py`
+- Pixel-textured copy builder: `scripts/build-gau-pixel-textured.sh`
+- Pixel-textured Blender transformer: `mobile/Assets/Art/Characters/Gau/Source/apply_gau_pixel_texture.py`
 
 The current generator creates a first mobile-friendly Gau prototype with:
 
@@ -35,6 +39,12 @@ The current generator creates a first mobile-friendly Gau prototype with:
   - `Gau_Idle`
   - `Gau_Celebrate`
   - `Gau_Prompt`
+
+The pixel-textured copy keeps the same rig and silhouette while adding:
+
+- a small texture atlas with nearest-neighbor sampling
+- UV-projected block color regions for a pixel-art feel
+- a separate `.blend`, `.fbx` and preview render for Unity experimentation
 
 ## Naming Conventions
 

@@ -48,3 +48,7 @@
 - Gau source file was opened successfully in Blender on `2026-03-24`
 - Gau visual was refined and revalidated from a generated preview at `mobile/Assets/Art/Characters/Gau/Exports/Gau-preview.png`
 - Gau now also has a pixel-art copy at `mobile/Assets/Art/Characters/Gau/PixelArt/Gau-pixel-art.png`
+- Gau now also has a 3D pixel-textured copy at `mobile/Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-textured.blend`
+- The pixel-textured copy exports to `mobile/Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-textured.fbx`
+- The pixel-textured texture atlas lives at `mobile/Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-texture.png`
+- The pixel-textured preview was rendered and visually validated at `mobile/Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-textured-preview.png`

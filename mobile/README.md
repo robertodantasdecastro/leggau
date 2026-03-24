@@ -18,6 +18,7 @@ Base do app mobile do Leggau.
 - `Assets/Editor`: scripts para gerar a cena bootstrap
 - `Assets/Art/Characters/Gau`: fonte `.blend` e export `.fbx` do mascote
 - `Assets/Art/Characters/Gau/PixelArt`: copia em pixel art do Gau
+- `Assets/Art/Characters/Gau/PixelTextured`: copia 3D com textura pixel art, atlas e preview
 - `Assets/StreamingAssets/config`: ambientes do app
 
 ## Abrindo no Unity
@@ -43,3 +44,4 @@ Base do app mobile do Leggau.
 - Buscar familia, atividades, progresso, recompensas e catalogo de assets
 - Renderizar um dashboard textual inicial dentro da cena Unity
 - Exibir o Gau 3D importado do Blender
+- Permitir variantes de arte do Gau, incluindo a copia 3D com textura pixel art
