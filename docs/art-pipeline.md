@@ -63,7 +63,7 @@ The rounded-pixel variant keeps a softer silhouette and adds:
 
 - heavier bevels and smoother forms for the body, head and limbs
 - a dedicated higher-density pixel atlas with more visible per-surface detail
-- separate idle, celebrate and prompt actions exported in the `.fbx`
+- separate idle, celebrate, prompt and greeting actions exported in the `.fbx`
 - an alternate `.blend`, `.fbx` and preview for comparing soft vs. blocky styles
 
 ## Naming Conventions

@@ -349,6 +349,30 @@ def build_actions(armature):
         bones["Wing.L"].rotation_euler = (0.0, math.radians(-4.0), math.radians(6.0))
         bones["Wing.R"].rotation_euler = (0.0, math.radians(14.0), math.radians(-22.0))
 
+    def greeting_pose_start(bones):
+        bones["Spine"].rotation_euler = (math.radians(6.0), 0.0, math.radians(-4.0))
+        bones["Head"].rotation_euler = (math.radians(-8.0), 0.0, math.radians(8.0))
+        bones["Wing.L"].rotation_euler = (0.0, math.radians(-16.0), math.radians(20.0))
+        bones["Wing.R"].rotation_euler = (math.radians(-10.0), math.radians(40.0), math.radians(-92.0))
+
+    def greeting_pose_wave_a(bones):
+        bones["Spine"].rotation_euler = (math.radians(8.0), 0.0, math.radians(-6.0))
+        bones["Head"].rotation_euler = (math.radians(-10.0), 0.0, math.radians(11.0))
+        bones["Wing.L"].rotation_euler = (0.0, math.radians(-18.0), math.radians(24.0))
+        bones["Wing.R"].rotation_euler = (math.radians(-18.0), math.radians(52.0), math.radians(-122.0))
+
+    def greeting_pose_wave_b(bones):
+        bones["Spine"].rotation_euler = (math.radians(7.0), 0.0, math.radians(-2.0))
+        bones["Head"].rotation_euler = (math.radians(-7.0), 0.0, math.radians(-6.0))
+        bones["Wing.L"].rotation_euler = (0.0, math.radians(-12.0), math.radians(16.0))
+        bones["Wing.R"].rotation_euler = (math.radians(-14.0), math.radians(34.0), math.radians(-72.0))
+
+    def greeting_pose_end(bones):
+        bones["Spine"].rotation_euler = (math.radians(3.0), 0.0, math.radians(-1.0))
+        bones["Head"].rotation_euler = (math.radians(-5.0), 0.0, math.radians(3.0))
+        bones["Wing.L"].rotation_euler = (0.0, math.radians(-8.0), math.radians(8.0))
+        bones["Wing.R"].rotation_euler = (math.radians(-6.0), math.radians(20.0), math.radians(-28.0))
+
     create_action(
         armature,
         "GauRoundedPixel_Idle",
@@ -377,6 +401,18 @@ def build_actions(armature):
             1: prompt_pose_a,
             12: prompt_pose_b,
             24: prompt_pose_a,
+        },
+    )
+    create_action(
+        armature,
+        "GauRoundedPixel_Greeting",
+        32,
+        {
+            1: greeting_pose_start,
+            8: greeting_pose_wave_a,
+            16: greeting_pose_wave_b,
+            24: greeting_pose_wave_a,
+            32: greeting_pose_end,
         },
     )
     armature.animation_data.action = bpy.data.actions["GauRoundedPixel_Idle"]
@@ -429,6 +465,7 @@ def save_export_and_render(output_dir):
     blend_path = os.path.join(output_dir, "Gau-rounded-pixel.blend")
     fbx_path = os.path.join(output_dir, "Gau-rounded-pixel.fbx")
     preview_path = os.path.join(output_dir, "Gau-rounded-pixel-preview.png")
+    greeting_preview_path = os.path.join(output_dir, "Gau-rounded-pixel-greeting-preview.png")
 
     bpy.ops.wm.save_as_mainfile(filepath=blend_path)
 
@@ -451,8 +488,17 @@ def save_export_and_render(output_dir):
         path_mode="AUTO",
     )
 
+    armature = bpy.data.objects["GauArmature"]
+
     bpy.ops.object.select_all(action="DESELECT")
+    armature.animation_data.action = bpy.data.actions["GauRoundedPixel_Idle"]
+    bpy.context.scene.frame_set(12)
     bpy.context.scene.render.filepath = preview_path
+    bpy.ops.render.render(write_still=True)
+
+    armature.animation_data.action = bpy.data.actions["GauRoundedPixel_Greeting"]
+    bpy.context.scene.frame_set(16)
+    bpy.context.scene.render.filepath = greeting_preview_path
     bpy.ops.render.render(write_still=True)
 
 
