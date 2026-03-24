@@ -64,3 +64,8 @@
 - The rounded-pixel variant was refined on `2026-03-24` with more rounded bevels and a denser pixel atlas for higher visible detail
 - The rounded-pixel variant now includes a greeting animation exported in the FBX as `GauRoundedPixel_Greeting`
 - A dedicated greeting still preview now exists at `mobile/Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel-greeting-preview.png`
+- Gau now also has a mario-pixel variant at `mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel.blend`
+- The mario-pixel variant exports to `mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel.fbx`
+- The mario-pixel atlas lives at `mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel-texture.png`
+- The mario-pixel preview was rendered, visually validated and reopened in Blender at `mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel-preview.png`
+- The mario-pixel variant uses a denser retro atlas so each body part carries more visible pixel information

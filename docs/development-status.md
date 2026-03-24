@@ -75,6 +75,13 @@ Date checked: `2026-03-24`
 - The rounded-pixel Gau variant was rendered and reopened in Blender for verification on `2026-03-24`
 - The rounded-pixel Gau variant was refined with softer bevels and a higher-density pixel atlas on `2026-03-24`
 - The rounded-pixel Gau variant now exports a greeting animation as `GauRoundedPixel_Greeting`
+- Gau now also has a mario-pixel variant:
+  - `mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel.blend`
+  - `mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel.fbx`
+  - `mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel-texture.png`
+  - `mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel-preview.png`
+- The mario-pixel Gau variant was rendered and reopened in Blender for verification on `2026-03-24`
+- The mario-pixel Gau variant uses a denser retro atlas so each body part has more visible pixel detail
 
 ## Current Conclusion
 
@@ -83,6 +90,7 @@ Date checked: `2026-03-24`
 - The Gau pipeline now includes a pixel-textured 3D variant alongside the base `.blend`, `.fbx` and 2D pixel-art copy.
 - The Gau pipeline now also includes a blocky Roblox-style pixel variant for alternate in-game presentation.
 - The Gau pipeline now also includes a rounded-pixel variant for a softer silhouette with visible pixel detail.
+- The Gau pipeline now also includes a mario-pixel variant with denser retro granulation by body part.
 - Unity tooling is much closer, and the editor repair is in progress, but the bootstrap scene still depends on that validation finishing.
 - Remote backend validation on `vm2` remains blocked by SSH authentication.
 - Project memory is now intended to live primarily inside the repository, not in global Codex state.

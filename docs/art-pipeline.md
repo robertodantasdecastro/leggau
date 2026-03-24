@@ -15,6 +15,7 @@ Freeze the first Leggau 3D pipeline as:
 - `mobile/Assets/Art/Characters/Gau/PixelTextured/`
 - `mobile/Assets/Art/Characters/Gau/RobloxPixel/`
 - `mobile/Assets/Art/Characters/Gau/RoundedPixel/`
+- `mobile/Assets/Art/Characters/Gau/MarioPixel/`
 - `mobile/Assets/Art/Animations/Gau/`
 - `mobile/Assets/Art/Materials/`
 
@@ -36,6 +37,8 @@ Freeze the first Leggau 3D pipeline as:
 - Roblox-style Blender generator: `mobile/Assets/Art/Characters/Gau/Source/generate_gau_roblox_style.py`
 - Rounded-pixel variant builder: `scripts/build-gau-rounded-pixel-style.sh`
 - Rounded-pixel Blender generator: `mobile/Assets/Art/Characters/Gau/Source/generate_gau_rounded_pixel_style.py`
+- Mario-pixel variant builder: `scripts/build-gau-mario-pixel-style.sh`
+- Mario-pixel Blender generator: `mobile/Assets/Art/Characters/Gau/Source/generate_gau_mario_pixel_style.py`
 
 The current generator creates a first mobile-friendly Gau prototype with:
 
@@ -65,6 +68,13 @@ The rounded-pixel variant keeps a softer silhouette and adds:
 - a dedicated higher-density pixel atlas with more visible per-surface detail
 - separate idle, celebrate, prompt and greeting actions exported in the `.fbx`
 - an alternate `.blend`, `.fbx` and preview for comparing soft vs. blocky styles
+
+The mario-pixel variant keeps the rounded base but changes the texturing strategy:
+
+- a denser retro atlas with more pixels allocated per body part
+- stronger per-part material variation for body, head, wings, feet and face details
+- separate idle, celebrate and prompt actions exported in the `.fbx`
+- an alternate `.blend`, `.fbx` and preview for comparing coarse vs. dense pixel granulation
 
 ## Naming Conventions
 
