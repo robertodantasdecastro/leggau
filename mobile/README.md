@@ -17,6 +17,7 @@ Base do app mobile do Leggau.
 - `Assets/Scripts/UI`: presenters de HUD e recompensas
 - `Assets/Editor`: scripts para gerar a cena bootstrap
 - `Assets/Art/Characters/Gau`: fonte `.blend` e export `.fbx` do mascote
+- `Assets/Art/Characters/Gau/PixelArt`: copia em pixel art do Gau
 - `Assets/StreamingAssets/config`: ambientes do app
 
 ## Abrindo no Unity

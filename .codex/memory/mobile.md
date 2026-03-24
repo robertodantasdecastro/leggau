@@ -47,3 +47,4 @@
 - Gau Unity export now exists at `mobile/Assets/Art/Characters/Gau/Exports/Gau.fbx`
 - Gau source file was opened successfully in Blender on `2026-03-24`
 - Gau visual was refined and revalidated from a generated preview at `mobile/Assets/Art/Characters/Gau/Exports/Gau-preview.png`
+- Gau now also has a pixel-art copy at `mobile/Assets/Art/Characters/Gau/PixelArt/Gau-pixel-art.png`

@@ -50,6 +50,8 @@ Date checked: `2026-03-24`
 - Gau source file was opened successfully in Blender for validation
 - Gau visual was refined and revalidated with a rendered preview:
   - `mobile/Assets/Art/Characters/Gau/Exports/Gau-preview.png`
+- Gau also has a pixel-art copy:
+  - `mobile/Assets/Art/Characters/Gau/PixelArt/Gau-pixel-art.png`
 
 ## Current Conclusion
 
