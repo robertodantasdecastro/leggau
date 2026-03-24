@@ -1,0 +1,6 @@
+{
+  "environmentName": "development",
+  "apiBaseUrl": "http://localhost:8080/api",
+  "devLoginEmail": "parent@leggau.local",
+  "devLoginName": "Responsavel Demo"
+}

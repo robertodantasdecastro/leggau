@@ -1,0 +1,27 @@
+.DS_Store
+._*
+.env
+.env.local
+.env.*.local
+
+# Node / Nest
+backend/node_modules/
+backend/dist/
+backend/coverage/
+
+# Unity
+mobile/Library/
+mobile/Logs/
+mobile/MemoryCaptures/
+mobile/Obj/
+mobile/Temp/
+mobile/UserSettings/
+mobile/Build/
+mobile/Builds/
+mobile/.vs/
+mobile/*.csproj
+mobile/*.sln
+
+# Infra runtime data
+.data/
+infra/runtime/

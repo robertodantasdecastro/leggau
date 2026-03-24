@@ -1,0 +1,14 @@
+project_root=/Volumes/SSDExterno/Desenvolvimento/Leggau
+memory_root=/Volumes/SSDExterno/Desenvolvimento/Leggau/.codex
+primary_agents_md=/Volumes/SSDExterno/Desenvolvimento/Leggau/AGENTS.md
+mobile_stack=Unity
+backend_stack=NestJS
+database=Postgres
+cache=Redis
+proxy=Nginx
+local_gateway=http://localhost:8080
+local_api=http://localhost:8080/api
+remote_dev_host=vm2
+remote_dev_root=~/leggau
+future_prod_host=leggau
+secrets_policy=never_store_real_secrets_in_repo_memory
