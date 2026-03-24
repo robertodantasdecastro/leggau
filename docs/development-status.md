@@ -48,6 +48,8 @@ Date checked: `2026-03-24`
   - `mobile/Assets/Art/Characters/Gau/Source/Gau.blend`
   - `mobile/Assets/Art/Characters/Gau/Exports/Gau.fbx`
 - Gau source file was opened successfully in Blender for validation
+- Gau visual was refined and revalidated with a rendered preview:
+  - `mobile/Assets/Art/Characters/Gau/Exports/Gau-preview.png`
 
 ## Current Conclusion
 
