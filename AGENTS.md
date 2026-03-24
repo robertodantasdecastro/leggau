@@ -29,6 +29,7 @@
 - `docs/`: architecture, setup, status and transition docs
 - `scripts/`: bootstrap, deploy and backup scripts
 - `.codex/`: local Codex memory, rules and project continuity
+- `.data/`: heavy local runtime data on the external SSD, including Docker state, uploads, backups, mobile builds and art exports
 
 ## Canonical Environment Variables
 
@@ -46,8 +47,13 @@ Use `.env.example` as the non-sensitive source of truth.
 - `REDIS_HOST=redis`
 - `REDIS_PORT=6379`
 - `REDIS_ENABLED=true`
+- `POSTGRES_DATA_ROOT=./.data/docker/postgres`
+- `REDIS_DATA_ROOT=./.data/docker/redis`
 - `UPLOADS_ROOT=./.data/uploads`
 - `BACKUP_ROOT=./.data/backups`
+- `MOBILE_BUILD_ROOT=./.data/mobile/builds`
+- `UNITY_CACHE_ROOT=./.data/mobile/cache`
+- `BLENDER_ASSET_ROOT=./.data/art/blender`
 - `DEV_API_BASE_URL=http://localhost:8080/api`
 - `PROD_API_BASE_URL=https://api.leggau.com`
 - `DEFAULT_PARENT_EMAIL=parent@leggau.local`
@@ -90,6 +96,8 @@ As of `2026-03-24`:
   - `adb`: present
   - `xcodebuild`: missing
   - Unity / Unity Hub: not detected
+- Heavy project files must stay on the external SSD under `/Volumes/SSDExterno/Desenvolvimento/Leggau`.
+- Local Docker persistence must stay under `./.data/docker/`, not Docker named volumes on the internal disk.
 
 ## Secrets Policy
 
@@ -101,6 +109,7 @@ As of `2026-03-24`:
 
 - Treat `mobile/` as the authoritative Unity root.
 - Treat `backend/` as the authoritative API root.
+- Treat `/Volumes/SSDExterno/Desenvolvimento/Leggau` as the canonical storage root for all large project files.
 - Route mobile development traffic through `http://localhost:8080/api`.
 - Keep uploads outside source code and serve them through `/uploads/`.
 - Keep VM bootstrap rooted at `~/leggau`.

@@ -39,6 +39,8 @@ npm run start:local
 ```text
 .
 |-- backend
+|-- .codex
+|-- .data
 |-- docs
 |-- infra
 |-- mobile
@@ -47,6 +49,9 @@ npm run start:local
 
 ## Observacoes
 
+- Arquivos grandes do projeto devem ficar no SSD externo em `/Volumes/SSDExterno/Desenvolvimento/Leggau`.
+- A stack Docker local foi configurada para usar bind mounts em `./.data/`, evitando deixar Postgres, Redis, uploads e backups no disco interno.
+- Builds mobile, cache local do Unity e artefatos 3D/Blender devem usar as raizes definidas em `.env`.
 - O acesso SSH para `vm2` ainda precisa estar autorizado com a chave correta para executar o deploy remoto automatizado.
 - O alias `leggau` para a futura EC2 ainda nao esta configurado nesta maquina.
 - O Unity nao esta instalado nesta estacao, entao a base mobile foi estruturada para abrir no editor e gerar os arquivos derivados quando o Unity for iniciado.

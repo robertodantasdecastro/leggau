@@ -10,6 +10,7 @@ Date checked: `2026-03-24`
 - Remote `origin` configured as `git@github.com:robertodantasdecastro/leggau.git`
 - Monorepo structure present: `backend`, `mobile`, `infra`, `docs`, `scripts`
 - Local Codex memory structure present in `.codex/`
+- SSD storage policy documented in `docs/storage-policy.md`
 
 ## Backend Local Status
 
@@ -29,8 +30,10 @@ Date checked: `2026-03-24`
   - `POST /api/progress/checkins`
   - `GET /api/progress/summary`
 - Persistence validated:
-  - Postgres named volume persists data across `docker compose down` / `up`
-  - Redis named volume exists and service comes back healthy
+  - Compose configuration now points Postgres and Redis to `./.data/docker/` bind mounts on the external SSD
+  - Uploads and backups remain under `./.data/`
+  - SSD directory structure was created with `./scripts/bootstrap-ssd-storage.sh`
+  - The running Docker daemon began timing out on direct inspection commands during this update, so the actual container remount to the SSD-backed paths should be applied on the next controlled `docker compose down` / `up`
 
 ## vm2 Status
 
@@ -56,3 +59,4 @@ Date checked: `2026-03-24`
 - Mobile repository structure is prepared, but the Apple/Unity toolchain is not yet fully installed on this Mac.
 - Remote backend validation on `vm2` remains blocked by SSH authentication.
 - Project memory is now intended to live primarily inside the repository, not in global Codex state.
+- Heavy project files are now standardized to live inside `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data`.

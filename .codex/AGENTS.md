@@ -14,6 +14,7 @@ This directory is the canonical Codex memory for the Leggau repository.
 - Keep Leggau-specific memory inside the project
 - Avoid dependence on global Codex memory
 - Preserve non-sensitive operational context for continuity
+- Keep heavy project data rooted in `/Volumes/SSDExterno/Desenvolvimento/Leggau`
 - Require memory refresh and Git commit at the end of each completed delivery
 
 ## Files

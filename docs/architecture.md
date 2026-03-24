@@ -27,4 +27,7 @@
 
 - `DEV_API_BASE_URL` aponta para a stack da `vm2` ou para o gateway local.
 - Uploads ficam fora do codigo-fonte e sao servidos por `/uploads/`.
+- Arquivos pesados de desenvolvimento devem permanecer no SSD externo, dentro de `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/`.
+- Postgres e Redis locais usam bind mounts em `./.data/docker/` para evitar consumo do disco interno.
+- Builds mobile, cache local do Unity e artefatos do Blender devem usar diretorios dentro de `./.data/`.
 - A EC2 de producao deve replicar essa topologia antes de endurecer a operacao.

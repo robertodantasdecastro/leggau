@@ -25,8 +25,12 @@
 
 ## Persistence
 
-- Postgres data persists in named volume `leggau_postgres_data`
-- Redis data persists in named volume `leggau_redis_data`
+- Postgres data root is now configured as `./.data/docker/postgres`
+- Redis data root is now configured as `./.data/docker/redis`
+- Uploads stay under `./.data/uploads`
+- Backups stay under `./.data/backups`
+- SSD storage bootstrap script: `./scripts/bootstrap-ssd-storage.sh`
+- Docker Compose now uses bind mounts inside the external SSD project root
 
 ## Remote Dev Host
 

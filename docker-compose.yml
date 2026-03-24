@@ -45,7 +45,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ${POSTGRES_DATA_ROOT:-./.data/docker/postgres}:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
@@ -59,7 +59,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - redis_data:/data
+      - ${REDIS_DATA_ROOT:-./.data/docker/redis}:/data
     ports:
       - "6379:6379"
 
@@ -73,7 +73,3 @@ services:
     volumes:
       - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ${UPLOADS_ROOT:-./.data/uploads}:/srv/leggau/uploads:ro
-
-volumes:
-  postgres_data:
-  redis_data:

@@ -9,6 +9,7 @@
 ## Repository
 
 - Root: `/Volumes/SSDExterno/Desenvolvimento/Leggau`
+- Large-file root: `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data`
 - Remote: `git@github.com:robertodantasdecastro/leggau.git`
 - Main work areas:
   - `backend/`
@@ -22,6 +23,7 @@
 - Backend local stack already operational through Docker
 - Unity mobile frontend is still in code-first bootstrap mode until Unity Editor is installed/opened
 - Remote VM development is blocked by SSH authentication
+- Heavy local files must stay on the external SSD, not on the internal disk
 
 ## Delivery Workflow
 

@@ -5,6 +5,7 @@
 - Engine: `Unity`
 - Targets: `Android`, `iOS`
 - Current API base for development: `http://localhost:8080/api`
+- Heavy mobile artifacts must stay under `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/mobile`
 
 ## Current Mac Status
 
@@ -34,3 +35,4 @@
 ## Current Recommended Next Step
 
 - Install Unity LTS with Android and iOS support, then open `mobile/` and connect the existing bootstrap scripts to the first scene.
+- Keep builds, exported assets and Unity cache pointed to SSD-backed directories inside the repository.
