@@ -22,6 +22,7 @@
 - Blocked:
   - `vm2` SSH access
   - full Xcode app installation
+  - Unity Android/iOS build support modules are not installed in the currently validated editor
 - Exit criteria:
   - access `vm2`
   - deploy current stack to `~/leggau`
@@ -95,12 +96,12 @@
 ## Next Execution Step
 
 1. Restore operational access to `vm2` by authorizing the current Mac key fingerprint `SHA256:Q1Z01LuZT82w7xYeXdICxgqqcVGPUKu4Fx6Vz2f6tYo`.
-2. Deploy the current `portal + admin + api` stack into `~/leggau` on the VM.
+2. Run `./scripts/promote-stack-to-vm.sh` to deploy the current `portal + admin + api` stack into `~/leggau` on the VM.
 3. Validate:
    - `http://10.211.55.22:8080/api`
    - portal via VM gateway
    - admin via VM gateway
-4. Install the full Xcode app and validate the Unity iOS target.
+4. Install the full Xcode app, add Unity Android/iOS modules to the SSD-backed editor, and validate the Unity mobile targets.
 
 ## Branch and Delivery Rule
 

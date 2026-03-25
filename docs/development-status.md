@@ -48,6 +48,10 @@ Date checked: `2026-03-25`
 - Real status of `~/leggau`, Docker, Compose and runtime on `vm2` is still unknown because login is blocked
 - Latest SSH debug confirms the server accepts `publickey,password` but rejects the current `id_ed25519` key
 - Current offered key fingerprint: `SHA256:Q1Z01LuZT82w7xYeXdICxgqqcVGPUKu4Fx6Vz2f6tYo`
+- Phase 0 promotion helper is now ready locally:
+  - `scripts/promote-stack-to-vm.sh`
+- The VM preflight helper now checks host, user, `~/leggau`, Docker, Compose and free space when SSH becomes available:
+  - `scripts/check-vm2-access.sh`
 
 ## Mobile Mac Status
 
@@ -56,10 +60,15 @@ Date checked: `2026-03-25`
 - Android Debug Bridge (`adb`): installed
 - Unity Hub: installed
 - Unity editor is detected on SSD at `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.4.0f1/Unity.app`
+- A second Unity editor shell is present under `/Applications/Unity/Hub/Editor/6000.0.71f1/Unity.app`, but its app bundle is incomplete and should not be treated as the canonical editor
 - Unity Hub templates are now symlinked to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/Templates`
 - Blender `4.5.1 LTS`: installed
+- `xcodes` CLI is installed and available
 - Xcode CLI / `xcodebuild`: available only through Command Line Tools
 - Full Xcode app install is still missing
+- A direct Xcode download attempt through `xcodes` now writes to the SSD-backed tooling tree, but still requires an authenticated Apple ID session before it can proceed
+- The runnable Unity editor currently exposes only `MacStandaloneSupport`
+- `AndroidPlayer` and `iOSSupport` playback modules are still missing from the currently validated editor install
 - Gau source asset generated in Blender:
   - `mobile/Assets/Art/Characters/Gau/Source/Gau.blend`
   - `mobile/Assets/Art/Characters/Gau/Exports/Gau.fbx`
@@ -157,6 +166,10 @@ Date checked: `2026-03-25`
   - Unity Hub launches again after the redirection
   - Unity editor is now detected on the SSD-backed install root
 - Unity tooling is now aligned with the SSD policy, but the bootstrap scene still needs in-editor validation.
+- Unity mobile tooling still requires:
+  - full Xcode app install and selection
+  - Android build support
+  - iOS build support
 - Remote backend validation on `vm2` remains blocked by SSH authentication.
 - Project memory is now intended to live primarily inside the repository, not in global Codex state.
 - Heavy project files are now standardized to live inside `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data`.
@@ -168,5 +181,7 @@ Date checked: `2026-03-25`
   - `scripts/cleanup-dev-storage.sh`
   - `scripts/report-environment-status.sh`
   - `scripts/sync-codex-to-vm.sh`
+- VM promotion is now scripted through:
+  - `scripts/promote-stack-to-vm.sh`
 - Portal/admin/billing foundation was added to the repo and is ready for container/runtime validation once dependencies finish and `vm2` SSH is restored.
 - The current phase checkpoint and remaining blockers are now tracked in `docs/mvp-timeline.md`.

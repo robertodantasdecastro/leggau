@@ -4,8 +4,10 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 UNITY_HUB_ROOT="${HOME}/Library/Application Support/UnityHub"
 UNITY_TEMPLATES_LINK="${UNITY_HUB_ROOT}/Templates"
-UNITY_EDITOR_ROOT="${PROJECT_ROOT}/.data/tooling/unity/editors"
+UNITY_EDITOR_SSD_ROOT="${PROJECT_ROOT}/.data/tooling/unity/editors"
+UNITY_EDITOR_SYSTEM_ROOT="/Applications/Unity/Hub/Editor"
 REMOTE_HOST="vm2"
+UNITY_EDITOR_PATHS=()
 
 cd "${PROJECT_ROOT}"
 
@@ -23,15 +25,55 @@ else
   echo "blender=missing"
 fi
 
-if [ -d "${UNITY_EDITOR_ROOT}" ]; then
-  editors="$(find "${UNITY_EDITOR_ROOT}" -maxdepth 2 -name 'Unity.app' | tr '\n' ',' | sed 's/,$//')"
+if [ -d "${UNITY_EDITOR_SSD_ROOT}" ]; then
+  editors="$(find "${UNITY_EDITOR_SSD_ROOT}" -maxdepth 2 -name 'Unity.app' | tr '\n' ',' | sed 's/,$//')"
   if [ -n "${editors}" ]; then
     echo "unity_editors_on_ssd=${editors}"
+    while IFS= read -r editor_path; do
+      [ -n "${editor_path}" ] && UNITY_EDITOR_PATHS+=("${editor_path}")
+    done < <(find "${UNITY_EDITOR_SSD_ROOT}" -maxdepth 2 -name 'Unity.app' -print | sort)
   else
     echo "unity_editors_on_ssd=none_detected"
   fi
 else
   echo "unity_editors_on_ssd=missing"
+fi
+
+if [ -d "${UNITY_EDITOR_SYSTEM_ROOT}" ]; then
+  system_editors="$(find "${UNITY_EDITOR_SYSTEM_ROOT}" -maxdepth 2 -name 'Unity.app' | tr '\n' ',' | sed 's/,$//')"
+  if [ -n "${system_editors}" ]; then
+    echo "unity_editors_system=${system_editors}"
+    while IFS= read -r editor_path; do
+      [ -n "${editor_path}" ] && UNITY_EDITOR_PATHS+=("${editor_path}")
+    done < <(find "${UNITY_EDITOR_SYSTEM_ROOT}" -maxdepth 2 -name 'Unity.app' -print | sort)
+  else
+    echo "unity_editors_system=none_detected"
+  fi
+else
+  echo "unity_editors_system=missing"
+fi
+
+ios_support_list=()
+android_support_list=()
+for editor_path in "${UNITY_EDITOR_PATHS[@]}"; do
+  if [ -d "${editor_path}/Contents/PlaybackEngines/iOSSupport" ]; then
+    ios_support_list+=("${editor_path}/Contents/PlaybackEngines/iOSSupport")
+  fi
+  if [ -d "${editor_path}/Contents/PlaybackEngines/AndroidPlayer" ]; then
+    android_support_list+=("${editor_path}/Contents/PlaybackEngines/AndroidPlayer")
+  fi
+done
+
+if [ "${#ios_support_list[@]}" -gt 0 ]; then
+  echo "unity_ios_support=$(printf '%s\n' "${ios_support_list[@]}" | tr '\n' ',' | sed 's/,$//')"
+else
+  echo "unity_ios_support=missing"
+fi
+
+if [ "${#android_support_list[@]}" -gt 0 ]; then
+  echo "unity_android_support=$(printf '%s\n' "${android_support_list[@]}" | tr '\n' ',' | sed 's/,$//')"
+else
+  echo "unity_android_support=missing"
 fi
 
 if [ -L "${UNITY_TEMPLATES_LINK}" ]; then
@@ -49,6 +91,13 @@ if command -v xcodebuild >/dev/null 2>&1; then
   fi
 else
   echo "xcode=missing"
+fi
+
+if command -v xcodes >/dev/null 2>&1; then
+  xcodes_installed="$(xcodes installed | tr '\n' ',' | sed 's/,$//' || true)"
+  echo "xcodes_installed=${xcodes_installed:-none}"
+else
+  echo "xcodes_installed=missing"
 fi
 
 if command -v adb >/dev/null 2>&1; then
