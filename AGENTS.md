@@ -6,6 +6,10 @@
 - Codex local memory root: `/Volumes/SSDExterno/Desenvolvimento/Leggau/.codex`
 - Git remote: `git@github.com:robertodantasdecastro/leggau.git`
 - Main branch target: `main`
+- Published environment branches:
+  - `backend`
+  - `frontend-android`
+  - `frontend-ios`
 - Product name: `Leggau`
 - Mascot: `Gau`
 

@@ -11,6 +11,10 @@
 - Root: `/Volumes/SSDExterno/Desenvolvimento/Leggau`
 - Large-file root: `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data`
 - Remote: `git@github.com:robertodantasdecastro/leggau.git`
+- Published environment branches:
+  - `backend`
+  - `frontend-android`
+  - `frontend-ios`
 - Main work areas:
   - `backend/`
   - `mobile/`
