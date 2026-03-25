@@ -15,6 +15,25 @@ namespace Leggau.Gameplay
         public ProgressEntry[] LatestEntries { get; private set; }
         public AssetsCatalogResponse AssetsCatalog { get; private set; }
         public GauVariantsCatalog GauVariantsCatalog { get; private set; }
+        public int ActiveGauVariantIndex { get; private set; }
+
+        public GauVariantDescriptor ActiveGauVariant
+        {
+            get
+            {
+                if (GauVariantsCatalog?.variants == null || GauVariantsCatalog.variants.Length == 0)
+                {
+                    return null;
+                }
+
+                if (ActiveGauVariantIndex < 0 || ActiveGauVariantIndex >= GauVariantsCatalog.variants.Length)
+                {
+                    return GauVariantsCatalog.variants[0];
+                }
+
+                return GauVariantsCatalog.variants[ActiveGauVariantIndex];
+            }
+        }
 
         public void SetLogin(DevLoginResponse response)
         {
@@ -94,6 +113,49 @@ namespace Leggau.Gameplay
         public void SetGauVariantsCatalog(GauVariantsCatalog response)
         {
             GauVariantsCatalog = response;
+            ActiveGauVariantIndex = ResolvePreferredVariantIndex(response);
+        }
+
+        public void SelectNextGauVariant()
+        {
+            if (GauVariantsCatalog?.variants == null || GauVariantsCatalog.variants.Length == 0)
+            {
+                return;
+            }
+
+            ActiveGauVariantIndex = (ActiveGauVariantIndex + 1) % GauVariantsCatalog.variants.Length;
+        }
+
+        public void SelectPreviousGauVariant()
+        {
+            if (GauVariantsCatalog?.variants == null || GauVariantsCatalog.variants.Length == 0)
+            {
+                return;
+            }
+
+            ActiveGauVariantIndex -= 1;
+            if (ActiveGauVariantIndex < 0)
+            {
+                ActiveGauVariantIndex = GauVariantsCatalog.variants.Length - 1;
+            }
+        }
+
+        private static int ResolvePreferredVariantIndex(GauVariantsCatalog response)
+        {
+            if (response?.variants == null || response.variants.Length == 0)
+            {
+                return 0;
+            }
+
+            for (var index = 0; index < response.variants.Length; index += 1)
+            {
+                if (response.variants[index].id == "gau-rounded-pixel")
+                {
+                    return index;
+                }
+            }
+
+            return 0;
         }
     }
 }

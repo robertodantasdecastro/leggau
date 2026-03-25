@@ -85,6 +85,8 @@ Date checked: `2026-03-24`
 - The mobile bootstrap now loads a local Gau variants catalog from:
   - `mobile/Assets/StreamingAssets/config/gau-variants.json`
 - The dashboard now shows the local Gau variants available to the app runtime
+- The bootstrap now supports cycling the active Gau variant through UI actions
+- The bootstrap scene builder now includes buttons for previous/next mascot selection
 
 ## Current Conclusion
 
@@ -95,6 +97,7 @@ Date checked: `2026-03-24`
 - The Gau pipeline now also includes a rounded-pixel variant for a softer silhouette with visible pixel detail.
 - The Gau pipeline now also includes a mario-pixel variant with denser retro granulation by body part.
 - The mobile runtime now has a local manifest that bridges Gau art variants into the bootstrap flow.
+- The mobile bootstrap now has the first runtime interaction for Gau art direction selection.
 - Unity tooling is much closer, and the editor repair is in progress, but the bootstrap scene still depends on that validation finishing.
 - Remote backend validation on `vm2` remains blocked by SSH authentication.
 - Project memory is now intended to live primarily inside the repository, not in global Codex state.

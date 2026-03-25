@@ -15,7 +15,14 @@ namespace Leggau.Editor
         private const string SceneDirectory = "Assets/Scenes/Bootstrap";
         private const string ScenePath = "Assets/Scenes/Bootstrap/Bootstrap.unity";
         private const string DevEnvironmentPath = "Assets/StreamingAssets/config/dev-api.json";
-        private const string GauModelPath = "Assets/Art/Characters/Gau/Exports/Gau.fbx";
+        private static readonly string[] GauModelPaths =
+        {
+            "Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel.fbx",
+            "Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel.fbx",
+            "Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel.fbx",
+            "Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-textured.fbx",
+            "Assets/Art/Characters/Gau/Exports/Gau.fbx",
+        };
 
         [MenuItem("Leggau/Build Bootstrap Scene")]
         public static void Build()
@@ -44,6 +51,7 @@ namespace Leggau.Editor
                 views.progress,
                 views.activities,
                 views.rewards,
+                views.gauVariant,
                 views.catalog,
                 rewardHud);
 
@@ -53,6 +61,7 @@ namespace Leggau.Editor
                 dashboard);
 
             BuildActionButton(canvas.transform, bootstrap);
+            BuildVariantControls(canvas.transform, bootstrap);
             TryInstantiateGau();
             EditorSceneManager.SaveScene(scene, ScenePath);
             EnsureBuildSettings(ScenePath);
@@ -151,10 +160,11 @@ namespace Leggau.Editor
                 parent = CreateLabel("ParentLabel", panelObject.transform, new Vector2(0.05f, 0.79f), new Vector2(0.95f, 0.87f), 18, FontStyle.Bold, TextAnchor.MiddleLeft, "Responsavel"),
                 child = CreateLabel("ChildLabel", panelObject.transform, new Vector2(0.05f, 0.72f), new Vector2(0.95f, 0.79f), 18, FontStyle.Bold, TextAnchor.MiddleLeft, "Crianca"),
                 points = CreateLabel("PointsLabel", panelObject.transform, new Vector2(0.05f, 0.65f), new Vector2(0.95f, 0.72f), 17, FontStyle.Bold, TextAnchor.MiddleLeft, "Pontos"),
-                progress = CreateLabel("ProgressLabel", panelObject.transform, new Vector2(0.05f, 0.46f), new Vector2(0.95f, 0.65f), 15, FontStyle.Normal, TextAnchor.UpperLeft, "Progresso"),
-                activities = CreateLabel("ActivitiesLabel", panelObject.transform, new Vector2(0.05f, 0.28f), new Vector2(0.95f, 0.46f), 15, FontStyle.Normal, TextAnchor.UpperLeft, "Atividades"),
-                rewards = CreateLabel("RewardsLabel", panelObject.transform, new Vector2(0.05f, 0.12f), new Vector2(0.95f, 0.28f), 15, FontStyle.Normal, TextAnchor.UpperLeft, "Recompensas"),
-                catalog = CreateLabel("CatalogLabel", panelObject.transform, new Vector2(0.05f, 0.01f), new Vector2(0.95f, 0.12f), 14, FontStyle.Italic, TextAnchor.UpperLeft, "Catalogo"),
+                progress = CreateLabel("ProgressLabel", panelObject.transform, new Vector2(0.05f, 0.5f), new Vector2(0.95f, 0.65f), 15, FontStyle.Normal, TextAnchor.UpperLeft, "Progresso"),
+                activities = CreateLabel("ActivitiesLabel", panelObject.transform, new Vector2(0.05f, 0.34f), new Vector2(0.95f, 0.5f), 15, FontStyle.Normal, TextAnchor.UpperLeft, "Atividades"),
+                rewards = CreateLabel("RewardsLabel", panelObject.transform, new Vector2(0.05f, 0.2f), new Vector2(0.95f, 0.34f), 15, FontStyle.Normal, TextAnchor.UpperLeft, "Recompensas"),
+                gauVariant = CreateLabel("GauVariantLabel", panelObject.transform, new Vector2(0.05f, 0.1f), new Vector2(0.95f, 0.2f), 14, FontStyle.Bold, TextAnchor.UpperLeft, "Mascote"),
+                catalog = CreateLabel("CatalogLabel", panelObject.transform, new Vector2(0.05f, 0.01f), new Vector2(0.95f, 0.1f), 14, FontStyle.Italic, TextAnchor.UpperLeft, "Catalogo"),
             };
         }
 
@@ -181,9 +191,66 @@ namespace Leggau.Editor
             CreateLabel("CheckinButtonLabel", buttonObject.transform, Vector2.zero, Vector2.one, 18, FontStyle.Bold, TextAnchor.MiddleCenter, "Registrar primeira atividade");
         }
 
+        private static void BuildVariantControls(Transform parent, LeggauAppBootstrap bootstrap)
+        {
+            BuildSecondaryButton(
+                parent,
+                "PrevVariantButton",
+                new Vector2(0.72f, 0.18f),
+                new Vector2(0.82f, 0.25f),
+                "Mascote anterior",
+                bootstrap.SelectPreviousGauVariant);
+
+            BuildSecondaryButton(
+                parent,
+                "NextVariantButton",
+                new Vector2(0.84f, 0.18f),
+                new Vector2(0.94f, 0.25f),
+                "Proximo mascote",
+                bootstrap.SelectNextGauVariant);
+        }
+
+        private static void BuildSecondaryButton(
+            Transform parent,
+            string name,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            string label,
+            UnityEngine.Events.UnityAction action)
+        {
+            var buttonObject = CreateUiObject(name, parent);
+            var rectTransform = buttonObject.AddComponent<RectTransform>();
+            rectTransform.anchorMin = anchorMin;
+            rectTransform.anchorMax = anchorMax;
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
+
+            var image = buttonObject.AddComponent<Image>();
+            image.color = new Color(0.42f, 0.72f, 0.98f, 0.92f);
+
+            var button = buttonObject.AddComponent<Button>();
+            var colors = button.colors;
+            colors.normalColor = image.color;
+            colors.highlightedColor = new Color(0.56f, 0.79f, 1f, 0.98f);
+            colors.pressedColor = new Color(0.29f, 0.61f, 0.87f, 0.98f);
+            button.colors = colors;
+            UnityEventTools.AddPersistentListener(button.onClick, action);
+
+            CreateLabel($"{name}Label", buttonObject.transform, Vector2.zero, Vector2.one, 14, FontStyle.Bold, TextAnchor.MiddleCenter, label);
+        }
+
         private static void TryInstantiateGau()
         {
-            var model = AssetDatabase.LoadAssetAtPath<GameObject>(GauModelPath);
+            GameObject model = null;
+            foreach (var path in GauModelPaths)
+            {
+                model = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (model != null)
+                {
+                    break;
+                }
+            }
+
             if (model == null)
             {
                 return;
@@ -287,6 +354,7 @@ namespace Leggau.Editor
             public TextValueView progress;
             public TextValueView activities;
             public TextValueView rewards;
+            public TextValueView gauVariant;
             public TextValueView catalog;
         }
     }

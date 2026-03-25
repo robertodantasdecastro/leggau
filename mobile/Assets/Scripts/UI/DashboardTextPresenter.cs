@@ -12,6 +12,7 @@ namespace Leggau.UI
         [SerializeField] private TextValueView progressLabel;
         [SerializeField] private TextValueView activitiesLabel;
         [SerializeField] private TextValueView rewardsLabel;
+        [SerializeField] private TextValueView gauVariantLabel;
         [SerializeField] private TextValueView catalogLabel;
         [SerializeField] private RewardHudPresenter rewardHudPresenter;
 
@@ -22,6 +23,7 @@ namespace Leggau.UI
             TextValueView progress,
             TextValueView activities,
             TextValueView rewards,
+            TextValueView gauVariant,
             TextValueView catalog,
             RewardHudPresenter rewardHud)
         {
@@ -31,6 +33,7 @@ namespace Leggau.UI
             progressLabel = progress;
             activitiesLabel = activities;
             rewardsLabel = rewards;
+            gauVariantLabel = gauVariant;
             catalogLabel = catalog;
             rewardHudPresenter = rewardHud;
         }
@@ -52,10 +55,28 @@ namespace Leggau.UI
             progressLabel?.SetText(BuildProgress(session));
             activitiesLabel?.SetText(BuildActivities(session));
             rewardsLabel?.SetText(BuildRewards(session));
+            gauVariantLabel?.SetText(BuildGauVariant(session));
             catalogLabel?.SetText(BuildCatalog(session));
 
             rewardHudPresenter?.SetPoints(session.AvailablePoints);
             SetStatus("Dashboard carregado.");
+        }
+
+        private static string BuildGauVariant(LeggauSessionState session)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("Mascote ativo:");
+
+            if (session.ActiveGauVariant == null)
+            {
+                builder.AppendLine("- Nenhuma variante selecionada");
+                return builder.ToString();
+            }
+
+            builder.AppendLine($"- {session.ActiveGauVariant.displayName}");
+            builder.AppendLine($"- Estilo: {session.ActiveGauVariant.styleTag}");
+            builder.AppendLine($"- Uso: {session.ActiveGauVariant.recommendedUse}");
+            return builder.ToString();
         }
 
         private static string BuildProgress(LeggauSessionState session)
@@ -156,7 +177,8 @@ namespace Leggau.UI
 
             foreach (var item in session.GauVariantsCatalog.variants)
             {
-                builder.AppendLine($"- {item.displayName}: {item.styleTag}");
+                var selected = session.ActiveGauVariant == item ? " [ativo]" : string.Empty;
+                builder.AppendLine($"- {item.displayName}: {item.styleTag}{selected}");
             }
 
             return builder.ToString();

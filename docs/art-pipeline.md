@@ -82,6 +82,8 @@ The mario-pixel variant keeps the rounded base but changes the texturing strateg
 - Unity loader: `mobile/Assets/Scripts/Config/GauVariantsCatalogLoader.cs`
 - Session storage: `mobile/Assets/Scripts/Gameplay/LeggauSessionState.cs`
 - Dashboard exposure: `mobile/Assets/Scripts/UI/DashboardTextPresenter.cs`
+- Bootstrap controls: `mobile/Assets/Scripts/App/LeggauAppBootstrap.cs`
+- Scene builder buttons: `mobile/Assets/Editor/BootstrapSceneBuilder.cs`
 
 ## Naming Conventions
 

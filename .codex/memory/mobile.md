@@ -72,3 +72,6 @@
 - The mobile app now has a local Gau variants catalog in `mobile/Assets/StreamingAssets/config/gau-variants.json`
 - The bootstrap now loads the local Gau variants catalog through `GauVariantsCatalogLoader`
 - The dashboard now renders the count and style tags of the local Gau variants
+- The bootstrap now supports selecting the active Gau variant with previous/next actions
+- The dashboard now shows the active Gau variant name, style and recommendation
+- The bootstrap scene builder now adds UI buttons for cycling between Gau variants

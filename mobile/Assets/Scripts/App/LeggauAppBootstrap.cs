@@ -175,6 +175,20 @@ namespace Leggau.App
             StartCoroutine(DevCheckinFirstActivityRoutine());
         }
 
+        public void SelectNextGauVariant()
+        {
+            sessionState.SelectNextGauVariant();
+            dashboardPresenter?.Render(sessionState);
+            dashboardPresenter?.SetStatus($"Mascote ativo: {sessionState.ActiveGauVariant?.displayName ?? "-"}");
+        }
+
+        public void SelectPreviousGauVariant()
+        {
+            sessionState.SelectPreviousGauVariant();
+            dashboardPresenter?.Render(sessionState);
+            dashboardPresenter?.SetStatus($"Mascote ativo: {sessionState.ActiveGauVariant?.displayName ?? "-"}");
+        }
+
         private IEnumerator DevCheckinFirstActivityRoutine()
         {
             if (sessionState.ActiveChild == null || sessionState.Activities == null || sessionState.Activities.Length == 0)
