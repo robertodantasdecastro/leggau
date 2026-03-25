@@ -87,6 +87,9 @@ Date checked: `2026-03-24`
 - The dashboard now shows the local Gau variants available to the app runtime
 - The bootstrap now supports cycling the active Gau variant through UI actions
 - The bootstrap scene builder now includes buttons for previous/next mascot selection
+- The bootstrap now includes a runtime preview presenter that swaps the displayed Gau model based on the selected variant
+- Local catalog validation is now reproducible through:
+  - `scripts/check-gau-runtime-catalog.sh`
 
 ## Current Conclusion
 
@@ -98,6 +101,7 @@ Date checked: `2026-03-24`
 - The Gau pipeline now also includes a mario-pixel variant with denser retro granulation by body part.
 - The mobile runtime now has a local manifest that bridges Gau art variants into the bootstrap flow.
 - The mobile bootstrap now has the first runtime interaction for Gau art direction selection.
+- The code path for variant selection and mascot preview is ready, but Unity scene generation and in-editor execution are still blocked until a working Unity editor binary is restored on this Mac.
 - Unity tooling is much closer, and the editor repair is in progress, but the bootstrap scene still depends on that validation finishing.
 - Remote backend validation on `vm2` remains blocked by SSH authentication.
 - Project memory is now intended to live primarily inside the repository, not in global Codex state.

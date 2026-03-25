@@ -13,15 +13,17 @@ namespace Leggau.App
         [SerializeField] private TextAsset environmentAsset;
         [SerializeField] private ApiClient apiClient;
         [SerializeField] private DashboardTextPresenter dashboardPresenter;
+        [SerializeField] private GauVariantPreviewPresenter gauVariantPreviewPresenter;
 
         private readonly LeggauSessionState sessionState = new();
         private bool isBusy;
 
-        public void Configure(TextAsset environment, ApiClient client, DashboardTextPresenter presenter)
+        public void Configure(TextAsset environment, ApiClient client, DashboardTextPresenter presenter, GauVariantPreviewPresenter previewPresenter)
         {
             environmentAsset = environment;
             apiClient = client;
             dashboardPresenter = presenter;
+            gauVariantPreviewPresenter = previewPresenter;
         }
 
         private void Start()
@@ -162,6 +164,7 @@ namespace Leggau.App
 
             yield return LoadProgressSummary();
             dashboardPresenter?.Render(sessionState);
+            gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
             isBusy = false;
         }
 
@@ -179,6 +182,7 @@ namespace Leggau.App
         {
             sessionState.SelectNextGauVariant();
             dashboardPresenter?.Render(sessionState);
+            gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
             dashboardPresenter?.SetStatus($"Mascote ativo: {sessionState.ActiveGauVariant?.displayName ?? "-"}");
         }
 
@@ -186,6 +190,7 @@ namespace Leggau.App
         {
             sessionState.SelectPreviousGauVariant();
             dashboardPresenter?.Render(sessionState);
+            gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
             dashboardPresenter?.SetStatus($"Mascote ativo: {sessionState.ActiveGauVariant?.displayName ?? "-"}");
         }
 
@@ -287,6 +292,7 @@ namespace Leggau.App
             {
                 var catalog = GauVariantsCatalogLoader.LoadFromStreamingAssets();
                 sessionState.SetGauVariantsCatalog(catalog);
+                gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
             }
             catch (System.Exception exception)
             {

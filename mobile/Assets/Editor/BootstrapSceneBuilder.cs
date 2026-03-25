@@ -15,13 +15,13 @@ namespace Leggau.Editor
         private const string SceneDirectory = "Assets/Scenes/Bootstrap";
         private const string ScenePath = "Assets/Scenes/Bootstrap/Bootstrap.unity";
         private const string DevEnvironmentPath = "Assets/StreamingAssets/config/dev-api.json";
-        private static readonly string[] GauModelPaths =
+        private static readonly GauVariantAsset[] GauVariantAssets =
         {
-            "Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel.fbx",
-            "Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel.fbx",
-            "Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel.fbx",
-            "Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-textured.fbx",
-            "Assets/Art/Characters/Gau/Exports/Gau.fbx",
+            new("gau-rounded-pixel", "Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel.fbx", new Vector3(2.6f, 0f, 0f), new Vector3(0f, -18f, 0f), Vector3.one),
+            new("gau-mario-pixel", "Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel.fbx", new Vector3(2.6f, 0f, 0f), new Vector3(0f, -18f, 0f), Vector3.one),
+            new("gau-roblox-pixel", "Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel.fbx", new Vector3(2.65f, 0f, 0f), new Vector3(0f, -18f, 0f), Vector3.one),
+            new("gau-pixel-textured", "Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-textured.fbx", new Vector3(2.6f, 0f, 0f), new Vector3(0f, -18f, 0f), Vector3.one),
+            new("gau-base-3d", "Assets/Art/Characters/Gau/Exports/Gau.fbx", new Vector3(2.6f, 0f, 0f), new Vector3(0f, -18f, 0f), Vector3.one),
         };
 
         [MenuItem("Leggau/Build Bootstrap Scene")]
@@ -34,11 +34,12 @@ namespace Leggau.Editor
             var apiClient = runtime.AddComponent<ApiClient>();
             var rewardHud = runtime.AddComponent<RewardHudPresenter>();
             var dashboard = runtime.AddComponent<DashboardTextPresenter>();
+            var previewPresenter = runtime.AddComponent<GauVariantPreviewPresenter>();
             var bootstrap = runtime.AddComponent<LeggauAppBootstrap>();
 
             var camera = CreateCamera();
             CreateLight();
-            CreateStage();
+            var stageRoot = CreateStage();
             CreateEventSystem();
 
             var canvas = CreateCanvas(camera);
@@ -58,11 +59,12 @@ namespace Leggau.Editor
             bootstrap.Configure(
                 AssetDatabase.LoadAssetAtPath<TextAsset>(DevEnvironmentPath),
                 apiClient,
-                dashboard);
+                dashboard,
+                previewPresenter);
 
             BuildActionButton(canvas.transform, bootstrap);
             BuildVariantControls(canvas.transform, bootstrap);
-            TryInstantiateGau();
+            ConfigureVariantPreview(previewPresenter, stageRoot);
             EditorSceneManager.SaveScene(scene, ScenePath);
             EnsureBuildSettings(ScenePath);
             AssetDatabase.SaveAssets();
@@ -97,10 +99,14 @@ namespace Leggau.Editor
             lightObject.transform.rotation = Quaternion.Euler(36f, -25f, 0f);
         }
 
-        private static void CreateStage()
+        private static Transform CreateStage()
         {
+            var stageRoot = new GameObject("MascotStage").transform;
+            stageRoot.position = Vector3.zero;
+
             var floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
             floor.name = "PlayFloor";
+            floor.transform.SetParent(stageRoot, true);
             floor.transform.position = Vector3.zero;
             floor.transform.localScale = new Vector3(0.9f, 1f, 0.75f);
 
@@ -117,6 +123,8 @@ namespace Leggau.Editor
                     renderer.sharedMaterial = material;
                 }
             }
+
+            return stageRoot;
         }
 
         private static void CreateEventSystem()
@@ -239,33 +247,24 @@ namespace Leggau.Editor
             CreateLabel($"{name}Label", buttonObject.transform, Vector2.zero, Vector2.one, 14, FontStyle.Bold, TextAnchor.MiddleCenter, label);
         }
 
-        private static void TryInstantiateGau()
+        private static void ConfigureVariantPreview(GauVariantPreviewPresenter presenter, Transform stageRoot)
         {
-            GameObject model = null;
-            foreach (var path in GauModelPaths)
+            var bindings = new GauVariantPreviewPresenter.GauVariantBinding[GauVariantAssets.Length];
+
+            for (var index = 0; index < GauVariantAssets.Length; index += 1)
             {
-                model = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                if (model != null)
+                var asset = GauVariantAssets[index];
+                bindings[index] = new GauVariantPreviewPresenter.GauVariantBinding
                 {
-                    break;
-                }
+                    variantId = asset.variantId,
+                    prefab = AssetDatabase.LoadAssetAtPath<GameObject>(asset.assetPath),
+                    position = asset.position,
+                    rotationEuler = asset.rotationEuler,
+                    scale = asset.scale,
+                };
             }
 
-            if (model == null)
-            {
-                return;
-            }
-
-            var instance = PrefabUtility.InstantiatePrefab(model) as GameObject;
-            if (instance == null)
-            {
-                return;
-            }
-
-            instance.name = "GauMascot";
-            instance.transform.position = new Vector3(2.6f, 0f, 0f);
-            instance.transform.rotation = Quaternion.Euler(0f, -18f, 0f);
-            instance.transform.localScale = Vector3.one;
+            presenter.Configure(bindings, stageRoot);
         }
 
         private static TextValueView CreateLabel(
@@ -356,6 +355,24 @@ namespace Leggau.Editor
             public TextValueView rewards;
             public TextValueView gauVariant;
             public TextValueView catalog;
+        }
+
+        private readonly struct GauVariantAsset
+        {
+            public GauVariantAsset(string variantId, string assetPath, Vector3 position, Vector3 rotationEuler, Vector3 scale)
+            {
+                this.variantId = variantId;
+                this.assetPath = assetPath;
+                this.position = position;
+                this.rotationEuler = rotationEuler;
+                this.scale = scale;
+            }
+
+            public readonly string variantId;
+            public readonly string assetPath;
+            public readonly Vector3 position;
+            public readonly Vector3 rotationEuler;
+            public readonly Vector3 scale;
         }
     }
 }

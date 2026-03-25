@@ -75,3 +75,6 @@
 - The bootstrap now supports selecting the active Gau variant with previous/next actions
 - The dashboard now shows the active Gau variant name, style and recommendation
 - The bootstrap scene builder now adds UI buttons for cycling between Gau variants
+- The bootstrap now includes `GauVariantPreviewPresenter` to swap the mascot model instance when the active variant changes
+- Local validation script: `scripts/check-gau-runtime-catalog.sh`
+- Unity editor binary is still not available in `/Applications` or `~/Applications`, so final scene generation still depends on reinstalling or restoring Unity locally

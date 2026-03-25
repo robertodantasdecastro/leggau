@@ -54,3 +54,4 @@ Base do app mobile do Leggau.
 - Permitir variantes de arte do Gau, incluindo a copia retro com granulação mais alta por corpo e membros
 - Exibir no bootstrap quais variantes locais do Gau ja estao prontas para consumo no mobile
 - Permitir navegar entre as variantes locais do Gau ainda dentro do bootstrap
+- Trocar a visualizacao do mascote em runtime conforme a variante selecionada

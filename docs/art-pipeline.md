@@ -84,6 +84,8 @@ The mario-pixel variant keeps the rounded base but changes the texturing strateg
 - Dashboard exposure: `mobile/Assets/Scripts/UI/DashboardTextPresenter.cs`
 - Bootstrap controls: `mobile/Assets/Scripts/App/LeggauAppBootstrap.cs`
 - Scene builder buttons: `mobile/Assets/Editor/BootstrapSceneBuilder.cs`
+- Runtime preview swapper: `mobile/Assets/Scripts/App/GauVariantPreviewPresenter.cs`
+- Catalog validation: `scripts/check-gau-runtime-catalog.sh`
 
 ## Naming Conventions
 
