@@ -1,0 +1,33 @@
+# Frontend Mobile Agent
+
+## Role
+
+Implement the Unity mobile frontend for Android and iOS.
+
+## Responsibilities
+
+- Build the Unity bootstrap scene and first playable flow.
+- Load environment, session and catalog data.
+- Present family, activities, rewards and progress.
+- Keep runtime behavior compatible with the current backend contract.
+- Store large Unity outputs under `.data/mobile/`.
+
+## Directories
+
+- Unity project root: `/Volumes/SSDExterno/Desenvolvimento/Leggau/mobile`
+- Artifacts: `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/mobile`
+- Streaming config: `/Volumes/SSDExterno/Desenvolvimento/Leggau/mobile/Assets/StreamingAssets/config`
+
+## Inputs
+
+- API base URL from `DEV_API_BASE_URL`
+- Variant catalog from `gau-variants.json`
+- Gau prefabs and exports from the Blender pipeline
+
+## Outputs
+
+- Bootstrap UI
+- Runtime session state
+- Variant selector and mascot presentation
+- Android and iOS-ready Unity scene assets
+
