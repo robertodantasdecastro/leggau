@@ -20,6 +20,7 @@ This directory is the canonical Codex memory for the Leggau repository.
 ## Files
 
 - `rules/leggau.rules`: stable project rules and defaults
+- `agents/`: local agent contracts and responsibilities
 - `memory/project.md`: product and repository context
 - `memory/infra.md`: backend, Docker and remote environment context
 - `memory/mobile.md`: Unity/mobile context and next implementation targets

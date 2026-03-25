@@ -25,6 +25,16 @@
 - Dev backend host target: `vm2`
 - Future production host target: `leggau` on `EC2`
 
+## Agent Topology
+
+- Mac coordinator: `.codex/agents/mac-coordinator.md`
+- Frontend mobile specialist: `.codex/agents/frontend-mobile.md`
+- Blender and 3D specialist: `.codex/agents/blender-3d.md`
+- Android and iOS platform specialist: `.codex/agents/android-ios.md`
+- API integration specialist: `.codex/agents/api-integration.md`
+- VM backend specialist: `.codex/agents/vm-backend.md`
+- Future production specialist: `.codex/agents/prod-ec2.md`
+
 ## Directory Architecture
 
 - `backend/`: NestJS API and domain modules
@@ -72,6 +82,9 @@ Use `.env.example` as the non-sensitive source of truth.
 - Backend local no-containers fallback: `cd backend && npm run start:local`
 - Gau asset generation: `./scripts/build-gau-asset.sh`
 - Unity bootstrap scene: `./scripts/build-unity-bootstrap.sh`
+- Safe local cleanup: `./scripts/cleanup-dev-storage.sh`
+- VM Codex sync: `./scripts/sync-codex-to-vm.sh`
+- Environment report: `./scripts/report-environment-status.sh`
 
 ## Backend Modules
 
@@ -87,25 +100,29 @@ Use `.env.example` as the non-sensitive source of truth.
 
 ## Current Environment Status
 
-As of `2026-03-24`:
+As of `2026-03-25`:
 
 - Official dev backend target is `vm2` at `10.211.55.22`.
-- Local backend remains a fallback path at `http://localhost:8080/api`.
+- Backend infrastructure must run on `vm2` under `~/leggau`.
+- Local backend remains fallback-only at `http://localhost:8080/api` and should stay off on the Mac unless the VM path is blocked.
 - `vm2` resolves to `10.211.55.22`, but SSH authentication is currently blocked for all known local keys.
+- Latest SSH debug confirms the server offers `publickey,password` and rejects the current `id_ed25519` identity.
 - `leggau` production alias is still reserved as future target, not validated here.
 - Mac toolchain status:
   - Docker: ready
   - Java 17: present
   - `adb`: present
   - Unity Hub: installed
-  - Unity Editor `6000.0.71f1`: install directory present and repair/revalidation in progress
+  - Unity editor detected on SSD at `.data/tooling/unity/editors/6000.4.0f1/Unity.app`
+  - Unity Hub templates are symlinked to `.data/tooling/unityhub/Templates`
   - Blender `4.5.1 LTS`: installed
-  - `xcodebuild`: missing
+  - `xcodebuild`: command line tools only
 - Gau asset pipeline is now versioned:
   - `mobile/Assets/Art/Characters/Gau/Source/Gau.blend`
   - `mobile/Assets/Art/Characters/Gau/Exports/Gau.fbx`
 - Heavy project files must stay on the external SSD under `/Volumes/SSDExterno/Desenvolvimento/Leggau`.
 - Local Docker persistence must stay under `./.data/docker/`, not Docker named volumes on the internal disk.
+- Cleanup and sync routines are now repository-owned scripts so the Mac coordinator and remote agents can rerun them consistently.
 
 ## Secrets Policy
 

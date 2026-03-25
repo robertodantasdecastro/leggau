@@ -14,10 +14,11 @@
 - Java 17: installed
 - `adb`: installed
 - Unity Hub: installed
-- Unity Editor `6000.0.71f1`: install directory detected, repair/revalidation running via Unity Hub
+- Unity editor is detected on SSD at `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.4.0f1/Unity.app`
+- Unity Hub templates are symlinked to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/Templates`
 - Blender `4.5.1 LTS`: installed
-- `xcodebuild`: missing
-- Xcode installation is still blocked by system authentication / full Xcode app absence
+- `xcodebuild`: only the command line tools path is active
+- Full Xcode app installation is still missing
 
 ## Current Frontend Goal
 
@@ -81,4 +82,5 @@
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination
 - `~/Library/Application Support/UnityHub/secondaryInstallPath.json` now points to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors`
 - `~/Library/Application Support/UnityHub/downloads` is now symlinked to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/downloads`
+- `~/Library/Application Support/UnityHub/Templates` is now symlinked to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/Templates`
 - Unity Hub was relaunched after the SSD redirection, but the user session/license still needs to be re-authenticated in the Hub UI before reinstalling the editor
