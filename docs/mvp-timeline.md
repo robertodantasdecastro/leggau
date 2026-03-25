@@ -92,6 +92,7 @@
   - generated bootstrap scene
   - batch-configured Unity project settings and validation report
   - real auth + legal bootstrap foundation in the mobile app with dev fallback
+  - first-access child bootstrap path implemented through `POST /api/children`
 - Remaining:
   - validate the new auth/legal bootstrap in Unity play mode
   - replace temporary development fallback with remote VM backend as primary once `vm2` is available

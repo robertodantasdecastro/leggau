@@ -78,6 +78,11 @@ namespace Leggau.Gameplay
             }
         }
 
+        public void SetActiveChild(ChildProfile child)
+        {
+            ActiveChild = child;
+        }
+
         public void SetActivities(DailyMission[] items)
         {
             Activities = items;

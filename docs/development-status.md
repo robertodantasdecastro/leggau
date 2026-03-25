@@ -74,6 +74,7 @@ Date checked: `2026-03-25`
   - `docs/unity-environment-status.md`
 - `scripts/build-unity-bootstrap.sh` now prefers the SSD-backed editor
 - Headless bootstrap generation now succeeds after the first graphical import cycle
+- When the graphical Unity editor is already open with the Leggau project, batchmode validation correctly aborts because Unity blocks a second instance for the same project
 - The stable path for a fresh machine is:
   - open the project in the graphical editor first
   - let Unity finish the initial import and write `Library/`
@@ -148,7 +149,13 @@ Date checked: `2026-03-25`
   - fallback to `POST /api/auth/login` when the user already exists
   - `GET /api/legal/documents`
   - `POST /api/legal/consents`
+  - `POST /api/children` when the authenticated family still has no child profile
   - fallback to `POST /api/auth/dev-login` only when configured and needed
+- The real-auth first-access path is now validated locally:
+  - register parent
+  - record legal consent
+  - create first child profile
+  - reload family overview with child data
 - The dashboard now shows the local Gau variants available to the app runtime
 - The bootstrap now supports cycling the active Gau variant through UI actions
 - The bootstrap scene builder now includes buttons for previous/next mascot selection

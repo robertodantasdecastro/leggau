@@ -89,8 +89,14 @@ namespace Leggau.App
                 }
             );
 
+            if (!requestFailed && sessionState.ActiveChild == null)
+            {
+                yield return EnsureFirstChildProfile(value => requestFailed = value);
+            }
+
             if (requestFailed || sessionState.ActiveChild == null)
             {
+                dashboardPresenter?.SetError("Nao foi possivel preparar o perfil infantil inicial.");
                 isBusy = false;
                 yield break;
             }
@@ -344,6 +350,50 @@ namespace Leggau.App
                     setFailed?.Invoke(true);
                     yield break;
                 }
+            }
+        }
+
+        private IEnumerator EnsureFirstChildProfile(System.Action<bool> setFailed)
+        {
+            var parentEmail = sessionState.CurrentUserEmail;
+            if (string.IsNullOrWhiteSpace(parentEmail))
+            {
+                setFailed?.Invoke(true);
+                dashboardPresenter?.SetError("Nao foi possivel criar a crianca inicial sem email do responsavel.");
+                yield break;
+            }
+
+            dashboardPresenter?.SetStatus("Criando primeiro perfil infantil...");
+
+            var parentName = sessionState.Parent?.name;
+            var firstName = string.IsNullOrWhiteSpace(parentName) ? "Explorador Gau" : $"Filho de {parentName.Split(' ')[0]}";
+            var request = new CreateChildRequest
+            {
+                parentEmail = parentEmail,
+                name = firstName,
+                age = 6,
+                avatar = sessionState.ActiveGauVariant?.id ?? "gau-rounded-pixel",
+            };
+
+            var requestFailed = false;
+
+            yield return apiClient.PostJson(
+                "children",
+                JsonUtility.ToJson(request),
+                response =>
+                {
+                    var child = JsonUtility.FromJson<ChildProfile>(response);
+                    sessionState.SetActiveChild(child);
+                },
+                error =>
+                {
+                    requestFailed = true;
+                    dashboardPresenter?.SetError($"Falha ao criar perfil infantil: {error}");
+                });
+
+            if (requestFailed)
+            {
+                setFailed?.Invoke(true);
             }
         }
 

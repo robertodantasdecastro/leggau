@@ -21,6 +21,7 @@ import { ProgressEntry } from './common/entities/progress-entry.entity';
 import { Reward } from './common/entities/reward.entity';
 import { AppSeedService } from './config/app-seed.service';
 import { BillingModule } from './billing/billing.module';
+import { ChildrenModule } from './children/children.module';
 import { FamiliesModule } from './families/families.module';
 import { HealthModule } from './health/health.module';
 import { LegalModule } from './legal/legal.module';
@@ -84,6 +85,7 @@ import { RewardsModule } from './rewards/rewards.module';
     AuthModule,
     LegalModule,
     BillingModule,
+    ChildrenModule,
     AdminModule,
     ProfilesModule,
     FamiliesModule,

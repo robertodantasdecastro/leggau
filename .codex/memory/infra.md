@@ -64,6 +64,7 @@
   - `6000.4.0f1` is the only validated runnable editor right now
   - `scripts/build-unity-bootstrap.sh` now targets the SSD-backed editor first
   - `scripts/configure-unity-project.sh` now configures identifiers, orientation, color space and build scene in batch
+  - when the graphical Unity editor is open, batchmode is expected to abort because Unity does not allow a second instance for the same project
   - the Unity `Resources/PackageManager` tree on the SSD install had to be cleaned of `._*` files because they broke package resolution
   - first-import stabilization must be done in the graphical editor before retrying batch scene generation
   - after the graphical import completed, batch scene generation succeeded and produced `mobile/Assets/Scenes/Bootstrap/Bootstrap.unity`

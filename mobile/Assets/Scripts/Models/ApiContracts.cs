@@ -132,6 +132,15 @@ namespace Leggau.Models
     }
 
     [Serializable]
+    public class CreateChildRequest
+    {
+        public string parentEmail;
+        public string name;
+        public int age;
+        public string avatar;
+    }
+
+    [Serializable]
     public class FamilyOverviewResponse
     {
         public ParentProfile parent;
