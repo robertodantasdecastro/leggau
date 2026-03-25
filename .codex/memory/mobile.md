@@ -103,6 +103,7 @@
 - The bootstrap now also includes `UnityRuntimeDriver` to automate scene-open + Play Mode validation when the editor lock allows it
 - The bootstrap now exposes `RetryBootstrap` so the full auth/legal/family bootstrap can be rerun during Play Mode without reopening the scene
 - The generated HUD now uses card-style sections and a dedicated mascot/actions panel to make Unity iteration easier after editor or SSD interruptions
+- The HUD now also shows a live bootstrap checklist for `Auth`, `Legal`, `Familia`, `Crianca`, `Atividades`, `Recompensas` and `Progresso`
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination
 - `~/Library/Application Support/UnityHub/secondaryInstallPath.json` now points to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors`

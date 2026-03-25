@@ -15,6 +15,7 @@ namespace Leggau.Editor
         private const string SceneDirectory = "Assets/Scenes/Bootstrap";
         private const string ScenePath = "Assets/Scenes/Bootstrap/Bootstrap.unity";
         private const string DevEnvironmentPath = "Assets/StreamingAssets/config/dev-api.json";
+
         private static readonly GauVariantAsset[] GauVariantAssets =
         {
             new("gau-rounded-pixel", "Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel.fbx", new Vector3(2.6f, 0f, 0f), new Vector3(0f, -18f, 0f), Vector3.one),
@@ -55,6 +56,7 @@ namespace Leggau.Editor
                 views.rewards,
                 views.gauVariant,
                 views.catalog,
+                views.flow,
                 rewardHud,
                 runtimeProbe);
 
@@ -173,8 +175,9 @@ namespace Leggau.Editor
                 progress = CreateCardLabel("ProgressCard", "Progresso recente", panelObject.transform, new Vector2(0.05f, 0.31f), new Vector2(0.95f, 0.48f), 14, "Progresso"),
                 activities = CreateCardLabel("ActivitiesCard", "Atividades do dia", panelObject.transform, new Vector2(0.05f, 0.16f), new Vector2(0.95f, 0.31f), 14, "Atividades"),
                 rewards = CreateCardLabel("RewardsCard", "Recompensas", panelObject.transform, new Vector2(0.05f, 0.02f), new Vector2(0.95f, 0.16f), 14, "Recompensas"),
-                gauVariant = CreateCardLabel("GauVariantCard", "Mascote ativo", actionPanel.transform, new Vector2(0.08f, 0.63f), new Vector2(0.92f, 0.82f), 14, "Mascote"),
-                catalog = CreateCardLabel("CatalogCard", "Catalogo 3D", actionPanel.transform, new Vector2(0.08f, 0.42f), new Vector2(0.92f, 0.63f), 13, "Catalogo"),
+                flow = CreateCardLabel("FlowCard", "Checklist do bootstrap", actionPanel.transform, new Vector2(0.08f, 0.58f), new Vector2(0.92f, 0.82f), 13, "Etapas"),
+                gauVariant = CreateCardLabel("GauVariantCard", "Mascote ativo", actionPanel.transform, new Vector2(0.08f, 0.39f), new Vector2(0.92f, 0.58f), 14, "Mascote"),
+                catalog = CreateCardLabel("CatalogCard", "Catalogo 3D", actionPanel.transform, new Vector2(0.08f, 0.22f), new Vector2(0.92f, 0.39f), 13, "Catalogo"),
                 actionsRoot = actionPanel.transform,
             };
         }
@@ -183,8 +186,8 @@ namespace Leggau.Editor
         {
             var buttonObject = CreateUiObject("CheckinButton", parent);
             var rectTransform = buttonObject.AddComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0.08f, 0.12f);
-            rectTransform.anchorMax = new Vector2(0.92f, 0.22f);
+            rectTransform.anchorMin = new Vector2(0.08f, 0.11f);
+            rectTransform.anchorMax = new Vector2(0.92f, 0.19f);
             rectTransform.offsetMin = Vector2.zero;
             rectTransform.offsetMax = Vector2.zero;
 
@@ -207,16 +210,16 @@ namespace Leggau.Editor
             BuildSecondaryButton(
                 parent,
                 "PrevVariantButton",
-                new Vector2(0.08f, 0.27f),
-                new Vector2(0.47f, 0.36f),
+                new Vector2(0.08f, 0.21f),
+                new Vector2(0.47f, 0.29f),
                 "Mascote anterior",
                 bootstrap.SelectPreviousGauVariant);
 
             BuildSecondaryButton(
                 parent,
                 "NextVariantButton",
-                new Vector2(0.53f, 0.27f),
-                new Vector2(0.92f, 0.36f),
+                new Vector2(0.53f, 0.21f),
+                new Vector2(0.92f, 0.29f),
                 "Proximo mascote",
                 bootstrap.SelectNextGauVariant);
 
@@ -224,7 +227,7 @@ namespace Leggau.Editor
                 parent,
                 "RetryBootstrapButton",
                 new Vector2(0.08f, 0.02f),
-                new Vector2(0.92f, 0.1f),
+                new Vector2(0.92f, 0.09f),
                 "Recarregar bootstrap",
                 bootstrap.RetryBootstrap,
                 new Color(0.48f, 0.84f, 0.67f, 0.94f),
@@ -416,6 +419,7 @@ namespace Leggau.Editor
             public TextValueView rewards;
             public TextValueView gauVariant;
             public TextValueView catalog;
+            public TextValueView flow;
             public Transform actionsRoot;
         }
 

@@ -95,6 +95,7 @@
   - first-access child bootstrap path implemented through `POST /api/children`
   - Unity Play Mode runtime reached `ready` through the bootstrap flow, with dashboard loaded and Gau session data present
   - bootstrap HUD is now organized for in-editor iteration and supports runtime retry without restarting the scene
+  - onboarding/bootstrap progress is now visible as a live checklist inside the Unity HUD
 - Remaining:
   - replace the current runtime probe-based validation with direct visual confirmation of the same flow in editor Play Mode
   - replace temporary development fallback with remote VM backend as primary once `vm2` is available

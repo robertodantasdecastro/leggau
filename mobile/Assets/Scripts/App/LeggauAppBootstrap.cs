@@ -41,6 +41,7 @@ namespace Leggau.App
             }
 
             isBusy = true;
+            dashboardPresenter?.ResetFlow();
             dashboardPresenter?.RenderLoadingState(sessionState, "Carregando ambiente...");
 
             var environment = environmentAsset != null
@@ -53,10 +54,12 @@ namespace Leggau.App
 
             if (environment.useRealAuthBootstrap)
             {
+                dashboardPresenter?.MarkFlowLoading("Auth", "registro/login");
                 yield return AuthenticateWithRealAuth(environment, value => requestFailed = value);
             }
             else
             {
+                dashboardPresenter?.MarkFlowLoading("Auth", "fallback dev");
                 yield return AuthenticateWithDevLogin(environment, value => requestFailed = value);
             }
 
@@ -66,9 +69,16 @@ namespace Leggau.App
                 yield break;
             }
 
+            dashboardPresenter?.MarkFlowDone("Auth", sessionState.UsedDevLoginFallback ? "login dev" : "sessao pronta");
+
             if (environment.autoAcceptLegalConsents && !sessionState.UsedDevLoginFallback)
             {
+                dashboardPresenter?.MarkFlowLoading("Legal", "consentimentos");
                 yield return LoadAndAcceptLegalConsents(value => requestFailed = value);
+            }
+            else
+            {
+                dashboardPresenter?.MarkFlowDone("Legal", "ignorado em dev");
             }
 
             if (requestFailed)
@@ -77,6 +87,12 @@ namespace Leggau.App
                 yield break;
             }
 
+            if (!sessionState.UsedDevLoginFallback)
+            {
+                dashboardPresenter?.MarkFlowDone("Legal", sessionState.ConsentsRecorded ? "aceites gravados" : "sem documentos");
+            }
+
+            dashboardPresenter?.MarkFlowLoading("Familia", "overview");
             dashboardPresenter?.SetStatus($"Carregando familia via {apiClient.ActiveBaseUrl}...");
 
             yield return apiClient.GetJson(
@@ -89,23 +105,34 @@ namespace Leggau.App
                 error =>
                 {
                     requestFailed = true;
+                    dashboardPresenter?.MarkFlowFailed("Familia", "erro");
                     dashboardPresenter?.SetError($"Falha ao carregar familia: {error}");
                 }
             );
 
             if (!requestFailed && sessionState.ActiveChild == null)
             {
+                dashboardPresenter?.MarkFlowDone("Familia", "responsavel pronto");
+                dashboardPresenter?.MarkFlowLoading("Crianca", "criacao inicial");
                 yield return EnsureFirstChildProfile(value => requestFailed = value);
+            }
+            else if (!requestFailed)
+            {
+                dashboardPresenter?.MarkFlowDone("Familia", "familia carregada");
+                dashboardPresenter?.MarkFlowDone("Crianca", "perfil existente");
             }
 
             if (requestFailed || sessionState.ActiveChild == null)
             {
+                dashboardPresenter?.MarkFlowFailed("Crianca", "nao disponivel");
                 dashboardPresenter?.SetError("Nao foi possivel preparar o perfil infantil inicial.");
                 isBusy = false;
                 yield break;
             }
 
+            dashboardPresenter?.MarkFlowDone("Crianca", "perfil ativo");
             dashboardPresenter?.SetStatus("Carregando atividades...");
+            dashboardPresenter?.MarkFlowLoading("Atividades", "catalogo diario");
 
             yield return apiClient.GetJson(
                 "activities",
@@ -117,6 +144,7 @@ namespace Leggau.App
                 error =>
                 {
                     requestFailed = true;
+                    dashboardPresenter?.MarkFlowFailed("Atividades", "erro");
                     dashboardPresenter?.SetError($"Falha ao carregar atividades: {error}");
                 }
             );
@@ -127,6 +155,7 @@ namespace Leggau.App
                 yield break;
             }
 
+            dashboardPresenter?.MarkFlowDone("Atividades", "atividades prontas");
             dashboardPresenter?.SetStatus("Carregando catalogo 3D...");
 
             yield return apiClient.GetJson(
@@ -150,6 +179,7 @@ namespace Leggau.App
             }
 
             dashboardPresenter?.SetStatus("Carregando recompensas...");
+            dashboardPresenter?.MarkFlowLoading("Recompensas", "saldo e premios");
 
             yield return apiClient.GetJson(
                 $"rewards?childId={sessionState.ActiveChild.id}",
@@ -161,6 +191,7 @@ namespace Leggau.App
                 error =>
                 {
                     requestFailed = true;
+                    dashboardPresenter?.MarkFlowFailed("Recompensas", "erro");
                     dashboardPresenter?.SetError($"Falha ao carregar recompensas: {error}");
                 }
             );
@@ -171,7 +202,15 @@ namespace Leggau.App
                 yield break;
             }
 
+            dashboardPresenter?.MarkFlowDone("Recompensas", "saldo pronto");
+            dashboardPresenter?.MarkFlowLoading("Progresso", "resumo diario");
             yield return LoadProgressSummary();
+            if (!isBusy)
+            {
+                yield break;
+            }
+
+            dashboardPresenter?.MarkFlowDone("Progresso", "painel pronto");
             dashboardPresenter?.Render(sessionState);
             gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
             isBusy = false;
@@ -238,17 +277,20 @@ namespace Leggau.App
 
             if (registerSucceeded)
             {
+                dashboardPresenter?.MarkFlowDone("Auth", "autenticado");
                 yield break;
             }
 
             if (environment.allowDevLoginFallback)
             {
                 dashboardPresenter?.SetStatus("Auth real indisponivel, usando fallback dev...");
+                dashboardPresenter?.MarkFlowLoading("Auth", "fallback dev");
                 yield return AuthenticateWithDevLogin(environment, setFailed);
                 yield break;
             }
 
             setFailed?.Invoke(true);
+            dashboardPresenter?.MarkFlowFailed("Auth", "falha");
             dashboardPresenter?.SetError($"Falha na autenticacao real: {authError}");
         }
 
@@ -275,6 +317,7 @@ namespace Leggau.App
                 error =>
                 {
                     requestFailed = true;
+                    dashboardPresenter?.MarkFlowFailed("Auth", "dev indisponivel");
                     dashboardPresenter?.SetError($"Falha no login dev: {error}");
                 }
             );
@@ -282,7 +325,10 @@ namespace Leggau.App
             if (requestFailed)
             {
                 setFailed?.Invoke(true);
+                yield break;
             }
+
+            dashboardPresenter?.MarkFlowDone("Auth", "login dev");
         }
 
         private IEnumerator LoadAndAcceptLegalConsents(System.Action<bool> setFailed)
@@ -302,6 +348,7 @@ namespace Leggau.App
                 error =>
                 {
                     requestFailed = true;
+                    dashboardPresenter?.MarkFlowFailed("Legal", "erro");
                     dashboardPresenter?.SetError($"Falha ao carregar documentos legais: {error}");
                 });
 
@@ -320,6 +367,7 @@ namespace Leggau.App
             if (string.IsNullOrWhiteSpace(currentUserEmail))
             {
                 setFailed?.Invoke(true);
+                dashboardPresenter?.MarkFlowFailed("Legal", "sem email");
                 dashboardPresenter?.SetError("Nao foi possivel registrar consentimentos sem email do usuario.");
                 yield break;
             }
@@ -346,6 +394,7 @@ namespace Leggau.App
                     error =>
                     {
                         requestFailed = true;
+                        dashboardPresenter?.MarkFlowFailed("Legal", "erro");
                         dashboardPresenter?.SetError($"Falha ao registrar consentimento: {error}");
                     });
 
@@ -363,6 +412,7 @@ namespace Leggau.App
             if (string.IsNullOrWhiteSpace(parentEmail))
             {
                 setFailed?.Invoke(true);
+                dashboardPresenter?.MarkFlowFailed("Crianca", "sem responsavel");
                 dashboardPresenter?.SetError("Nao foi possivel criar a crianca inicial sem email do responsavel.");
                 yield break;
             }
@@ -392,6 +442,7 @@ namespace Leggau.App
                 error =>
                 {
                     requestFailed = true;
+                    dashboardPresenter?.MarkFlowFailed("Crianca", "erro");
                     dashboardPresenter?.SetError($"Falha ao criar perfil infantil: {error}");
                 });
 
@@ -491,6 +542,7 @@ namespace Leggau.App
                 error =>
                 {
                     requestFailed = true;
+                    dashboardPresenter?.MarkFlowFailed("Recompensas", "erro");
                     dashboardPresenter?.SetError($"Falha ao atualizar recompensas: {error}");
                 }
             );
@@ -522,6 +574,7 @@ namespace Leggau.App
                 error =>
                 {
                     requestFailed = true;
+                    dashboardPresenter?.MarkFlowFailed("Progresso", "erro");
                     dashboardPresenter?.SetError($"Falha ao carregar progresso: {error}");
                 }
             );

@@ -179,6 +179,14 @@ Date checked: `2026-03-25`
   - structured cards for session, child, points, progress, activities and rewards
   - dedicated mascot/actions panel
   - explicit `RetryBootstrap` action for re-running the full bootstrap without restarting the scene
+- The bootstrap HUD now also exposes a live checklist for:
+  - auth
+  - legal
+  - family overview
+  - child provisioning
+  - activities
+  - rewards
+  - progress
 - Local catalog validation is now reproducible through:
   - `scripts/check-gau-runtime-catalog.sh`
 

@@ -7,6 +7,17 @@ namespace Leggau.UI
 {
     public class DashboardTextPresenter : MonoBehaviour
     {
+        private static readonly string[] FlowOrder =
+        {
+            "Auth",
+            "Legal",
+            "Familia",
+            "Crianca",
+            "Atividades",
+            "Recompensas",
+            "Progresso",
+        };
+
         [SerializeField] private TextValueView statusLabel;
         [SerializeField] private TextValueView parentLabel;
         [SerializeField] private TextValueView childLabel;
@@ -15,8 +26,10 @@ namespace Leggau.UI
         [SerializeField] private TextValueView rewardsLabel;
         [SerializeField] private TextValueView gauVariantLabel;
         [SerializeField] private TextValueView catalogLabel;
+        [SerializeField] private TextValueView flowLabel;
         [SerializeField] private RewardHudPresenter rewardHudPresenter;
         [SerializeField] private BootstrapRuntimeProbe runtimeProbe;
+        private readonly string[] flowStates = new string[FlowOrder.Length];
 
         public void BindViews(
             TextValueView status,
@@ -27,6 +40,7 @@ namespace Leggau.UI
             TextValueView rewards,
             TextValueView gauVariant,
             TextValueView catalog,
+            TextValueView flow,
             RewardHudPresenter rewardHud,
             BootstrapRuntimeProbe probe)
         {
@@ -38,8 +52,69 @@ namespace Leggau.UI
             rewardsLabel = rewards;
             gauVariantLabel = gauVariant;
             catalogLabel = catalog;
+            flowLabel = flow;
             rewardHudPresenter = rewardHud;
             runtimeProbe = probe;
+            ResetFlow();
+        }
+
+        public void ResetFlow()
+        {
+            for (var index = 0; index < FlowOrder.Length; index += 1)
+            {
+                flowStates[index] = "[ ] aguardando";
+            }
+
+            RenderFlow();
+        }
+
+        public void MarkFlowLoading(string step, string detail = null)
+        {
+            SetFlow(step, string.IsNullOrWhiteSpace(detail) ? "[..] em andamento" : $"[..] {detail}");
+        }
+
+        public void MarkFlowDone(string step, string detail = null)
+        {
+            SetFlow(step, string.IsNullOrWhiteSpace(detail) ? "[ok] concluido" : $"[ok] {detail}");
+        }
+
+        public void MarkFlowFailed(string step, string detail)
+        {
+            SetFlow(step, string.IsNullOrWhiteSpace(detail) ? "[x] falhou" : $"[x] {detail}");
+        }
+
+        private void SetFlow(string step, string state)
+        {
+            for (var index = 0; index < FlowOrder.Length; index += 1)
+            {
+                if (FlowOrder[index] != step)
+                {
+                    continue;
+                }
+
+                flowStates[index] = state;
+                RenderFlow();
+                return;
+            }
+        }
+
+        private void RenderFlow()
+        {
+            if (flowLabel == null)
+            {
+                return;
+            }
+
+            var builder = new StringBuilder();
+            for (var index = 0; index < FlowOrder.Length; index += 1)
+            {
+                builder.Append("- ");
+                builder.Append(FlowOrder[index]);
+                builder.Append(": ");
+                builder.AppendLine(string.IsNullOrWhiteSpace(flowStates[index]) ? "[ ] aguardando" : flowStates[index]);
+            }
+
+            flowLabel.SetText(builder.ToString());
         }
 
         public void SetStatus(string value)
