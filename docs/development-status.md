@@ -81,6 +81,8 @@ Date checked: `2026-03-25`
   - `Contents/MacOS/Unity`
   - `PlaybackEngines/AndroidPlayer`
   - `PlaybackEngines/iOSSupport`
+- The main Unity editor package for `6000.0.71f1` has already finished downloading and is now in the local `installing` stage
+- Android and iOS support packages are already downloaded or queued for local installation behind the editor payload
 - Docker Desktop was shut down locally to free RAM for the Unity Hub installer, since backend services must not remain dependent on the MacBook
 - Gau source asset generated in Blender:
   - `mobile/Assets/Art/Characters/Gau/Source/Gau.blend`

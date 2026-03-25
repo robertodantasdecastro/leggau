@@ -46,6 +46,7 @@
 - Unity mobile build modules are not yet present in the validated editor install
 - A headless Unity Hub install for `6000.0.71f1` with Android+iOS support is now in progress against the SSD-backed install tree
 - The SSD-backed `6000.0.71f1` editor shell now exists, but remains incomplete until the headless install finishes
+- The `6000.0.71f1` editor payload has already finished downloading and is now installing locally
 - Full Xcode is still not installed; `xcodes` is available and is the preferred reproducible path for downloading to the SSD-backed tooling tree
 - The current delivery already includes the first Gau `.blend` and `.fbx`
 - VM promotion should now prefer `./scripts/promote-stack-to-vm.sh` once SSH access is restored

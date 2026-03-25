@@ -25,7 +25,8 @@
   - Unity Android/iOS build support modules are still being installed into the SSD-backed editor
 - Current Unity state:
   - `6000.0.71f1` partial editor shell already exists on the SSD
-  - mobile modules are still queued behind editor completion
+  - the main editor payload has finished downloading and entered local installation
+  - mobile modules are queued behind editor installation
 - Exit criteria:
   - access `vm2`
   - deploy current stack to `~/leggau`

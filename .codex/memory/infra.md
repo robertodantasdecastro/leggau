@@ -57,6 +57,10 @@
 - Current mobile module status:
   - Android build support installation in progress through Unity Hub headless install
   - iOS build support installation in progress through Unity Hub headless install
+- Unity install progress has passed these checkpoints:
+  - editor payload downloaded
+  - Android child modules downloaded/queued
+  - main editor currently in local install stage
 - Unity Hub install command currently in use:
   - `'/Applications/Unity Hub.app/Contents/MacOS/Unity Hub' --headless install --version 6000.0.71f1 --architecture arm64 --module android android-sdk-ndk-tools android-open-jdk ios`
 - Local Docker Desktop may need to remain stopped while the mobile editor install runs, to satisfy Unity Hub RAM requirements
