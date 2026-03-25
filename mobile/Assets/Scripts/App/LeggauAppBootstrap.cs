@@ -41,6 +41,7 @@ namespace Leggau.App
 
             var environment = AppEnvironmentLoader.Load(environmentAsset);
             apiClient.SetBaseUrls(environment.apiBaseUrl, environment.fallbackApiBaseUrl);
+            TryLoadLocalGauCatalog();
 
             var loginRequest = new DevLoginRequest
             {
@@ -263,6 +264,19 @@ namespace Leggau.App
             if (requestFailed)
             {
                 isBusy = false;
+            }
+        }
+
+        private void TryLoadLocalGauCatalog()
+        {
+            try
+            {
+                var catalog = GauVariantsCatalogLoader.LoadFromStreamingAssets();
+                sessionState.SetGauVariantsCatalog(catalog);
+            }
+            catch (System.Exception exception)
+            {
+                dashboardPresenter?.SetStatus($"Catalogo local do Gau indisponivel: {exception.Message}");
             }
         }
     }

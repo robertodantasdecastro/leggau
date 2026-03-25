@@ -1,0 +1,66 @@
+{
+  "mascot": "Gau",
+  "generatedAt": "2026-03-24",
+  "variants": [
+    {
+      "id": "gau-base-3d",
+      "displayName": "Gau Base 3D",
+      "styleTag": "foundation",
+      "sourceOfTruth": "mobile/Assets/Art/Characters/Gau/Source/Gau.blend",
+      "blendPath": "mobile/Assets/Art/Characters/Gau/Source/Gau.blend",
+      "fbxPath": "mobile/Assets/Art/Characters/Gau/Exports/Gau.fbx",
+      "previewPath": "mobile/Assets/Art/Characters/Gau/Exports/Gau-preview.png",
+      "summary": "Protótipo 3D base do Gau, com rig inicial e identidade principal do mascote.",
+      "recommendedUse": "Base para substituir por arte final ou comparar proporções e rig.",
+      "is3d": true
+    },
+    {
+      "id": "gau-pixel-textured",
+      "displayName": "Gau Pixel Textured",
+      "styleTag": "pixel-3d",
+      "sourceOfTruth": "mobile/Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-textured.blend",
+      "blendPath": "mobile/Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-textured.blend",
+      "fbxPath": "mobile/Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-textured.fbx",
+      "previewPath": "mobile/Assets/Art/Characters/Gau/PixelTextured/Gau-pixel-textured-preview.png",
+      "summary": "Versão 3D que preserva a silhueta do Gau base, mas com atlas pixelada e leitura mais retro.",
+      "recommendedUse": "Boa para experimentar UI híbrida 2D/3D sem alterar muito a forma do personagem.",
+      "is3d": true
+    },
+    {
+      "id": "gau-roblox-pixel",
+      "displayName": "Gau Roblox Pixel",
+      "styleTag": "blocky-retro",
+      "sourceOfTruth": "mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel.blend",
+      "blendPath": "mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel.blend",
+      "fbxPath": "mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel.fbx",
+      "previewPath": "mobile/Assets/Art/Characters/Gau/RobloxPixel/Gau-roblox-pixel-preview.png",
+      "summary": "Variante blocada, com linguagem mais próxima de avatar brinquedo e pixels grandes.",
+      "recommendedUse": "Indicado para cenas mais geométricas ou testes com gameplay infantil e volumes simples.",
+      "is3d": true
+    },
+    {
+      "id": "gau-rounded-pixel",
+      "displayName": "Gau Rounded Pixel",
+      "styleTag": "soft-pixel",
+      "sourceOfTruth": "mobile/Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel.blend",
+      "blendPath": "mobile/Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel.blend",
+      "fbxPath": "mobile/Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel.fbx",
+      "previewPath": "mobile/Assets/Art/Characters/Gau/RoundedPixel/Gau-rounded-pixel-preview.png",
+      "summary": "Variante com volumes mais suaves, pixels mais densos e animação de saudação embutida.",
+      "recommendedUse": "Melhor candidata atual para cenas principais e para o mascote com mais apelo afetivo.",
+      "is3d": true
+    },
+    {
+      "id": "gau-mario-pixel",
+      "displayName": "Gau Mario Pixel",
+      "styleTag": "retro-dense",
+      "sourceOfTruth": "mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel.blend",
+      "blendPath": "mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel.blend",
+      "fbxPath": "mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel.fbx",
+      "previewPath": "mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel-preview.png",
+      "summary": "Variante com granulação retro mais densa por parte do corpo, inspirada em leitura clássica de sprite.",
+      "recommendedUse": "Indicada para direção retro, menus especiais e experimentos de identidade visual 16-bit.",
+      "is3d": true
+    }
+  ]
+}

@@ -69,3 +69,6 @@
 - The mario-pixel atlas lives at `mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel-texture.png`
 - The mario-pixel preview was rendered, visually validated and reopened in Blender at `mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel-preview.png`
 - The mario-pixel variant uses a denser retro atlas so each body part carries more visible pixel information
+- The mobile app now has a local Gau variants catalog in `mobile/Assets/StreamingAssets/config/gau-variants.json`
+- The bootstrap now loads the local Gau variants catalog through `GauVariantsCatalogLoader`
+- The dashboard now renders the count and style tags of the local Gau variants

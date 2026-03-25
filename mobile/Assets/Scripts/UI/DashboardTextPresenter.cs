@@ -137,12 +137,26 @@ namespace Leggau.UI
             if (session.AssetsCatalog.scenes == null || session.AssetsCatalog.scenes.Length == 0)
             {
                 builder.AppendLine("- Nenhuma cena 3D informada");
+            }
+            else
+            {
+                foreach (var item in session.AssetsCatalog.scenes)
+                {
+                    builder.AppendLine($"- {item.key}: {item.objective}");
+                }
+            }
+
+            if (session.GauVariantsCatalog?.variants == null || session.GauVariantsCatalog.variants.Length == 0)
+            {
+                builder.AppendLine("- Variantes locais do Gau ainda nao carregadas");
                 return builder.ToString();
             }
 
-            foreach (var item in session.AssetsCatalog.scenes)
+            builder.AppendLine($"- Variantes locais: {session.GauVariantsCatalog.variants.Length}");
+
+            foreach (var item in session.GauVariantsCatalog.variants)
             {
-                builder.AppendLine($"- {item.key}: {item.objective}");
+                builder.AppendLine($"- {item.displayName}: {item.styleTag}");
             }
 
             return builder.ToString();

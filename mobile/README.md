@@ -23,6 +23,7 @@ Base do app mobile do Leggau.
 - `Assets/Art/Characters/Gau/RoundedPixel`: variante 3D com cantos mais arredondados e textura pixel art mais detalhada
 - `Assets/Art/Characters/Gau/MarioPixel`: variante 3D retro com granulação de pixels mais densa por parte do corpo
 - `Assets/StreamingAssets/config`: ambientes do app
+- `Assets/StreamingAssets/config/gau-variants.json`: catalogo local das variantes do Gau para o app
 
 ## Abrindo no Unity
 
@@ -51,3 +52,4 @@ Base do app mobile do Leggau.
 - Permitir variantes de arte do Gau, incluindo a copia blocada tipo Roblox para testes de estilo
 - Permitir variantes de arte do Gau, incluindo a copia arredondada com mais leitura de pixels
 - Permitir variantes de arte do Gau, incluindo a copia retro com granulação mais alta por corpo e membros
+- Exibir no bootstrap quais variantes locais do Gau ja estao prontas para consumo no mobile

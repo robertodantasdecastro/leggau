@@ -14,6 +14,7 @@ namespace Leggau.Gameplay
         public int CompletedActivities { get; private set; }
         public ProgressEntry[] LatestEntries { get; private set; }
         public AssetsCatalogResponse AssetsCatalog { get; private set; }
+        public GauVariantsCatalog GauVariantsCatalog { get; private set; }
 
         public void SetLogin(DevLoginResponse response)
         {
@@ -88,6 +89,11 @@ namespace Leggau.Gameplay
         public void SetAssetsCatalog(AssetsCatalogResponse response)
         {
             AssetsCatalog = response;
+        }
+
+        public void SetGauVariantsCatalog(GauVariantsCatalog response)
+        {
+            GauVariantsCatalog = response;
         }
     }
 }

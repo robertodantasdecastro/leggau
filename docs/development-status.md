@@ -82,6 +82,9 @@ Date checked: `2026-03-24`
   - `mobile/Assets/Art/Characters/Gau/MarioPixel/Gau-mario-pixel-preview.png`
 - The mario-pixel Gau variant was rendered and reopened in Blender for verification on `2026-03-24`
 - The mario-pixel Gau variant uses a denser retro atlas so each body part has more visible pixel detail
+- The mobile bootstrap now loads a local Gau variants catalog from:
+  - `mobile/Assets/StreamingAssets/config/gau-variants.json`
+- The dashboard now shows the local Gau variants available to the app runtime
 
 ## Current Conclusion
 
@@ -91,6 +94,7 @@ Date checked: `2026-03-24`
 - The Gau pipeline now also includes a blocky Roblox-style pixel variant for alternate in-game presentation.
 - The Gau pipeline now also includes a rounded-pixel variant for a softer silhouette with visible pixel detail.
 - The Gau pipeline now also includes a mario-pixel variant with denser retro granulation by body part.
+- The mobile runtime now has a local manifest that bridges Gau art variants into the bootstrap flow.
 - Unity tooling is much closer, and the editor repair is in progress, but the bootstrap scene still depends on that validation finishing.
 - Remote backend validation on `vm2` remains blocked by SSH authentication.
 - Project memory is now intended to live primarily inside the repository, not in global Codex state.

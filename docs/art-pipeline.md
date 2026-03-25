@@ -76,6 +76,13 @@ The mario-pixel variant keeps the rounded base but changes the texturing strateg
 - separate idle, celebrate and prompt actions exported in the `.fbx`
 - an alternate `.blend`, `.fbx` and preview for comparing coarse vs. dense pixel granulation
 
+## Runtime Bridge
+
+- Local runtime catalog: `mobile/Assets/StreamingAssets/config/gau-variants.json`
+- Unity loader: `mobile/Assets/Scripts/Config/GauVariantsCatalogLoader.cs`
+- Session storage: `mobile/Assets/Scripts/Gameplay/LeggauSessionState.cs`
+- Dashboard exposure: `mobile/Assets/Scripts/UI/DashboardTextPresenter.cs`
+
 ## Naming Conventions
 
 - Armature: `GauArmature`
