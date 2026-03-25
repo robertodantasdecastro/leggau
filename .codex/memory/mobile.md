@@ -5,7 +5,7 @@
 - Engine: `Unity`
 - Targets: `Android`, `iOS`
 - Current API base for development: `http://10.211.55.22:8080/api`
-- Local API fallback: `http://localhost:8080/api`
+- Local API fallback for Unity bootstrap validation: `http://localhost:3000/api`
 - Heavy mobile artifacts must stay under `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/mobile`
 
 ## Current Mac Status
@@ -88,11 +88,19 @@
 - The bootstrap now tries `auth/register`, falls back to `auth/login` for existing accounts, records legal consents, and only then falls back to `auth/dev-login` when configured
 - The bootstrap now auto-creates the first child profile through `POST /api/children` when a newly authenticated family still has no child
 - The real-auth bootstrap path is now validated locally for first access: parent register -> consent -> child create -> family overview
+- Unity Play Mode runtime now persists status snapshots through `BootstrapRuntimeProbe` at `.data/runtime/unity/bootstrap-playmode-status.json`
+- The latest validated probe reached `ready` with:
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
 - The dashboard now renders the count and style tags of the local Gau variants
 - The bootstrap now supports selecting the active Gau variant with previous/next actions
 - The dashboard now shows the active Gau variant name, style and recommendation
 - The bootstrap scene builder now adds UI buttons for cycling between Gau variants
 - The bootstrap now includes `GauVariantPreviewPresenter` to swap the mascot model instance when the active variant changes
+- The bootstrap now also includes `UnityRuntimeDriver` to automate scene-open + Play Mode validation when the editor lock allows it
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination
 - `~/Library/Application Support/UnityHub/secondaryInstallPath.json` now points to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors`

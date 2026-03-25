@@ -1,6 +1,6 @@
 # Unity Environment Status
 
-Generated: `2026-03-25 11:18:23 -03:00`
+Generated: `2026-03-25 11:52:37 -03:00`
 Editor: `6000.4.0f1`
 Project: `/Volumes/SSDExterno/Desenvolvimento/Leggau/mobile`
 
@@ -13,6 +13,7 @@ Project: `/Volumes/SSDExterno/Desenvolvimento/Leggau/mobile`
 - Android Bundle Version Code: `1`
 - Default Orientation: `Portrait`
 - Color Space: `Linear`
+- Insecure HTTP: `AlwaysAllowed`
 
 ## Build Settings
 - Scene: `Assets/Scenes/Bootstrap/Bootstrap.unity` enabled=`True` exists=`True`

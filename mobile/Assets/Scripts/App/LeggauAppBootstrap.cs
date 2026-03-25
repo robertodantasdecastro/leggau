@@ -11,6 +11,7 @@ namespace Leggau.App
     public class LeggauAppBootstrap : MonoBehaviour
     {
         [SerializeField] private TextAsset environmentAsset;
+        [SerializeField] private string environmentRelativePath = "config/dev-api.json";
         [SerializeField] private ApiClient apiClient;
         [SerializeField] private DashboardTextPresenter dashboardPresenter;
         [SerializeField] private GauVariantPreviewPresenter gauVariantPreviewPresenter;
@@ -18,9 +19,10 @@ namespace Leggau.App
         private readonly LeggauSessionState sessionState = new();
         private bool isBusy;
 
-        public void Configure(TextAsset environment, ApiClient client, DashboardTextPresenter presenter, GauVariantPreviewPresenter previewPresenter)
+        public void Configure(TextAsset environment, string environmentPath, ApiClient client, DashboardTextPresenter presenter, GauVariantPreviewPresenter previewPresenter)
         {
             environmentAsset = environment;
+            environmentRelativePath = string.IsNullOrWhiteSpace(environmentPath) ? "config/dev-api.json" : environmentPath;
             apiClient = client;
             dashboardPresenter = presenter;
             gauVariantPreviewPresenter = previewPresenter;
@@ -41,7 +43,9 @@ namespace Leggau.App
             isBusy = true;
             dashboardPresenter?.SetStatus("Carregando ambiente...");
 
-            var environment = AppEnvironmentLoader.Load(environmentAsset);
+            var environment = environmentAsset != null
+                ? AppEnvironmentLoader.Load(environmentAsset)
+                : AppEnvironmentLoader.LoadFromStreamingAssets(environmentRelativePath);
             apiClient.SetBaseUrls(environment.apiBaseUrl, environment.fallbackApiBaseUrl);
             TryLoadLocalGauCatalog();
 

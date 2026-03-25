@@ -32,6 +32,7 @@ namespace Leggau.Editor
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             var runtime = new GameObject("LeggauRuntime");
             var apiClient = runtime.AddComponent<ApiClient>();
+            var runtimeProbe = runtime.AddComponent<BootstrapRuntimeProbe>();
             var rewardHud = runtime.AddComponent<RewardHudPresenter>();
             var dashboard = runtime.AddComponent<DashboardTextPresenter>();
             var previewPresenter = runtime.AddComponent<GauVariantPreviewPresenter>();
@@ -54,13 +55,16 @@ namespace Leggau.Editor
                 views.rewards,
                 views.gauVariant,
                 views.catalog,
-                rewardHud);
+                rewardHud,
+                runtimeProbe);
 
             bootstrap.Configure(
-                AssetDatabase.LoadAssetAtPath<TextAsset>(DevEnvironmentPath),
+                null,
+                "config/dev-api.json",
                 apiClient,
                 dashboard,
                 previewPresenter);
+            PersistBootstrapBindings(bootstrap, "config/dev-api.json", apiClient, dashboard, previewPresenter);
 
             BuildActionButton(canvas.transform, bootstrap);
             BuildVariantControls(canvas.transform, bootstrap);
@@ -265,6 +269,22 @@ namespace Leggau.Editor
             }
 
             presenter.Configure(bindings, stageRoot);
+        }
+
+        private static void PersistBootstrapBindings(
+            LeggauAppBootstrap bootstrap,
+            string environmentPath,
+            ApiClient apiClient,
+            DashboardTextPresenter dashboard,
+            GauVariantPreviewPresenter previewPresenter)
+        {
+            var serializedBootstrap = new SerializedObject(bootstrap);
+            serializedBootstrap.FindProperty("environmentAsset").objectReferenceValue = null;
+            serializedBootstrap.FindProperty("environmentRelativePath").stringValue = environmentPath;
+            serializedBootstrap.FindProperty("apiClient").objectReferenceValue = apiClient;
+            serializedBootstrap.FindProperty("dashboardPresenter").objectReferenceValue = dashboard;
+            serializedBootstrap.FindProperty("gauVariantPreviewPresenter").objectReferenceValue = previewPresenter;
+            serializedBootstrap.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static TextValueView CreateLabel(

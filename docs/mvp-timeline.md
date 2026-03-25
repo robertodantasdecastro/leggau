@@ -93,8 +93,9 @@
   - batch-configured Unity project settings and validation report
   - real auth + legal bootstrap foundation in the mobile app with dev fallback
   - first-access child bootstrap path implemented through `POST /api/children`
+  - Unity Play Mode runtime reached `ready` through the bootstrap flow, with dashboard loaded and Gau session data present
 - Remaining:
-  - validate the new auth/legal bootstrap in Unity play mode
+  - replace the current runtime probe-based validation with direct visual confirmation of the same flow in editor Play Mode
   - replace temporary development fallback with remote VM backend as primary once `vm2` is available
 
 ### Phase 6 and beyond
@@ -112,7 +113,7 @@
    - `http://10.211.55.22:8080/api`
    - portal via VM gateway
    - admin via VM gateway
-4. Let the graphical Unity import stabilize, rerun `./scripts/build-unity-bootstrap.sh`, then finish mobile modules and install the full Xcode app.
+4. Keep the graphical Unity project open path stable, use the runtime probe to confirm `ready`, then finish mobile modules and install the full Xcode app.
 
 ## Branch and Delivery Rule
 

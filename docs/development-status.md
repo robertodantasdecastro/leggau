@@ -151,15 +151,29 @@ Date checked: `2026-03-25`
   - `POST /api/legal/consents`
   - `POST /api/children` when the authenticated family still has no child profile
   - fallback to `POST /api/auth/dev-login` only when configured and needed
+- For Unity Play Mode validation on the Mac, the primary VM URL still points to `http://10.211.55.22:8080/api`, but the local development fallback used by the mobile bootstrap is now `http://localhost:3000/api`
 - The real-auth first-access path is now validated locally:
   - register parent
   - record legal consent
   - create first child profile
   - reload family overview with child data
+- Unity runtime validation now writes a probe snapshot to:
+  - `.data/runtime/unity/bootstrap-playmode-status.json`
+- Latest validated runtime probe on `2026-03-25` reached:
+  - `state=ready`
+  - `status=Dashboard carregado.`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
 - The dashboard now shows the local Gau variants available to the app runtime
 - The bootstrap now supports cycling the active Gau variant through UI actions
 - The bootstrap scene builder now includes buttons for previous/next mascot selection
 - The bootstrap now includes a runtime preview presenter that swaps the displayed Gau model based on the selected variant
+- The bootstrap now also includes:
+  - `BootstrapRuntimeProbe` for runtime-state snapshots during Play Mode
+  - `UnityRuntimeDriver` for repeatable editor/batch validation of the bootstrap scene
 - Local catalog validation is now reproducible through:
   - `scripts/check-gau-runtime-catalog.sh`
 

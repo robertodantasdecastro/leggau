@@ -9,6 +9,7 @@
 - Local portal gateway: `http://localhost:8080/`
 - Local admin gateway: `http://localhost:8080/admin/`
 - Official dev backend target: `http://10.211.55.22:8080/api`
+- Unity mobile runtime fallback target on the Mac: `http://localhost:3000/api`
 - Backend code build passes with `cd backend && npm run build`
 - Backend runtime is intended to live on `vm2`; the local stack is fallback-only
 
@@ -54,6 +55,11 @@
   - `./.data/tooling/unity/editors/6000.4.0f1/Unity.app`
 - Current validated Unity project-open path is:
   - `open -na '/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.4.0f1/Unity.app' --args -projectPath '/Volumes/SSDExterno/Desenvolvimento/Leggau/mobile'`
+- Unity bootstrap runtime probe path is:
+  - `./.data/runtime/unity/bootstrap-playmode-status.json`
+- Latest validated probe snapshot reached:
+  - `state=ready`
+  - `status=Dashboard carregado.`
 - Current in-progress Unity install path is:
   - `./.data/tooling/unity/editors/6000.0.71f1/Unity.app`
 - Current mobile module status:
@@ -64,6 +70,7 @@
   - `6000.4.0f1` is the only validated runnable editor right now
   - `scripts/build-unity-bootstrap.sh` now targets the SSD-backed editor first
   - `scripts/configure-unity-project.sh` now configures identifiers, orientation, color space and build scene in batch
+  - `mobile/Assets/Editor/UnityRuntimeDriver.cs` now provides repeatable bootstrap runtime validation hooks
   - when the graphical Unity editor is open, batchmode is expected to abort because Unity does not allow a second instance for the same project
   - the Unity `Resources/PackageManager` tree on the SSD install had to be cleaned of `._*` files because they broke package resolution
   - first-import stabilization must be done in the graphical editor before retrying batch scene generation

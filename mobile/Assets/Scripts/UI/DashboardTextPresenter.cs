@@ -1,4 +1,5 @@
 using System.Text;
+using Leggau.App;
 using Leggau.Gameplay;
 using UnityEngine;
 
@@ -15,6 +16,7 @@ namespace Leggau.UI
         [SerializeField] private TextValueView gauVariantLabel;
         [SerializeField] private TextValueView catalogLabel;
         [SerializeField] private RewardHudPresenter rewardHudPresenter;
+        [SerializeField] private BootstrapRuntimeProbe runtimeProbe;
 
         public void BindViews(
             TextValueView status,
@@ -25,7 +27,8 @@ namespace Leggau.UI
             TextValueView rewards,
             TextValueView gauVariant,
             TextValueView catalog,
-            RewardHudPresenter rewardHud)
+            RewardHudPresenter rewardHud,
+            BootstrapRuntimeProbe probe)
         {
             statusLabel = status;
             parentLabel = parent;
@@ -36,15 +39,18 @@ namespace Leggau.UI
             gauVariantLabel = gauVariant;
             catalogLabel = catalog;
             rewardHudPresenter = rewardHud;
+            runtimeProbe = probe;
         }
 
         public void SetStatus(string value)
         {
             statusLabel?.SetText(value);
+            runtimeProbe?.ReportStatus(value);
         }
 
         public void SetError(string value)
         {
+            runtimeProbe?.ReportError(value);
             SetStatus($"Erro: {value}");
         }
 
@@ -59,6 +65,7 @@ namespace Leggau.UI
             catalogLabel?.SetText(BuildCatalog(session));
 
             rewardHudPresenter?.SetPoints(session.AvailablePoints);
+            runtimeProbe?.ReportSession(session);
             SetStatus("Dashboard carregado.");
         }
 

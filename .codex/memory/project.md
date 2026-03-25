@@ -48,6 +48,8 @@
 - The first bootstrap scene now builds successfully through `./scripts/build-unity-bootstrap.sh`
 - Unity project setup and validation are now reproducible through `./scripts/configure-unity-project.sh`
 - The mobile bootstrap now covers first-access auth, legal consent and initial child creation against the backend
+- Unity bootstrap runtime validation now uses a persisted probe file under `.data/runtime/unity/bootstrap-playmode-status.json`
+- The latest validated bootstrap runtime reached `ready` with dashboard data loaded through the real auth/legal/child flow using local fallback
 - Unity mobile build modules are still not present in the validated editor install
 - A second SSD-backed shell for `6000.0.71f1` exists, but it currently fails signature validation and should not be used until it is reinstalled cleanly
 - Full Xcode is still not installed; `xcodes` is available and is the preferred reproducible path for downloading to the SSD-backed tooling tree
