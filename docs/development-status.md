@@ -75,6 +75,12 @@ Date checked: `2026-03-25`
   - `android-open-jdk`
   - `ios`
   is now running against the SSD-backed install path and has already started downloading the editor plus Android child modules
+- The SSD-backed install root now also contains a partial editor shell at:
+  - `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.0.71f1/Unity.app`
+- That new shell is not yet runnable and still does not expose:
+  - `Contents/MacOS/Unity`
+  - `PlaybackEngines/AndroidPlayer`
+  - `PlaybackEngines/iOSSupport`
 - Docker Desktop was shut down locally to free RAM for the Unity Hub installer, since backend services must not remain dependent on the MacBook
 - Gau source asset generated in Blender:
   - `mobile/Assets/Art/Characters/Gau/Source/Gau.blend`

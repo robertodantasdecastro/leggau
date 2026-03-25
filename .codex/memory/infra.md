@@ -52,6 +52,8 @@
 - Xcode downloads should target `./.data/tooling/xcode/downloads`
 - Current validated Unity runtime binary is:
   - `./.data/tooling/unity/editors/6000.4.0f1/Unity.app`
+- Current in-progress Unity install path is:
+  - `./.data/tooling/unity/editors/6000.0.71f1/Unity.app`
 - Current mobile module status:
   - Android build support installation in progress through Unity Hub headless install
   - iOS build support installation in progress through Unity Hub headless install

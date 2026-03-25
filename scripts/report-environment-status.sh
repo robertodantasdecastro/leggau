@@ -100,6 +100,40 @@ else
   echo "xcodes_installed=missing"
 fi
 
+if pgrep -if "Unity Hub --headless install" >/dev/null 2>&1; then
+  echo "unity_hub_install=running"
+else
+  echo "unity_hub_install=idle"
+fi
+
+if command -v python3 >/dev/null 2>&1; then
+  python3 - <<'PY'
+import json
+import pathlib
+
+downloads_file = pathlib.Path.home() / "Library/Application Support/UnityHub/paused-downloads.json"
+if not downloads_file.exists():
+    print("unity_hub_downloads=missing")
+    raise SystemExit
+
+downloads = json.loads(downloads_file.read_text()).get("downloads", [])
+if not downloads:
+    print("unity_hub_downloads=none")
+    raise SystemExit
+
+status_counts = {}
+for item in downloads:
+    status = item.get("status", "unknown")
+    status_counts[status] = status_counts.get(status, 0) + 1
+
+summary = ",".join(f"{key}:{value}" for key, value in sorted(status_counts.items()))
+print(f"unity_hub_downloads={len(downloads)}")
+print(f"unity_hub_download_status={summary}")
+PY
+else
+  echo "unity_hub_downloads=python_missing"
+fi
+
 if command -v adb >/dev/null 2>&1; then
   echo "adb=installed"
 else

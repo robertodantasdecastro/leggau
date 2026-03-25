@@ -46,6 +46,55 @@ check_cmd() {
   fi
 }
 
+print_unity_hub_install_state() {
+  if ! command -v python3 >/dev/null 2>&1; then
+    return
+  fi
+
+  python3 - <<'PY'
+import json
+import pathlib
+import subprocess
+
+downloads_file = pathlib.Path.home() / "Library/Application Support/UnityHub/paused-downloads.json"
+
+try:
+    output = subprocess.check_output(
+        ["pgrep", "-ifl", "Unity Hub --headless install"],
+        text=True,
+    )
+    processes = [line.strip() for line in output.splitlines() if line.strip()]
+except subprocess.CalledProcessError:
+    processes = []
+
+if processes:
+    print("[info] Unity Hub install in progress:")
+    for line in processes:
+        print(f"  - {line}")
+
+if not downloads_file.exists():
+    raise SystemExit
+
+downloads = json.loads(downloads_file.read_text()).get("downloads", [])
+if not downloads:
+    raise SystemExit
+
+status_counts = {}
+for item in downloads:
+    status = item.get("status", "unknown")
+    status_counts[status] = status_counts.get(status, 0) + 1
+
+formatted_counts = ", ".join(
+    f"{key}={value}" for key, value in sorted(status_counts.items())
+)
+print(f"[info] Unity Hub queued downloads: {len(downloads)} ({formatted_counts})")
+for item in downloads[:6]:
+    name = item.get("metadata", {}).get("itemDisplayName", "unknown")
+    status = item.get("status", "unknown")
+    print(f"  - {name}: {status}")
+PY
+}
+
 printf "Leggau mobile toolchain check\n"
 printf "Project root: %s\n\n" "$ROOT_DIR"
 
@@ -97,3 +146,5 @@ elif [[ -n "${xcodes_installed_output}" ]]; then
 else
   printf "[missing] Xcode build tools\n"
 fi
+
+print_unity_hub_install_state
