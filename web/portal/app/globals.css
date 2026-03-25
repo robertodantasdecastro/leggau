@@ -1,0 +1,171 @@
+:root {
+  --bg: #f7f1df;
+  --card: #fffaf0;
+  --ink: #16324f;
+  --accent: #f28b30;
+  --accent-2: #3e8ed0;
+  --line: #e5d8b8;
+  --soft: #eef7ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+  background:
+    radial-gradient(circle at top left, #fff9dd, transparent 34%),
+    radial-gradient(circle at bottom right, #d8f0ff, transparent 28%),
+    var(--bg);
+  color: var(--ink);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.shell {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.nav {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 36px;
+}
+
+.brand {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.links {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.card {
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 18px 40px rgba(22, 50, 79, 0.08);
+}
+
+.eyebrow {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--accent-2);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.headline {
+  font-size: clamp(2rem, 4vw, 4rem);
+  line-height: 0.95;
+  margin: 16px 0;
+}
+
+.lead {
+  font-size: 1.08rem;
+  line-height: 1.6;
+  max-width: 48ch;
+}
+
+.ctaRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 14px 18px;
+  font-weight: 700;
+}
+
+.button.primary {
+  background: var(--accent);
+  color: white;
+}
+
+.button.secondary {
+  background: white;
+  border: 1px solid var(--line);
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.metric {
+  padding: 18px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+.metric strong {
+  display: block;
+  font-size: 1.4rem;
+  margin-bottom: 6px;
+}
+
+.section {
+  margin-top: 36px;
+}
+
+.section h2 {
+  margin: 0 0 12px;
+  font-size: 1.7rem;
+}
+
+.section p {
+  line-height: 1.6;
+}
+
+.list {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.list li {
+  padding: 16px;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid var(--line);
+}
+
+@media (max-width: 860px) {
+  .hero,
+  .grid3 {
+    grid-template-columns: 1fr;
+  }
+}

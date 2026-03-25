@@ -18,6 +18,8 @@
 - Mobile frontend: `Unity`
 - Target platforms: `Android` and `iOS`
 - API/backend: `NestJS`
+- Portal web: `Next.js`
+- Web admin: `Next.js`
 - Database: `Postgres`
 - Cache/support service: `Redis`
 - Reverse proxy: `Nginx`
@@ -39,6 +41,8 @@
 
 - `backend/`: NestJS API and domain modules
 - `mobile/`: Unity project root
+- `web/portal/`: public portal and legal/distribution surface
+- `web/admin/`: technical and billing admin surface
 - `infra/`: Nginx and operational service definitions
 - `docs/`: architecture, setup, status and transition docs
 - `scripts/`: bootstrap, deploy and backup scripts
@@ -70,8 +74,15 @@ Use `.env.example` as the non-sensitive source of truth.
 - `BLENDER_ASSET_ROOT=./.data/art/blender`
 - `DEV_API_BASE_URL=http://10.211.55.22:8080/api`
 - `PROD_API_BASE_URL=https://api.leggau.com`
+- `PROD_PORTAL_URL=https://www.leggau.com`
+- `PROD_ADMIN_URL=https://admin.leggau.com`
 - `DEFAULT_PARENT_EMAIL=parent@leggau.local`
 - `DEFAULT_PARENT_NAME=Responsavel Demo`
+- `DEFAULT_ADMIN_EMAIL=admin@leggau.local`
+- `DEFAULT_ADMIN_PASSWORD=<do not persist real secret here>`
+- `DEV_PORTAL_ALIAS_URL=https://portal-dev.trycloudflare.com`
+- `DEV_ADMIN_ALIAS_URL=https://admin-dev.trycloudflare.com`
+- `BILLING_SANDBOX_ENABLED=true`
 
 ## Operational Commands
 
@@ -82,9 +93,12 @@ Use `.env.example` as the non-sensitive source of truth.
 - Backend local no-containers fallback: `cd backend && npm run start:local`
 - Gau asset generation: `./scripts/build-gau-asset.sh`
 - Unity bootstrap scene: `./scripts/build-unity-bootstrap.sh`
+- Portal build: `cd web/portal && npm run build`
+- Admin build: `cd web/admin && npm run build`
 - Safe local cleanup: `./scripts/cleanup-dev-storage.sh`
 - VM Codex sync: `./scripts/sync-codex-to-vm.sh`
 - Environment report: `./scripts/report-environment-status.sh`
+- Cloudflare dev alias sync: `./scripts/sync-cloudflare-dev-alias.sh`
 
 ## Backend Modules
 

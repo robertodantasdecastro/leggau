@@ -6,6 +6,8 @@
 - Status: `docker compose ps`
 - Stop: `docker compose down`
 - Local API gateway: `http://localhost:8080/api`
+- Local portal gateway: `http://localhost:8080/`
+- Local admin gateway: `http://localhost:8080/admin/`
 - Official dev backend target: `http://10.211.55.22:8080/api`
 - Backend code build passes with `cd backend && npm run build`
 - Backend runtime is intended to live on `vm2`; the local stack is fallback-only
@@ -13,6 +15,8 @@
 ## Validated Services
 
 - `leggau-api`
+- `leggau-portal`
+- `leggau-admin`
 - `leggau-nginx`
 - `leggau-postgres`
 - `leggau-redis`
@@ -22,6 +26,12 @@
 - `GET /api/health`
 - `GET /api/activities`
 - `GET /api/assets-catalog`
+- `GET /api/legal/documents`
+- `POST /api/auth/register`
+- `POST /api/admin/auth/login`
+- `GET /api/admin/overview`
+- `GET /api/admin/billing/overview`
+- `POST /api/admin/dev/cloudflare-alias/sync`
 - `POST /api/auth/dev-login`
 - `POST /api/progress/checkins`
 - `GET /api/progress/summary`
@@ -32,8 +42,10 @@
 - Redis data root is now configured as `./.data/docker/redis`
 - Uploads stay under `./.data/uploads`
 - Backups stay under `./.data/backups`
+- Cloudflare dev alias runtime stays under `./.data/runtime/cloudflare`
 - SSD storage bootstrap script: `./scripts/bootstrap-ssd-storage.sh`
 - Local cleanup routine: `./scripts/cleanup-dev-storage.sh`
+- Cloudflare alias sync helper: `./scripts/sync-cloudflare-dev-alias.sh`
 - Docker Compose now uses bind mounts inside the external SSD project root
 - Unity Hub templates are symlinked to `./.data/tooling/unityhub/Templates`
 - Unity Hub downloads are mirrored under `./.data/tooling/unityhub/downloads`

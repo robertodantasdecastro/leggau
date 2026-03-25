@@ -7,7 +7,8 @@ VM_IP="${2:-10.211.55.22}"
 
 echo "[leggau] Creating base directories..."
 mkdir -p "${APP_ROOT}"/.data/docker/{postgres,redis}
-mkdir -p "${APP_ROOT}"/.data/{uploads,backups}
+mkdir -p "${APP_ROOT}"/.data/{uploads,backups,runtime}
+mkdir -p "${APP_ROOT}"/.data/runtime/cloudflare
 mkdir -p "${APP_ROOT}"/.data/mobile/{builds,cache}
 mkdir -p "${APP_ROOT}"/.data/art/blender "${APP_ROOT}"/logs
 

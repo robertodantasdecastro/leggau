@@ -18,6 +18,8 @@
 - Main work areas:
   - `backend/`
   - `mobile/`
+  - `web/portal/`
+  - `web/admin/`
   - `infra/`
   - `docs/`
   - `scripts/`
@@ -35,6 +37,9 @@
 - Backend local remains a fallback; official dev backend target is `vm2` at `10.211.55.22`
 - Backend infrastructure and services must live on the VM, not on the MacBook
 - Unity mobile frontend is moving from code-first bootstrap to first imported scene and Gau asset delivery
+- Portal institucional and web admin now exist as repository surfaces and must be treated as first-class parts of the MVP
+- Billing enters in sandbox mode only during this phase
+- Portal and admin Next.js builds have already passed locally
 - Remote VM development is blocked by SSH authentication
 - Heavy local files must stay on the external SSD, not on the internal disk
 - Unity Hub templates and downloads are now redirected to the SSD-backed project tree

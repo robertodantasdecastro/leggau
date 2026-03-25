@@ -21,6 +21,11 @@ services:
       PROD_API_BASE_URL: ${PROD_API_BASE_URL:-https://api.leggau.com}
       DEFAULT_PARENT_EMAIL: ${DEFAULT_PARENT_EMAIL:-parent@leggau.local}
       DEFAULT_PARENT_NAME: ${DEFAULT_PARENT_NAME:-Responsavel Demo}
+      DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL:-admin@leggau.local}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-Admin123!}
+      DEV_PORTAL_ALIAS_URL: ${DEV_PORTAL_ALIAS_URL:-https://portal-dev.trycloudflare.com}
+      DEV_ADMIN_ALIAS_URL: ${DEV_ADMIN_ALIAS_URL:-https://admin-dev.trycloudflare.com}
+      BILLING_SANDBOX_ENABLED: ${BILLING_SANDBOX_ENABLED:-true}
       UPLOADS_ROOT: /srv/leggau/uploads
     depends_on:
       postgres:
@@ -31,6 +36,25 @@ services:
       - ${UPLOADS_ROOT:-./.data/uploads}:/srv/leggau/uploads
     ports:
       - "${API_PORT:-3000}:3000"
+
+  portal:
+    build:
+      context: ./web/portal
+    container_name: leggau-portal
+    environment:
+      NODE_ENV: production
+    ports:
+      - "${PORTAL_PORT:-3001}:3000"
+
+  admin:
+    build:
+      context: ./web/admin
+    container_name: leggau-admin
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_ADMIN_API_BASE_URL: /api
+    ports:
+      - "${ADMIN_PORT:-3002}:3000"
 
   postgres:
     image: postgres:16-alpine
@@ -68,6 +92,8 @@ services:
     container_name: leggau-nginx
     depends_on:
       - api
+      - portal
+      - admin
     ports:
       - "${NGINX_HTTP_PORT:-8080}:80"
     volumes:

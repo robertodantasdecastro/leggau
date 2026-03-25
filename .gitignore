@@ -24,6 +24,10 @@ mobile/.vs/
 mobile/*.csproj
 mobile/*.sln
 
+# Web
+web/**/node_modules/
+web/**/.next/
+
 # Infra runtime data
 .data/
 infra/runtime/

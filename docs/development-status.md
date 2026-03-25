@@ -8,7 +8,7 @@ Date checked: `2026-03-25`
 
 - Local repository initialized in `/Volumes/SSDExterno/Desenvolvimento/Leggau`
 - Remote `origin` configured as `git@github.com:robertodantasdecastro/leggau.git`
-- Monorepo structure present: `backend`, `mobile`, `infra`, `docs`, `scripts`
+- Monorepo structure present: `backend`, `mobile`, `web`, `infra`, `docs`, `scripts`
 - Local Codex memory structure present in `.codex/`
 - SSD storage policy documented in `docs/storage-policy.md`
 
@@ -17,6 +17,18 @@ Date checked: `2026-03-25`
 - `npm run build` passes in `backend/`
 - The local stack is intended as fallback only; the official dev target is now `http://10.211.55.22:8080/api`
 - Backend infrastructure should run in `vm2` under `~/leggau`, not on the MacBook
+- Backend now includes foundation modules for:
+  - auth real
+  - legal documents and consent
+  - admin auth and operational overview
+  - billing providers, plans, transactions and sandbox overview
+- Local smoke validation passed in `start:local` for:
+  - `GET /api/legal/documents`
+  - `POST /api/auth/register`
+  - `POST /api/admin/auth/login`
+  - `GET /api/admin/overview`
+  - `GET /api/admin/billing/overview`
+  - `POST /api/admin/dev/cloudflare-alias/sync`
 - At the moment of this status refresh, `localhost:8080` was not responding, so the local fallback stack is currently down
 - Persistence validated:
   - Compose configuration now points Postgres and Redis to `./.data/docker/` bind mounts on the external SSD
@@ -95,6 +107,37 @@ Date checked: `2026-03-25`
 - Local catalog validation is now reproducible through:
   - `scripts/check-gau-runtime-catalog.sh`
 
+## Web Surface Status
+
+- `web/portal` scaffolded with Next.js for:
+  - home
+  - pais
+  - profissionais
+  - download
+  - privacidade
+  - termos
+  - contato
+- `web/admin` scaffolded with Next.js and basePath `/admin`
+- `npm run build` passed for:
+  - `web/portal`
+  - `web/admin`
+- `web/admin` now consumes:
+  - `POST /api/admin/auth/login`
+  - `GET /api/admin/overview`
+  - `GET /api/admin/realtime`
+  - `GET /api/admin/users`
+  - `GET /api/admin/billing/overview`
+- Docker Compose now includes:
+  - `leggau-portal`
+  - `leggau-admin`
+- Nginx now proxies:
+  - `/` -> portal
+  - `/admin/` -> admin
+  - `/api/` -> backend
+- Dev alias runtime placeholders now persist under:
+  - `.data/runtime/cloudflare/portal.json`
+  - `.data/runtime/cloudflare/admin.json`
+
 ## Current Conclusion
 
 - Backend local remains a fallback path, but the official development backend on `vm2` is still blocked by SSH access.
@@ -122,3 +165,4 @@ Date checked: `2026-03-25`
   - `scripts/cleanup-dev-storage.sh`
   - `scripts/report-environment-status.sh`
   - `scripts/sync-codex-to-vm.sh`
+- Portal/admin/billing foundation was added to the repo and is ready for container/runtime validation once dependencies finish and `vm2` SSH is restored.
