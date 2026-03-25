@@ -67,6 +67,11 @@ Date checked: `2026-03-25`
 - Unity also generated the scene and metadata layer expected by the repository:
   - `mobile/Assets/Scenes/Bootstrap/Bootstrap.unity`
   - `mobile/Assets/**/*.meta`
+- Unity project configuration is now reproducible through:
+  - `scripts/configure-unity-project.sh`
+  - `mobile/Assets/Editor/UnityProjectConfigurator.cs`
+- Unity environment validation now writes:
+  - `docs/unity-environment-status.md`
 - `scripts/build-unity-bootstrap.sh` now prefers the SSD-backed editor
 - Headless bootstrap generation now succeeds after the first graphical import cycle
 - The stable path for a fresh machine is:
@@ -138,6 +143,12 @@ Date checked: `2026-03-25`
 - The mario-pixel Gau variant uses a denser retro atlas so each body part has more visible pixel detail
 - The mobile bootstrap now loads a local Gau variants catalog from:
   - `mobile/Assets/StreamingAssets/config/gau-variants.json`
+- The mobile bootstrap now tries the real backend flow first in development:
+  - `POST /api/auth/register`
+  - fallback to `POST /api/auth/login` when the user already exists
+  - `GET /api/legal/documents`
+  - `POST /api/legal/consents`
+  - fallback to `POST /api/auth/dev-login` only when configured and needed
 - The dashboard now shows the local Gau variants available to the app runtime
 - The bootstrap now supports cycling the active Gau variant through UI actions
 - The bootstrap scene builder now includes buttons for previous/next mascot selection

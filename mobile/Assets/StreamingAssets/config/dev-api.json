@@ -2,6 +2,10 @@
   "environmentName": "development",
   "apiBaseUrl": "http://10.211.55.22:8080/api",
   "fallbackApiBaseUrl": "http://localhost:8080/api",
+  "useRealAuthBootstrap": true,
+  "autoAcceptLegalConsents": true,
+  "allowDevLoginFallback": true,
   "devLoginEmail": "parent@leggau.local",
-  "devLoginName": "Responsavel Demo"
+  "devLoginName": "Responsavel Demo",
+  "devAuthPassword": "Leggau123!"
 }

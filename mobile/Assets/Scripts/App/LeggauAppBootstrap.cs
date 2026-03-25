@@ -45,30 +45,29 @@ namespace Leggau.App
             apiClient.SetBaseUrls(environment.apiBaseUrl, environment.fallbackApiBaseUrl);
             TryLoadLocalGauCatalog();
 
-            var loginRequest = new DevLoginRequest
-            {
-                email = string.IsNullOrWhiteSpace(environment.devLoginEmail) ? "parent@leggau.local" : environment.devLoginEmail,
-                name = string.IsNullOrWhiteSpace(environment.devLoginName) ? "Responsavel Demo" : environment.devLoginName,
-            };
-
             var requestFailed = false;
 
-            yield return apiClient.PostJson(
-                "auth/dev-login",
-                JsonUtility.ToJson(loginRequest),
-                response =>
-                {
-                    var login = JsonUtility.FromJson<DevLoginResponse>(response);
-                    sessionState.SetLogin(login);
-                },
-                error =>
-                {
-                    requestFailed = true;
-                    dashboardPresenter?.SetError($"Falha no login dev: {error}");
-                }
-            );
+            if (environment.useRealAuthBootstrap)
+            {
+                yield return AuthenticateWithRealAuth(environment, value => requestFailed = value);
+            }
+            else
+            {
+                yield return AuthenticateWithDevLogin(environment, value => requestFailed = value);
+            }
 
-            if (requestFailed || sessionState.Parent == null)
+            if (requestFailed || string.IsNullOrWhiteSpace(sessionState.CurrentUserEmail))
+            {
+                isBusy = false;
+                yield break;
+            }
+
+            if (environment.autoAcceptLegalConsents && !sessionState.UsedDevLoginFallback)
+            {
+                yield return LoadAndAcceptLegalConsents(value => requestFailed = value);
+            }
+
+            if (requestFailed)
             {
                 isBusy = false;
                 yield break;
@@ -77,7 +76,7 @@ namespace Leggau.App
             dashboardPresenter?.SetStatus($"Carregando familia via {apiClient.ActiveBaseUrl}...");
 
             yield return apiClient.GetJson(
-                $"families/overview?email={sessionState.Parent.email}",
+                $"families/overview?email={sessionState.CurrentUserEmail}",
                 response =>
                 {
                     var family = JsonUtility.FromJson<FamilyOverviewResponse>(response);
@@ -166,6 +165,186 @@ namespace Leggau.App
             dashboardPresenter?.Render(sessionState);
             gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
             isBusy = false;
+        }
+
+        private IEnumerator AuthenticateWithRealAuth(AppEnvironment environment, System.Action<bool> setFailed)
+        {
+            dashboardPresenter?.SetStatus("Registrando sessao de desenvolvimento...");
+
+            var email = string.IsNullOrWhiteSpace(environment.devLoginEmail) ? "parent@leggau.local" : environment.devLoginEmail;
+            var name = string.IsNullOrWhiteSpace(environment.devLoginName) ? "Responsavel Demo" : environment.devLoginName;
+            var password = string.IsNullOrWhiteSpace(environment.devAuthPassword) ? "Leggau123!" : environment.devAuthPassword;
+            var registerSucceeded = false;
+            var shouldTryLogin = false;
+            string authError = null;
+
+            var registerRequest = new RegisterRequest
+            {
+                email = email,
+                password = password,
+                displayName = name,
+            };
+
+            yield return apiClient.PostJson(
+                "auth/register",
+                JsonUtility.ToJson(registerRequest),
+                response =>
+                {
+                    var session = JsonUtility.FromJson<AuthSessionResponse>(response);
+                    sessionState.SetAuthSession(session);
+                    registerSucceeded = true;
+                },
+                error =>
+                {
+                    authError = error;
+                    shouldTryLogin = error != null && (error.Contains("409") || error.Contains("already exists"));
+                });
+
+            if (!registerSucceeded && shouldTryLogin)
+            {
+                dashboardPresenter?.SetStatus("Conta existente, entrando com login real...");
+
+                var loginRequest = new LoginRequest
+                {
+                    email = email,
+                    password = password,
+                };
+
+                yield return apiClient.PostJson(
+                    "auth/login",
+                    JsonUtility.ToJson(loginRequest),
+                    response =>
+                    {
+                        var session = JsonUtility.FromJson<AuthSessionResponse>(response);
+                        sessionState.SetAuthSession(session);
+                        registerSucceeded = true;
+                        authError = null;
+                    },
+                    error =>
+                    {
+                        authError = error;
+                    });
+            }
+
+            if (registerSucceeded)
+            {
+                yield break;
+            }
+
+            if (environment.allowDevLoginFallback)
+            {
+                dashboardPresenter?.SetStatus("Auth real indisponivel, usando fallback dev...");
+                yield return AuthenticateWithDevLogin(environment, setFailed);
+                yield break;
+            }
+
+            setFailed?.Invoke(true);
+            dashboardPresenter?.SetError($"Falha na autenticacao real: {authError}");
+        }
+
+        private IEnumerator AuthenticateWithDevLogin(AppEnvironment environment, System.Action<bool> setFailed)
+        {
+            dashboardPresenter?.SetStatus("Entrando com login dev...");
+
+            var loginRequest = new DevLoginRequest
+            {
+                email = string.IsNullOrWhiteSpace(environment.devLoginEmail) ? "parent@leggau.local" : environment.devLoginEmail,
+                name = string.IsNullOrWhiteSpace(environment.devLoginName) ? "Responsavel Demo" : environment.devLoginName,
+            };
+
+            var requestFailed = false;
+
+            yield return apiClient.PostJson(
+                "auth/dev-login",
+                JsonUtility.ToJson(loginRequest),
+                response =>
+                {
+                    var login = JsonUtility.FromJson<DevLoginResponse>(response);
+                    sessionState.SetDevLogin(login);
+                },
+                error =>
+                {
+                    requestFailed = true;
+                    dashboardPresenter?.SetError($"Falha no login dev: {error}");
+                }
+            );
+
+            if (requestFailed)
+            {
+                setFailed?.Invoke(true);
+            }
+        }
+
+        private IEnumerator LoadAndAcceptLegalConsents(System.Action<bool> setFailed)
+        {
+            dashboardPresenter?.SetStatus("Carregando documentos legais...");
+
+            var requestFailed = false;
+
+            yield return apiClient.GetJson(
+                "legal/documents",
+                response =>
+                {
+                    var wrapped = $"{{\"items\":{response}}}";
+                    var documents = JsonUtility.FromJson<LegalDocumentsEnvelope>(wrapped);
+                    sessionState.SetLegalDocuments(documents?.items);
+                },
+                error =>
+                {
+                    requestFailed = true;
+                    dashboardPresenter?.SetError($"Falha ao carregar documentos legais: {error}");
+                });
+
+            if (requestFailed)
+            {
+                setFailed?.Invoke(true);
+                yield break;
+            }
+
+            if (sessionState.LegalDocuments == null || sessionState.LegalDocuments.Length == 0)
+            {
+                yield break;
+            }
+
+            var currentUserEmail = sessionState.CurrentUserEmail;
+            if (string.IsNullOrWhiteSpace(currentUserEmail))
+            {
+                setFailed?.Invoke(true);
+                dashboardPresenter?.SetError("Nao foi possivel registrar consentimentos sem email do usuario.");
+                yield break;
+            }
+
+            foreach (var document in sessionState.LegalDocuments)
+            {
+                if (document == null || string.IsNullOrWhiteSpace(document.key))
+                {
+                    continue;
+                }
+
+                dashboardPresenter?.SetStatus($"Registrando aceite: {document.title}...");
+
+                var request = new RecordConsentRequest
+                {
+                    userEmail = currentUserEmail,
+                    documentKey = document.key,
+                };
+
+                yield return apiClient.PostJson(
+                    "legal/consents",
+                    JsonUtility.ToJson(request),
+                    _ => sessionState.MarkConsentsRecorded(),
+                    error =>
+                    {
+                        requestFailed = true;
+                        dashboardPresenter?.SetError($"Falha ao registrar consentimento: {error}");
+                    });
+
+                if (requestFailed)
+                {
+                    setFailed?.Invoke(true);
+                    yield break;
+                }
+            }
         }
 
         public void DevCheckinFirstActivity()

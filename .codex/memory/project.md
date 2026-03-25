@@ -46,6 +46,7 @@
 - The canonical validated Unity editor is now `6000.4.0f1` on the SSD-backed install tree
 - The Leggau Unity project now opens successfully in the graphical editor
 - The first bootstrap scene now builds successfully through `./scripts/build-unity-bootstrap.sh`
+- Unity project setup and validation are now reproducible through `./scripts/configure-unity-project.sh`
 - Unity mobile build modules are still not present in the validated editor install
 - A second SSD-backed shell for `6000.0.71f1` exists, but it currently fails signature validation and should not be used until it is reinstalled cleanly
 - Full Xcode is still not installed; `xcodes` is available and is the preferred reproducible path for downloading to the SSD-backed tooling tree

@@ -12,6 +12,16 @@ namespace Leggau.Models
     }
 
     [Serializable]
+    public class AppUserProfile
+    {
+        public string id;
+        public string email;
+        public string displayName;
+        public string role;
+        public bool isActive;
+    }
+
+    [Serializable]
     public class ChildProfile
     {
         public string id;
@@ -69,6 +79,56 @@ namespace Leggau.Models
     {
         public string accessToken;
         public ParentProfile parent;
+    }
+
+    [Serializable]
+    public class RegisterRequest
+    {
+        public string email;
+        public string password;
+        public string displayName;
+    }
+
+    [Serializable]
+    public class LoginRequest
+    {
+        public string email;
+        public string password;
+    }
+
+    [Serializable]
+    public class AuthSessionResponse
+    {
+        public string accessToken;
+        public string refreshToken;
+        public AppUserProfile user;
+        public ParentProfile parent;
+    }
+
+    [Serializable]
+    public class LegalDocumentRecord
+    {
+        public string id;
+        public string key;
+        public string version;
+        public string title;
+        public string audience;
+        public string contentMarkdown;
+        public bool isActive;
+        public string effectiveAt;
+    }
+
+    [Serializable]
+    public class LegalDocumentsEnvelope
+    {
+        public LegalDocumentRecord[] items;
+    }
+
+    [Serializable]
+    public class RecordConsentRequest
+    {
+        public string userEmail;
+        public string documentKey;
     }
 
     [Serializable]

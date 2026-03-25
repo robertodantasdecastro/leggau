@@ -20,6 +20,8 @@
 - Unity now also generated the first scene asset and Unity metadata layer:
   - `mobile/Assets/Scenes/Bootstrap/Bootstrap.unity`
   - `mobile/Assets/**/*.meta`
+- Unity project configuration is now reproducible through `scripts/configure-unity-project.sh`
+- Unity environment validation now writes `docs/unity-environment-status.md`
 - Headless bootstrap generation now succeeds after the first graphical import, so the stable sequence is:
   - open the project in the graphical editor first
   - let the first import finish
@@ -33,7 +35,8 @@
 ## Current Frontend Goal
 
 - Bootstrap app environment
-- Perform dev login against backend
+- Perform real auth bootstrap against backend
+- Register legal consents in development flow
 - Load family overview
 - Load activities
 - Load assets catalog
@@ -82,6 +85,7 @@
 - The mario-pixel variant uses a denser retro atlas so each body part carries more visible pixel information
 - The mobile app now has a local Gau variants catalog in `mobile/Assets/StreamingAssets/config/gau-variants.json`
 - The bootstrap now loads the local Gau variants catalog through `GauVariantsCatalogLoader`
+- The bootstrap now tries `auth/register`, falls back to `auth/login` for existing accounts, records legal consents, and only then falls back to `auth/dev-login` when configured
 - The dashboard now renders the count and style tags of the local Gau variants
 - The bootstrap now supports selecting the active Gau variant with previous/next actions
 - The dashboard now shows the active Gau variant name, style and recommendation

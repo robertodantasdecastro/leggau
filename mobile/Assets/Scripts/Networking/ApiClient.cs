@@ -65,7 +65,18 @@ namespace Leggau.Networking
                     yield break;
                 }
 
-                lastError = $"[{baseUrl}] {request.error}";
+                var body = request.downloadHandler?.text;
+                if (request.responseCode > 0)
+                {
+                    lastError = string.IsNullOrWhiteSpace(body)
+                        ? $"[{baseUrl}] HTTP {request.responseCode}: {request.error}"
+                        : $"[{baseUrl}] HTTP {request.responseCode}: {body}";
+                    continue;
+                }
+
+                lastError = string.IsNullOrWhiteSpace(body)
+                    ? $"[{baseUrl}] {request.error}"
+                    : $"[{baseUrl}] {request.error}: {body}";
             }
 
             onError?.Invoke(lastError ?? "Falha de conexao com a API.");

@@ -9,8 +9,12 @@ namespace Leggau.Config
         public string environmentName;
         public string apiBaseUrl;
         public string fallbackApiBaseUrl;
+        public bool useRealAuthBootstrap;
+        public bool autoAcceptLegalConsents;
+        public bool allowDevLoginFallback;
         public string devLoginEmail;
         public string devLoginName;
+        public string devAuthPassword;
     }
 
     public static class AppEnvironmentLoader
