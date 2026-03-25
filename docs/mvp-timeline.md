@@ -22,7 +22,7 @@
 - Blocked:
   - `vm2` SSH access
   - full Xcode app installation
-  - Unity Android/iOS build support modules are not installed in the currently validated editor
+  - Unity Android/iOS build support modules are still being installed into the SSD-backed editor
 - Exit criteria:
   - access `vm2`
   - deploy current stack to `~/leggau`
@@ -101,7 +101,7 @@
    - `http://10.211.55.22:8080/api`
    - portal via VM gateway
    - admin via VM gateway
-4. Install the full Xcode app, add Unity Android/iOS modules to the SSD-backed editor, and validate the Unity mobile targets.
+4. Finish the Unity Hub mobile-module installation now in progress, install the full Xcode app, and validate the Unity mobile targets.
 
 ## Branch and Delivery Rule
 

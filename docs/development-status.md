@@ -69,6 +69,13 @@ Date checked: `2026-03-25`
 - A direct Xcode download attempt through `xcodes` now writes to the SSD-backed tooling tree, but still requires an authenticated Apple ID session before it can proceed
 - The runnable Unity editor currently exposes only `MacStandaloneSupport`
 - `AndroidPlayer` and `iOSSupport` playback modules are still missing from the currently validated editor install
+- A headless Unity Hub installation of `6000.0.71f1` with:
+  - `android`
+  - `android-sdk-ndk-tools`
+  - `android-open-jdk`
+  - `ios`
+  is now running against the SSD-backed install path and has already started downloading the editor plus Android child modules
+- Docker Desktop was shut down locally to free RAM for the Unity Hub installer, since backend services must not remain dependent on the MacBook
 - Gau source asset generated in Blender:
   - `mobile/Assets/Art/Characters/Gau/Source/Gau.blend`
   - `mobile/Assets/Art/Characters/Gau/Exports/Gau.fbx`
@@ -168,8 +175,7 @@ Date checked: `2026-03-25`
 - Unity tooling is now aligned with the SSD policy, but the bootstrap scene still needs in-editor validation.
 - Unity mobile tooling still requires:
   - full Xcode app install and selection
-  - Android build support
-  - iOS build support
+  - completion of the headless Unity mobile module installation now in progress
 - Remote backend validation on `vm2` remains blocked by SSH authentication.
 - Project memory is now intended to live primarily inside the repository, not in global Codex state.
 - Heavy project files are now standardized to live inside `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data`.

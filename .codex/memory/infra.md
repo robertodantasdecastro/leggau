@@ -53,8 +53,11 @@
 - Current validated Unity runtime binary is:
   - `./.data/tooling/unity/editors/6000.4.0f1/Unity.app`
 - Current mobile module status:
-  - Android build support missing
-  - iOS build support missing
+  - Android build support installation in progress through Unity Hub headless install
+  - iOS build support installation in progress through Unity Hub headless install
+- Unity Hub install command currently in use:
+  - `'/Applications/Unity Hub.app/Contents/MacOS/Unity Hub' --headless install --version 6000.0.71f1 --architecture arm64 --module android android-sdk-ndk-tools android-open-jdk ios`
+- Local Docker Desktop may need to remain stopped while the mobile editor install runs, to satisfy Unity Hub RAM requirements
 
 ## Remote Dev Host
 

@@ -44,6 +44,7 @@
 - Heavy local files must stay on the external SSD, not on the internal disk
 - Unity Hub templates and downloads are now redirected to the SSD-backed project tree
 - Unity mobile build modules are not yet present in the validated editor install
+- A headless Unity Hub install for `6000.0.71f1` with Android+iOS support is now in progress against the SSD-backed install tree
 - Full Xcode is still not installed; `xcodes` is available and is the preferred reproducible path for downloading to the SSD-backed tooling tree
 - The current delivery already includes the first Gau `.blend` and `.fbx`
 - VM promotion should now prefer `./scripts/promote-stack-to-vm.sh` once SSH access is restored
