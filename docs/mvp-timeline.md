@@ -15,6 +15,7 @@
 - Completed:
   - local agent architecture is defined
   - Unity editor is present on SSD-backed storage
+  - Leggau project now opens in the graphical Unity editor on the SSD-backed install
   - backend foundation for auth, legal, admin and billing sandbox is implemented
   - `web/portal` and `web/admin` foundations are implemented
   - local builds passed for backend, portal and admin
@@ -22,11 +23,13 @@
 - Blocked:
   - `vm2` SSH access
   - full Xcode app installation
-  - Unity Android/iOS build support modules are still being installed into the SSD-backed editor
+  - Unity Android/iOS build support modules are still missing from the validated editor
+  - first bootstrap scene generation still needs a successful post-import batch run
 - Current Unity state:
-  - `6000.0.71f1` partial editor shell already exists on the SSD
-  - the main editor payload has finished downloading and entered local installation
-  - mobile modules are queued behind editor installation
+  - `6000.4.0f1` is the validated runnable editor on the SSD
+  - `6000.0.71f1` exists on the SSD but currently fails signature validation and should not be used yet
+  - package resolution now succeeds in batchmode after cleaning `._*` artifacts from the Unity SSD install
+  - the first `AssetDatabase Initial Refresh` still crashes in headless mode, so the GUI import must finish before retrying automated bootstrap generation
 - Exit criteria:
   - access `vm2`
   - deploy current stack to `~/leggau`
@@ -105,7 +108,7 @@
    - `http://10.211.55.22:8080/api`
    - portal via VM gateway
    - admin via VM gateway
-4. Finish the Unity Hub mobile-module installation now in progress, install the full Xcode app, and validate the Unity mobile targets.
+4. Let the graphical Unity import stabilize, rerun `./scripts/build-unity-bootstrap.sh`, then finish mobile modules and install the full Xcode app.
 
 ## Branch and Delivery Rule
 

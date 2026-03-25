@@ -15,6 +15,13 @@
 - `adb`: installed
 - Unity Hub: installed
 - Unity editor is detected on SSD at `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.4.0f1/Unity.app`
+- The Leggau project was opened successfully in the graphical editor on `2026-03-25`
+- Unity generated first local project state such as `packages-lock.json` and `ProjectSettings/*.asset`
+- Headless bootstrap generation still crashes during the first `AssetDatabase Initial Refresh`, so the stable sequence is:
+  - open the project in the graphical editor first
+  - let the first import finish
+  - retry `scripts/build-unity-bootstrap.sh`
+- The SSD-backed `6000.0.71f1` editor shell currently fails macOS signature validation and should not be used yet
 - Unity Hub templates are symlinked to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/Templates`
 - Blender `4.5.1 LTS`: installed
 - `xcodebuild`: only the command line tools path is active
@@ -42,7 +49,7 @@
 
 ## Current Recommended Next Step
 
-- Validate the Unity editor binary, import the Gau asset and build the first bootstrap scene.
+- Let the graphical Unity import stabilize, then rerun `scripts/build-unity-bootstrap.sh` to generate `Assets/Scenes/Bootstrap/Bootstrap.unity`.
 - Keep builds, exported assets and Unity cache pointed to SSD-backed directories inside the repository.
 - Gau asset source now exists at `mobile/Assets/Art/Characters/Gau/Source/Gau.blend`
 - Gau Unity export now exists at `mobile/Assets/Art/Characters/Gau/Exports/Gau.fbx`
@@ -78,9 +85,9 @@
 - The bootstrap scene builder now adds UI buttons for cycling between Gau variants
 - The bootstrap now includes `GauVariantPreviewPresenter` to swap the mascot model instance when the active variant changes
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
-- Unity editor binary is still not available in `/Applications` or `~/Applications`, so final scene generation still depends on reinstalling or restoring Unity locally
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination
 - `~/Library/Application Support/UnityHub/secondaryInstallPath.json` now points to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors`
 - `~/Library/Application Support/UnityHub/downloads` is now symlinked to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/downloads`
 - `~/Library/Application Support/UnityHub/Templates` is now symlinked to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/Templates`
-- Unity Hub was relaunched after the SSD redirection, but the user session/license still needs to be re-authenticated in the Hub UI before reinstalling the editor
+- `scripts/build-unity-bootstrap.sh` now prefers the SSD-backed editor before any `/Applications` shell
+- Unity's SSD-backed PackageManager tree had to be cleaned of `._*` files on `2026-03-25` because they were breaking package resolution in batchmode

@@ -23,6 +23,7 @@ mobile/Builds/
 mobile/.vs/
 mobile/*.csproj
 mobile/*.sln
+mobile/mono_crash*.json
 
 # Web
 web/**/node_modules/

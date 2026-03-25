@@ -52,15 +52,20 @@
 - Xcode downloads should target `./.data/tooling/xcode/downloads`
 - Current validated Unity runtime binary is:
   - `./.data/tooling/unity/editors/6000.4.0f1/Unity.app`
+- Current validated Unity project-open path is:
+  - `open -na '/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.4.0f1/Unity.app' --args -projectPath '/Volumes/SSDExterno/Desenvolvimento/Leggau/mobile'`
 - Current in-progress Unity install path is:
   - `./.data/tooling/unity/editors/6000.0.71f1/Unity.app`
 - Current mobile module status:
-  - Android build support installation in progress through Unity Hub headless install
-  - iOS build support installation in progress through Unity Hub headless install
-- Unity install progress has passed these checkpoints:
-  - editor payload downloaded
-  - Android child modules downloaded/queued
-  - main editor currently in local install stage
+  - Android build support still missing from the validated editor
+  - iOS build support still missing from the validated editor
+- Current Unity install caveats:
+  - `6000.0.71f1` on the SSD currently fails macOS signature validation
+  - `6000.4.0f1` is the only validated runnable editor right now
+  - `scripts/build-unity-bootstrap.sh` now targets the SSD-backed editor first
+  - the Unity `Resources/PackageManager` tree on the SSD install had to be cleaned of `._*` files because they broke package resolution
+  - the first headless import now passes package resolution, but still crashes during `Application.AssetDatabase Initial Refresh`
+  - first-import stabilization should be done in the graphical editor before retrying batch scene generation
 - Unity Hub install command currently in use:
   - `'/Applications/Unity Hub.app/Contents/MacOS/Unity Hub' --headless install --version 6000.0.71f1 --architecture arm64 --module android android-sdk-ndk-tools android-open-jdk ios`
 - Local Docker Desktop may need to remain stopped while the mobile editor install runs, to satisfy Unity Hub RAM requirements

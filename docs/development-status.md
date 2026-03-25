@@ -59,15 +59,25 @@ Date checked: `2026-03-25`
 - Java 17: installed
 - Android Debug Bridge (`adb`): installed
 - Unity Hub: installed
-- Unity editor is detected on SSD at `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.4.0f1/Unity.app`
-- A second Unity editor shell is present under `/Applications/Unity/Hub/Editor/6000.0.71f1/Unity.app`, but its app bundle is incomplete and should not be treated as the canonical editor
+- Canonical Unity editor is now the SSD-backed install at `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.4.0f1/Unity.app`
+- The Leggau project was opened successfully in the graphical Unity editor on `2026-03-25`
+- Unity generated project runtime state locally, including:
+  - `mobile/Packages/packages-lock.json`
+  - multiple `mobile/ProjectSettings/*.asset` files
+- `scripts/build-unity-bootstrap.sh` now prefers the SSD-backed editor
+- Headless bootstrap generation still crashes during `Application.AssetDatabase Initial Refresh` on the first import cycle, so the current stable path is:
+  - open the project in the graphical editor first
+  - let Unity finish the initial import and write `Library/`
+  - retry bootstrap scene generation afterward
+- A second editor shell remains present at `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.0.71f1/Unity.app`, but the current binary fails macOS signature validation and should not be treated as usable yet
+- A system-side shell is also present under `/Applications/Unity/Hub/Editor/6000.0.71f1/Unity.app`, but its app bundle is incomplete and should not be treated as canonical
 - Unity Hub templates are now symlinked to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/Templates`
 - Blender `4.5.1 LTS`: installed
 - `xcodes` CLI is installed and available
 - Xcode CLI / `xcodebuild`: available only through Command Line Tools
 - Full Xcode app install is still missing
 - A direct Xcode download attempt through `xcodes` now writes to the SSD-backed tooling tree, but still requires an authenticated Apple ID session before it can proceed
-- The runnable Unity editor currently exposes only `MacStandaloneSupport`
+- The validated Unity editor currently exposes only `MacStandaloneSupport`
 - `AndroidPlayer` and `iOSSupport` playback modules are still missing from the currently validated editor install
 - A headless Unity Hub installation of `6000.0.71f1` with:
   - `android`
@@ -172,15 +182,15 @@ Date checked: `2026-03-25`
 - The Gau pipeline now also includes a mario-pixel variant with denser retro granulation by body part.
 - The mobile runtime now has a local manifest that bridges Gau art variants into the bootstrap flow.
 - The mobile bootstrap now has the first runtime interaction for Gau art direction selection.
-- The code path for variant selection and mascot preview is ready, but Unity scene generation and in-editor execution are still blocked until a working Unity editor binary is restored on this Mac.
+- The code path for variant selection and mascot preview is ready, and the project now opens in Unity, but automated bootstrap scene generation still needs one more pass after the graphical import stabilizes.
 - Unity Hub recovery diagnosis on `2026-03-25` confirmed:
   - install failure happened because the editor tried to use the default `/Applications` destination and failed disk-space validation
   - the editor install path was redirected to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors`
   - the Hub downloads directory was redirected to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/downloads`
   - the Hub templates directory was redirected to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/Templates`
   - Unity Hub launches again after the redirection
-  - Unity editor is now detected on the SSD-backed install root
-- Unity tooling is now aligned with the SSD policy, but the bootstrap scene still needs in-editor validation.
+- Unity editor is now detected on the SSD-backed install root and the Leggau project now opens there successfully
+- Unity tooling is now aligned with the SSD policy, but the bootstrap scene still needs a successful automated build after the first graphical import cycle completes
 - Unity mobile tooling still requires:
   - full Xcode app install and selection
   - completion of the headless Unity mobile module installation now in progress
