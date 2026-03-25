@@ -147,10 +147,13 @@ As of `2026-03-25`:
 ## Development Defaults
 
 - Treat `mobile/` as the authoritative Unity root.
+- Treat `web/portal/` as the authoritative public portal root.
+- Treat `web/admin/` as the authoritative admin console root.
 - Treat `backend/` as the authoritative API root.
 - Treat `/Volumes/SSDExterno/Desenvolvimento/Leggau` as the canonical storage root for all large project files.
 - Route mobile development traffic through `http://10.211.55.22:8080/api`, with localhost only as fallback.
 - Keep uploads outside source code and serve them through `/uploads/`.
 - Keep VM bootstrap rooted at `~/leggau`.
 - Treat `.codex/AGENTS.md` and `.codex/memory/*.md` as the primary agent memory for this repository.
+- Treat `docs/mvp-timeline.md` as the authoritative delivery timeline document.
 - On each completed delivery, update recursive project memory and create a Git commit.

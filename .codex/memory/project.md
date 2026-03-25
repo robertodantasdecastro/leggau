@@ -50,5 +50,6 @@
 - After each completed step:
   - refresh recursive memory in `.codex/` and `AGENTS.md` when needed
   - keep status docs current
+  - keep `docs/mvp-timeline.md` aligned with the current checkpoint
   - create a Git commit for the finished step
   - keep branch pushes synchronized for `main`, `backend`, `frontend-android` and `frontend-ios` when the delivery changes shared state

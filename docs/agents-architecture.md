@@ -11,6 +11,8 @@ flowchart LR
   Blender["Blender 3D Agent"]
   Platform["Android and iOS Agent"]
   API["API Integration Agent"]
+  Portal["Web Portal Agent"]
+  Admin["Web Admin Agent"]
   VM["VM Backend Agent"]
   Prod["Production EC2 Agent"]
 
@@ -18,7 +20,11 @@ flowchart LR
   Mac --> Blender
   Mac --> Platform
   Mac --> API
+  Mac --> Portal
+  Mac --> Admin
   Mac --> VM
+  Portal --> API
+  Admin --> API
   VM --> Prod
 ```
 
@@ -29,6 +35,8 @@ flowchart LR
 - `Blender 3D`: own Gau source art, variants, rigging and FBX exports.
 - `Android and iOS`: keep target settings, SDKs and build readiness aligned.
 - `API Integration`: keep frontend and backend contracts stable and versioned.
+- `Web Portal`: own institutional site, distribution surface and public legal pages.
+- `Web Admin`: own operations console, user administration and billing sandbox visibility.
 - `VM Backend`: operate the remote backend stack on `vm2`.
 - `Production EC2`: prepare the later hardened cloud deployment.
 
@@ -57,4 +65,3 @@ flowchart LR
 - The Mac coordinator owns synchronization across all agents.
 - The VM agent owns backend execution and reporting.
 - The production agent stays dormant until the VM is stable.
-

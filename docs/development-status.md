@@ -161,8 +161,12 @@ Date checked: `2026-03-25`
 - Project memory is now intended to live primarily inside the repository, not in global Codex state.
 - Heavy project files are now standardized to live inside `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data`.
 - The repository now includes a local agent registry under `.codex/agents/`.
+- The repository now includes dedicated web agents for:
+  - portal
+  - admin
 - Local cleanup and status reporting are now scripted through:
   - `scripts/cleanup-dev-storage.sh`
   - `scripts/report-environment-status.sh`
   - `scripts/sync-codex-to-vm.sh`
 - Portal/admin/billing foundation was added to the repo and is ready for container/runtime validation once dependencies finish and `vm2` SSH is restored.
+- The current phase checkpoint and remaining blockers are now tracked in `docs/mvp-timeline.md`.

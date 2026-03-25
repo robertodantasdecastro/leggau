@@ -21,6 +21,8 @@ Own the MacBook as the coordination node for the Leggau project. This agent does
 ## Handoff Rules
 
 - Frontend work goes to `frontend-mobile.md`, `android-ios.md` and `api-integration.md`.
+- Public web work goes to `web-portal.md`.
+- Operational admin and billing console work goes to `web-admin.md`.
 - 3D work goes to `blender-3d.md`.
 - Remote backend work goes to `vm-backend.md`.
 - Future cloud production readiness goes to `prod-ec2.md`.
@@ -28,4 +30,3 @@ Own the MacBook as the coordination node for the Leggau project. This agent does
 ## Success Criteria
 
 - A delivery is only complete when memory is updated, status is synchronized and the relevant branch is ready to push.
-
