@@ -54,7 +54,21 @@ namespace Leggau.UI
             SetStatus($"Erro: {value}");
         }
 
+        public void RenderLoadingState(LeggauSessionState session, string status)
+        {
+            ApplySessionSnapshot(session);
+            runtimeProbe?.ReportSession(session);
+            SetStatus(status);
+        }
+
         public void Render(LeggauSessionState session)
+        {
+            ApplySessionSnapshot(session);
+            runtimeProbe?.ReportSession(session);
+            SetStatus("Dashboard carregado.");
+        }
+
+        private void ApplySessionSnapshot(LeggauSessionState session)
         {
             parentLabel?.SetText(session.Parent != null ? $"Responsavel: {session.Parent.name}" : "Responsavel: -");
             childLabel?.SetText(session.ActiveChild != null ? $"Crianca: {session.ActiveChild.name} ({session.ActiveChild.age} anos)" : "Crianca: -");
@@ -65,8 +79,6 @@ namespace Leggau.UI
             catalogLabel?.SetText(BuildCatalog(session));
 
             rewardHudPresenter?.SetPoints(session.AvailablePoints);
-            runtimeProbe?.ReportSession(session);
-            SetStatus("Dashboard carregado.");
         }
 
         private static string BuildGauVariant(LeggauSessionState session)

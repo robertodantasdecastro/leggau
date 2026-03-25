@@ -160,6 +160,24 @@ namespace Leggau.Gameplay
             ActiveGauVariantIndex = ResolvePreferredVariantIndex(response);
         }
 
+        public void ResetForBootstrap()
+        {
+            AccessToken = null;
+            User = null;
+            Parent = null;
+            ActiveChild = null;
+            Activities = null;
+            Rewards = null;
+            AvailablePoints = 0;
+            TotalPoints = 0;
+            CompletedActivities = 0;
+            LatestEntries = null;
+            AssetsCatalog = null;
+            LegalDocuments = null;
+            UsedDevLoginFallback = false;
+            ConsentsRecorded = false;
+        }
+
         public void SelectNextGauVariant()
         {
             if (GauVariantsCatalog?.variants == null || GauVariantsCatalog.variants.Length == 0)

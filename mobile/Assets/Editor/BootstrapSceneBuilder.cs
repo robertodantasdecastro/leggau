@@ -66,8 +66,8 @@ namespace Leggau.Editor
                 previewPresenter);
             PersistBootstrapBindings(bootstrap, "config/dev-api.json", apiClient, dashboard, previewPresenter);
 
-            BuildActionButton(canvas.transform, bootstrap);
-            BuildVariantControls(canvas.transform, bootstrap);
+            BuildActionButton(views.actionsRoot, bootstrap);
+            BuildVariantControls(views.actionsRoot, bootstrap);
             ConfigureVariantPreview(previewPresenter, stageRoot);
             EditorSceneManager.SaveScene(scene, ScenePath);
             EnsureBuildSettings(ScenePath);
@@ -156,27 +156,26 @@ namespace Leggau.Editor
 
         private static HudViews BuildHud(Transform parent)
         {
-            var panelObject = CreateUiObject("DashboardPanel", parent);
-            var panelRect = panelObject.AddComponent<RectTransform>();
-            panelRect.anchorMin = new Vector2(0.04f, 0.05f);
-            panelRect.anchorMax = new Vector2(0.48f, 0.95f);
-            panelRect.offsetMin = Vector2.zero;
-            panelRect.offsetMax = Vector2.zero;
+            var panelObject = CreatePanel("DashboardPanel", parent, new Vector2(0.04f, 0.05f), new Vector2(0.46f, 0.95f), new Color(1f, 0.99f, 0.96f, 0.9f));
+            CreateLabel("DashboardTitle", panelObject.transform, new Vector2(0.05f, 0.93f), new Vector2(0.95f, 0.99f), 26, FontStyle.Bold, TextAnchor.MiddleLeft, "Leggau MVP");
+            CreateLabel("DashboardSubtitle", panelObject.transform, new Vector2(0.05f, 0.88f), new Vector2(0.95f, 0.93f), 14, FontStyle.Italic, TextAnchor.MiddleLeft, "Bootstrap de autenticacao, familia e mascote");
 
-            var panelImage = panelObject.AddComponent<Image>();
-            panelImage.color = new Color(1f, 0.99f, 0.96f, 0.88f);
+            var actionPanel = CreatePanel("ActionPanel", parent, new Vector2(0.67f, 0.08f), new Vector2(0.96f, 0.92f), new Color(0.99f, 0.98f, 0.94f, 0.92f));
+            CreateLabel("ActionTitle", actionPanel.transform, new Vector2(0.08f, 0.9f), new Vector2(0.92f, 0.97f), 22, FontStyle.Bold, TextAnchor.MiddleLeft, "Mascote e acoes");
+            CreateLabel("ActionHint", actionPanel.transform, new Vector2(0.08f, 0.84f), new Vector2(0.92f, 0.9f), 13, FontStyle.Italic, TextAnchor.MiddleLeft, "Use o Gau para validar bootstrap e check-ins");
 
             return new HudViews
             {
-                status = CreateLabel("StatusLabel", panelObject.transform, new Vector2(0.05f, 0.88f), new Vector2(0.95f, 0.98f), 22, FontStyle.Bold, TextAnchor.MiddleLeft, "Status"),
-                parent = CreateLabel("ParentLabel", panelObject.transform, new Vector2(0.05f, 0.79f), new Vector2(0.95f, 0.87f), 18, FontStyle.Bold, TextAnchor.MiddleLeft, "Responsavel"),
-                child = CreateLabel("ChildLabel", panelObject.transform, new Vector2(0.05f, 0.72f), new Vector2(0.95f, 0.79f), 18, FontStyle.Bold, TextAnchor.MiddleLeft, "Crianca"),
-                points = CreateLabel("PointsLabel", panelObject.transform, new Vector2(0.05f, 0.65f), new Vector2(0.95f, 0.72f), 17, FontStyle.Bold, TextAnchor.MiddleLeft, "Pontos"),
-                progress = CreateLabel("ProgressLabel", panelObject.transform, new Vector2(0.05f, 0.5f), new Vector2(0.95f, 0.65f), 15, FontStyle.Normal, TextAnchor.UpperLeft, "Progresso"),
-                activities = CreateLabel("ActivitiesLabel", panelObject.transform, new Vector2(0.05f, 0.34f), new Vector2(0.95f, 0.5f), 15, FontStyle.Normal, TextAnchor.UpperLeft, "Atividades"),
-                rewards = CreateLabel("RewardsLabel", panelObject.transform, new Vector2(0.05f, 0.2f), new Vector2(0.95f, 0.34f), 15, FontStyle.Normal, TextAnchor.UpperLeft, "Recompensas"),
-                gauVariant = CreateLabel("GauVariantLabel", panelObject.transform, new Vector2(0.05f, 0.1f), new Vector2(0.95f, 0.2f), 14, FontStyle.Bold, TextAnchor.UpperLeft, "Mascote"),
-                catalog = CreateLabel("CatalogLabel", panelObject.transform, new Vector2(0.05f, 0.01f), new Vector2(0.95f, 0.1f), 14, FontStyle.Italic, TextAnchor.UpperLeft, "Catalogo"),
+                status = CreateCardLabel("StatusCard", "Status da sessao", panelObject.transform, new Vector2(0.05f, 0.76f), new Vector2(0.95f, 0.87f), 18, "Status"),
+                parent = CreateCardLabel("ParentCard", "Responsavel", panelObject.transform, new Vector2(0.05f, 0.66f), new Vector2(0.95f, 0.76f), 16, "Responsavel"),
+                child = CreateCardLabel("ChildCard", "Crianca ativa", panelObject.transform, new Vector2(0.05f, 0.56f), new Vector2(0.95f, 0.66f), 16, "Crianca"),
+                points = CreateCardLabel("PointsCard", "Saldo atual", panelObject.transform, new Vector2(0.05f, 0.48f), new Vector2(0.95f, 0.56f), 16, "Pontos"),
+                progress = CreateCardLabel("ProgressCard", "Progresso recente", panelObject.transform, new Vector2(0.05f, 0.31f), new Vector2(0.95f, 0.48f), 14, "Progresso"),
+                activities = CreateCardLabel("ActivitiesCard", "Atividades do dia", panelObject.transform, new Vector2(0.05f, 0.16f), new Vector2(0.95f, 0.31f), 14, "Atividades"),
+                rewards = CreateCardLabel("RewardsCard", "Recompensas", panelObject.transform, new Vector2(0.05f, 0.02f), new Vector2(0.95f, 0.16f), 14, "Recompensas"),
+                gauVariant = CreateCardLabel("GauVariantCard", "Mascote ativo", actionPanel.transform, new Vector2(0.08f, 0.63f), new Vector2(0.92f, 0.82f), 14, "Mascote"),
+                catalog = CreateCardLabel("CatalogCard", "Catalogo 3D", actionPanel.transform, new Vector2(0.08f, 0.42f), new Vector2(0.92f, 0.63f), 13, "Catalogo"),
+                actionsRoot = actionPanel.transform,
             };
         }
 
@@ -184,8 +183,8 @@ namespace Leggau.Editor
         {
             var buttonObject = CreateUiObject("CheckinButton", parent);
             var rectTransform = buttonObject.AddComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0.72f, 0.08f);
-            rectTransform.anchorMax = new Vector2(0.94f, 0.16f);
+            rectTransform.anchorMin = new Vector2(0.08f, 0.12f);
+            rectTransform.anchorMax = new Vector2(0.92f, 0.22f);
             rectTransform.offsetMin = Vector2.zero;
             rectTransform.offsetMax = Vector2.zero;
 
@@ -208,18 +207,29 @@ namespace Leggau.Editor
             BuildSecondaryButton(
                 parent,
                 "PrevVariantButton",
-                new Vector2(0.72f, 0.18f),
-                new Vector2(0.82f, 0.25f),
+                new Vector2(0.08f, 0.27f),
+                new Vector2(0.47f, 0.36f),
                 "Mascote anterior",
                 bootstrap.SelectPreviousGauVariant);
 
             BuildSecondaryButton(
                 parent,
                 "NextVariantButton",
-                new Vector2(0.84f, 0.18f),
-                new Vector2(0.94f, 0.25f),
+                new Vector2(0.53f, 0.27f),
+                new Vector2(0.92f, 0.36f),
                 "Proximo mascote",
                 bootstrap.SelectNextGauVariant);
+
+            BuildSecondaryButton(
+                parent,
+                "RetryBootstrapButton",
+                new Vector2(0.08f, 0.02f),
+                new Vector2(0.92f, 0.1f),
+                "Recarregar bootstrap",
+                bootstrap.RetryBootstrap,
+                new Color(0.48f, 0.84f, 0.67f, 0.94f),
+                new Color(0.61f, 0.9f, 0.76f, 0.98f),
+                new Color(0.35f, 0.74f, 0.57f, 0.98f));
         }
 
         private static void BuildSecondaryButton(
@@ -228,7 +238,10 @@ namespace Leggau.Editor
             Vector2 anchorMin,
             Vector2 anchorMax,
             string label,
-            UnityEngine.Events.UnityAction action)
+            UnityEngine.Events.UnityAction action,
+            Color? normalColor = null,
+            Color? highlightedColor = null,
+            Color? pressedColor = null)
         {
             var buttonObject = CreateUiObject(name, parent);
             var rectTransform = buttonObject.AddComponent<RectTransform>();
@@ -238,13 +251,13 @@ namespace Leggau.Editor
             rectTransform.offsetMax = Vector2.zero;
 
             var image = buttonObject.AddComponent<Image>();
-            image.color = new Color(0.42f, 0.72f, 0.98f, 0.92f);
+            image.color = normalColor ?? new Color(0.42f, 0.72f, 0.98f, 0.92f);
 
             var button = buttonObject.AddComponent<Button>();
             var colors = button.colors;
             colors.normalColor = image.color;
-            colors.highlightedColor = new Color(0.56f, 0.79f, 1f, 0.98f);
-            colors.pressedColor = new Color(0.29f, 0.61f, 0.87f, 0.98f);
+            colors.highlightedColor = highlightedColor ?? new Color(0.56f, 0.79f, 1f, 0.98f);
+            colors.pressedColor = pressedColor ?? new Color(0.29f, 0.61f, 0.87f, 0.98f);
             button.colors = colors;
             UnityEventTools.AddPersistentListener(button.onClick, action);
 
@@ -269,6 +282,34 @@ namespace Leggau.Editor
             }
 
             presenter.Configure(bindings, stageRoot);
+        }
+
+        private static GameObject CreatePanel(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Color color)
+        {
+            var panelObject = CreateUiObject(name, parent);
+            var rectTransform = panelObject.AddComponent<RectTransform>();
+            rectTransform.anchorMin = anchorMin;
+            rectTransform.anchorMax = anchorMax;
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
+
+            var image = panelObject.AddComponent<Image>();
+            image.color = color;
+            return panelObject;
+        }
+
+        private static TextValueView CreateCardLabel(
+            string name,
+            string title,
+            Transform parent,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            int fontSize,
+            string initialText)
+        {
+            var cardObject = CreatePanel(name, parent, anchorMin, anchorMax, new Color(1f, 1f, 1f, 0.7f));
+            CreateLabel($"{name}Title", cardObject.transform, new Vector2(0.04f, 0.7f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.MiddleLeft, title);
+            return CreateLabel($"{name}Value", cardObject.transform, new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.76f), fontSize, FontStyle.Normal, TextAnchor.UpperLeft, initialText);
         }
 
         private static void PersistBootstrapBindings(
@@ -375,6 +416,7 @@ namespace Leggau.Editor
             public TextValueView rewards;
             public TextValueView gauVariant;
             public TextValueView catalog;
+            public Transform actionsRoot;
         }
 
         private readonly struct GauVariantAsset

@@ -174,6 +174,11 @@ Date checked: `2026-03-25`
 - The bootstrap now also includes:
   - `BootstrapRuntimeProbe` for runtime-state snapshots during Play Mode
   - `UnityRuntimeDriver` for repeatable editor/batch validation of the bootstrap scene
+- After the SSD recovery on `2026-03-25`, the Unity project was reopened successfully from the SSD-backed editor and the bootstrap flow resumed without repository loss
+- The bootstrap scene now has a more operable in-editor HUD:
+  - structured cards for session, child, points, progress, activities and rewards
+  - dedicated mascot/actions panel
+  - explicit `RetryBootstrap` action for re-running the full bootstrap without restarting the scene
 - Local catalog validation is now reproducible through:
   - `scripts/check-gau-runtime-catalog.sh`
 

@@ -41,7 +41,7 @@ namespace Leggau.App
             }
 
             isBusy = true;
-            dashboardPresenter?.SetStatus("Carregando ambiente...");
+            dashboardPresenter?.RenderLoadingState(sessionState, "Carregando ambiente...");
 
             var environment = environmentAsset != null
                 ? AppEnvironmentLoader.Load(environmentAsset)
@@ -409,6 +409,19 @@ namespace Leggau.App
             }
 
             StartCoroutine(DevCheckinFirstActivityRoutine());
+        }
+
+        public void RetryBootstrap()
+        {
+            if (isBusy)
+            {
+                return;
+            }
+
+            sessionState.ResetForBootstrap();
+            dashboardPresenter?.RenderLoadingState(sessionState, "Reiniciando bootstrap...");
+            gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
+            StartCoroutine(Bootstrap());
         }
 
         public void SelectNextGauVariant()
