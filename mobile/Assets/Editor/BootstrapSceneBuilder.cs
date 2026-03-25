@@ -129,7 +129,7 @@ namespace Leggau.Editor
 
         private static void CreateEventSystem()
         {
-            if (Object.FindFirstObjectByType<EventSystem>() != null)
+            if (Object.FindAnyObjectByType<EventSystem>() != null)
             {
                 return;
             }
@@ -285,7 +285,7 @@ namespace Leggau.Editor
             rectTransform.offsetMax = new Vector2(-8f, -4f);
 
             var text = labelObject.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             text.fontSize = fontSize;
             text.fontStyle = fontStyle;
             text.alignment = alignment;

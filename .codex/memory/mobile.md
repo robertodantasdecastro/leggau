@@ -17,7 +17,10 @@
 - Unity editor is detected on SSD at `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.4.0f1/Unity.app`
 - The Leggau project was opened successfully in the graphical editor on `2026-03-25`
 - Unity generated first local project state such as `packages-lock.json` and `ProjectSettings/*.asset`
-- Headless bootstrap generation still crashes during the first `AssetDatabase Initial Refresh`, so the stable sequence is:
+- Unity now also generated the first scene asset and Unity metadata layer:
+  - `mobile/Assets/Scenes/Bootstrap/Bootstrap.unity`
+  - `mobile/Assets/**/*.meta`
+- Headless bootstrap generation now succeeds after the first graphical import, so the stable sequence is:
   - open the project in the graphical editor first
   - let the first import finish
   - retry `scripts/build-unity-bootstrap.sh`
@@ -49,7 +52,7 @@
 
 ## Current Recommended Next Step
 
-- Let the graphical Unity import stabilize, then rerun `scripts/build-unity-bootstrap.sh` to generate `Assets/Scenes/Bootstrap/Bootstrap.unity`.
+- Use the generated bootstrap scene as the base for the first real mobile flow and runtime validation inside the editor.
 - Keep builds, exported assets and Unity cache pointed to SSD-backed directories inside the repository.
 - Gau asset source now exists at `mobile/Assets/Art/Characters/Gau/Source/Gau.blend`
 - Gau Unity export now exists at `mobile/Assets/Art/Characters/Gau/Exports/Gau.fbx`

@@ -64,11 +64,15 @@ Date checked: `2026-03-25`
 - Unity generated project runtime state locally, including:
   - `mobile/Packages/packages-lock.json`
   - multiple `mobile/ProjectSettings/*.asset` files
+- Unity also generated the scene and metadata layer expected by the repository:
+  - `mobile/Assets/Scenes/Bootstrap/Bootstrap.unity`
+  - `mobile/Assets/**/*.meta`
 - `scripts/build-unity-bootstrap.sh` now prefers the SSD-backed editor
-- Headless bootstrap generation still crashes during `Application.AssetDatabase Initial Refresh` on the first import cycle, so the current stable path is:
+- Headless bootstrap generation now succeeds after the first graphical import cycle
+- The stable path for a fresh machine is:
   - open the project in the graphical editor first
   - let Unity finish the initial import and write `Library/`
-  - retry bootstrap scene generation afterward
+  - run `scripts/build-unity-bootstrap.sh`
 - A second editor shell remains present at `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.0.71f1/Unity.app`, but the current binary fails macOS signature validation and should not be treated as usable yet
 - A system-side shell is also present under `/Applications/Unity/Hub/Editor/6000.0.71f1/Unity.app`, but its app bundle is incomplete and should not be treated as canonical
 - Unity Hub templates are now symlinked to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/Templates`
@@ -182,7 +186,7 @@ Date checked: `2026-03-25`
 - The Gau pipeline now also includes a mario-pixel variant with denser retro granulation by body part.
 - The mobile runtime now has a local manifest that bridges Gau art variants into the bootstrap flow.
 - The mobile bootstrap now has the first runtime interaction for Gau art direction selection.
-- The code path for variant selection and mascot preview is ready, and the project now opens in Unity, but automated bootstrap scene generation still needs one more pass after the graphical import stabilizes.
+- The code path for variant selection and mascot preview is ready, and the bootstrap scene is now generated successfully for the first time.
 - Unity Hub recovery diagnosis on `2026-03-25` confirmed:
   - install failure happened because the editor tried to use the default `/Applications` destination and failed disk-space validation
   - the editor install path was redirected to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors`
@@ -190,7 +194,7 @@ Date checked: `2026-03-25`
   - the Hub templates directory was redirected to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/Templates`
   - Unity Hub launches again after the redirection
 - Unity editor is now detected on the SSD-backed install root and the Leggau project now opens there successfully
-- Unity tooling is now aligned with the SSD policy, but the bootstrap scene still needs a successful automated build after the first graphical import cycle completes
+- Unity tooling is now aligned with the SSD policy, and the bootstrap scene now builds successfully after the first graphical import cycle
 - Unity mobile tooling still requires:
   - full Xcode app install and selection
   - completion of the headless Unity mobile module installation now in progress

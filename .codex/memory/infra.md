@@ -64,8 +64,8 @@
   - `6000.4.0f1` is the only validated runnable editor right now
   - `scripts/build-unity-bootstrap.sh` now targets the SSD-backed editor first
   - the Unity `Resources/PackageManager` tree on the SSD install had to be cleaned of `._*` files because they broke package resolution
-  - the first headless import now passes package resolution, but still crashes during `Application.AssetDatabase Initial Refresh`
-  - first-import stabilization should be done in the graphical editor before retrying batch scene generation
+  - first-import stabilization must be done in the graphical editor before retrying batch scene generation
+  - after the graphical import completed, batch scene generation succeeded and produced `mobile/Assets/Scenes/Bootstrap/Bootstrap.unity`
 - Unity Hub install command currently in use:
   - `'/Applications/Unity Hub.app/Contents/MacOS/Unity Hub' --headless install --version 6000.0.71f1 --architecture arm64 --module android android-sdk-ndk-tools android-open-jdk ios`
 - Local Docker Desktop may need to remain stopped while the mobile editor install runs, to satisfy Unity Hub RAM requirements
