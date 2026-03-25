@@ -55,3 +55,4 @@ Base do app mobile do Leggau.
 - Exibir no bootstrap quais variantes locais do Gau ja estao prontas para consumo no mobile
 - Permitir navegar entre as variantes locais do Gau ainda dentro do bootstrap
 - Trocar a visualizacao do mascote em runtime conforme a variante selecionada
+- Manter editor e downloads do Unity preferencialmente no SSD do projeto quando possivel

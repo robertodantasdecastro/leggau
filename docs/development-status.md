@@ -102,6 +102,12 @@ Date checked: `2026-03-24`
 - The mobile runtime now has a local manifest that bridges Gau art variants into the bootstrap flow.
 - The mobile bootstrap now has the first runtime interaction for Gau art direction selection.
 - The code path for variant selection and mascot preview is ready, but Unity scene generation and in-editor execution are still blocked until a working Unity editor binary is restored on this Mac.
+- Unity Hub recovery diagnosis on `2026-03-25` confirmed:
+  - install failure happened because the editor tried to use the default `/Applications` destination and failed disk-space validation
+  - the editor install path was redirected to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors`
+  - the Hub downloads directory was redirected to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/downloads`
+  - Unity Hub launches again after the redirection
+  - the remaining blocker is user re-authentication/licensing inside the Hub UI and then rerunning the editor install
 - Unity tooling is much closer, and the editor repair is in progress, but the bootstrap scene still depends on that validation finishing.
 - Remote backend validation on `vm2` remains blocked by SSH authentication.
 - Project memory is now intended to live primarily inside the repository, not in global Codex state.

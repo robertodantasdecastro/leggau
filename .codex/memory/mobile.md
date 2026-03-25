@@ -78,3 +78,7 @@
 - The bootstrap now includes `GauVariantPreviewPresenter` to swap the mascot model instance when the active variant changes
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity editor binary is still not available in `/Applications` or `~/Applications`, so final scene generation still depends on reinstalling or restoring Unity locally
+- Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination
+- `~/Library/Application Support/UnityHub/secondaryInstallPath.json` now points to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors`
+- `~/Library/Application Support/UnityHub/downloads` is now symlinked to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/downloads`
+- Unity Hub was relaunched after the SSD redirection, but the user session/license still needs to be re-authenticated in the Hub UI before reinstalling the editor

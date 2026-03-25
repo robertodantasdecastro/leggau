@@ -86,6 +86,8 @@ The mario-pixel variant keeps the rounded base but changes the texturing strateg
 - Scene builder buttons: `mobile/Assets/Editor/BootstrapSceneBuilder.cs`
 - Runtime preview swapper: `mobile/Assets/Scripts/App/GauVariantPreviewPresenter.cs`
 - Catalog validation: `scripts/check-gau-runtime-catalog.sh`
+- Unity Hub editor install target: `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors`
+- Unity Hub downloads target: `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/downloads`
 
 ## Naming Conventions
 
