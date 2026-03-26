@@ -226,6 +226,10 @@ Date checked: `2026-03-26`
   - explicit legal consent toggle
   - child naming field
   - onboarding action buttons for each step
+- On `2026-03-26`, the mobile bootstrap also gained local persistence and resume behavior:
+  - local session snapshot is stored for parent, child, Gau variant and home state
+  - reopening the app now restores the pending onboarding step or re-enters the home directly
+  - when a persisted home exists, the app refreshes activities, rewards and progress again from `vm2`
 - The batch validation path now also supports an automated development run through the editor driver, without changing the user-facing runtime flow
 - After the reboot and SSH restoration on `2026-03-26`, the bootstrap scene was rebuilt and the batch validation against `vm2` again reached:
   - `state=ready`
@@ -237,6 +241,14 @@ Date checked: `2026-03-26`
   - `rewardCount=2`
 - A full graphical Unity validation was completed on `2026-03-26` through the `Leggau > Run Bootstrap Play Mode` menu action
 - During that visual sign-off pass, the VM stack had to be restarted on `vm2`, after which the graphical bootstrap reached:
+  - `state=ready`
+  - `status=Dashboard carregado.`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
+- After the onboarding persistence cut on `2026-03-26`, a fresh batch validation against `vm2` again reached:
   - `state=ready`
   - `status=Dashboard carregado.`
   - `parentName=Responsavel Demo`

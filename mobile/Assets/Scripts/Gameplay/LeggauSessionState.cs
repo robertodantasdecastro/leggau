@@ -4,7 +4,10 @@ namespace Leggau.Gameplay
 {
     public class LeggauSessionState
     {
+        private string preferredGauVariantId = "gau-rounded-pixel";
+
         public string AccessToken { get; private set; }
+        public string RefreshToken { get; private set; }
         public AppUserProfile User { get; private set; }
         public ParentProfile Parent { get; private set; }
         public ChildProfile ActiveChild { get; private set; }
@@ -27,6 +30,12 @@ namespace Leggau.Gameplay
         public bool DraftConsentsAccepted { get; private set; }
         public bool HomeReady { get; private set; }
         public bool IsAuthenticated => !string.IsNullOrWhiteSpace(AccessToken);
+        public bool HasPersistableState =>
+            IsAuthenticated ||
+            HomeReady ||
+            !string.IsNullOrWhiteSpace(DraftParentEmail) ||
+            !string.IsNullOrWhiteSpace(DraftChildName);
+        public string PreferredGauVariantId => preferredGauVariantId;
 
         public GauVariantDescriptor ActiveGauVariant
         {
@@ -51,6 +60,7 @@ namespace Leggau.Gameplay
         public void SetDevLogin(DevLoginResponse response)
         {
             AccessToken = response.accessToken;
+            RefreshToken = null;
             Parent = response.parent;
             UsedDevLoginFallback = true;
         }
@@ -63,6 +73,7 @@ namespace Leggau.Gameplay
             }
 
             AccessToken = response.accessToken;
+            RefreshToken = response.refreshToken;
             User = response.user;
             UsedDevLoginFallback = false;
 
@@ -165,12 +176,13 @@ namespace Leggau.Gameplay
         public void SetGauVariantsCatalog(GauVariantsCatalog response)
         {
             GauVariantsCatalog = response;
-            ActiveGauVariantIndex = ResolvePreferredVariantIndex(response);
+            ActiveGauVariantIndex = ResolvePreferredVariantIndex(response, preferredGauVariantId);
         }
 
         public void ResetForBootstrap()
         {
             AccessToken = null;
+            RefreshToken = null;
             User = null;
             Parent = null;
             ActiveChild = null;
@@ -186,6 +198,7 @@ namespace Leggau.Gameplay
             ConsentsRecorded = false;
             DraftConsentsAccepted = false;
             HomeReady = false;
+            preferredGauVariantId = "gau-rounded-pixel";
         }
 
         public void SetDraftResponsible(string email, string name, string password)
@@ -218,6 +231,7 @@ namespace Leggau.Gameplay
             }
 
             ActiveGauVariantIndex = (ActiveGauVariantIndex + 1) % GauVariantsCatalog.variants.Length;
+            preferredGauVariantId = ActiveGauVariant?.id ?? preferredGauVariantId;
         }
 
         public void SelectPreviousGauVariant()
@@ -232,13 +246,113 @@ namespace Leggau.Gameplay
             {
                 ActiveGauVariantIndex = GauVariantsCatalog.variants.Length - 1;
             }
+
+            preferredGauVariantId = ActiveGauVariant?.id ?? preferredGauVariantId;
         }
 
-        private static int ResolvePreferredVariantIndex(GauVariantsCatalog response)
+        public void RestoreFromSnapshot(LeggauLocalSessionSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return;
+            }
+
+            AccessToken = snapshot.accessToken;
+            RefreshToken = snapshot.refreshToken;
+            User = snapshot.user;
+            Parent = snapshot.parent;
+            ActiveChild = snapshot.activeChild;
+            Activities = snapshot.activities;
+            Rewards = snapshot.rewards;
+            AvailablePoints = snapshot.availablePoints;
+            TotalPoints = snapshot.totalPoints;
+            CompletedActivities = snapshot.completedActivities;
+            LatestEntries = snapshot.latestEntries;
+            AssetsCatalog = snapshot.assetsCatalog;
+            LegalDocuments = snapshot.legalDocuments;
+            GauVariantsCatalog = snapshot.gauVariantsCatalog;
+            UsedDevLoginFallback = snapshot.usedDevLoginFallback;
+            ConsentsRecorded = snapshot.consentsRecorded;
+            DraftParentEmail = snapshot.draftParentEmail ?? string.Empty;
+            DraftParentName = snapshot.draftParentName ?? string.Empty;
+            DraftPassword = snapshot.draftPassword ?? string.Empty;
+            DraftChildName = snapshot.draftChildName ?? string.Empty;
+            DraftConsentsAccepted = snapshot.draftConsentsAccepted;
+            HomeReady = snapshot.homeReady;
+            preferredGauVariantId = string.IsNullOrWhiteSpace(snapshot.preferredGauVariantId)
+                ? "gau-rounded-pixel"
+                : snapshot.preferredGauVariantId;
+            ActiveGauVariantIndex = ResolvePreferredVariantIndex(GauVariantsCatalog, preferredGauVariantId);
+        }
+
+        public LeggauLocalSessionSnapshot ToSnapshot()
+        {
+            return new LeggauLocalSessionSnapshot
+            {
+                accessToken = AccessToken,
+                refreshToken = RefreshToken,
+                user = User,
+                parent = Parent,
+                activeChild = ActiveChild,
+                activities = Activities,
+                rewards = Rewards,
+                availablePoints = AvailablePoints,
+                totalPoints = TotalPoints,
+                completedActivities = CompletedActivities,
+                latestEntries = LatestEntries,
+                assetsCatalog = AssetsCatalog,
+                legalDocuments = LegalDocuments,
+                gauVariantsCatalog = GauVariantsCatalog,
+                preferredGauVariantId = preferredGauVariantId,
+                usedDevLoginFallback = UsedDevLoginFallback,
+                consentsRecorded = ConsentsRecorded,
+                draftParentEmail = DraftParentEmail,
+                draftParentName = DraftParentName,
+                draftPassword = DraftPassword,
+                draftChildName = DraftChildName,
+                draftConsentsAccepted = DraftConsentsAccepted,
+                homeReady = HomeReady,
+            };
+        }
+
+        public string ResolveResumeStep()
+        {
+            if (HomeReady && ActiveChild != null)
+            {
+                return "Home";
+            }
+
+            if (!IsAuthenticated)
+            {
+                return "Auth";
+            }
+
+            if (LegalDocuments != null && LegalDocuments.Length > 0 && !ConsentsRecorded)
+            {
+                return "Legal";
+            }
+
+            if (ActiveChild == null)
+            {
+                return "Crianca";
+            }
+
+            return "Entrada";
+        }
+
+        private static int ResolvePreferredVariantIndex(GauVariantsCatalog response, string preferredId)
         {
             if (response?.variants == null || response.variants.Length == 0)
             {
                 return 0;
+            }
+
+            for (var index = 0; index < response.variants.Length; index += 1)
+            {
+                if (!string.IsNullOrWhiteSpace(preferredId) && response.variants[index].id == preferredId)
+                {
+                    return index;
+                }
             }
 
             for (var index = 0; index < response.variants.Length; index += 1)

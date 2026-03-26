@@ -157,10 +157,10 @@ namespace Leggau.UI
         {
             if (!HasLegalDocuments(session))
             {
-                return "Documentos legais\nNenhum documento exigido no momento.";
+                return "Consentimentos\nNenhum documento extra exigido nesta etapa.";
             }
 
-            var lines = "Documentos legais";
+            var lines = "Consentimentos";
             foreach (var document in session.LegalDocuments)
             {
                 if (document == null)

@@ -61,6 +61,8 @@
   - fast dev path for validation without silent auto-run on scene start
 - The bootstrap scene now has interactive fields for responsible credentials, legal confirmation and child naming
 - The Unity editor driver now supports a development-flow validation pass that reuses the real VM backend while preserving the manual UX in normal Play Mode
+- The mobile bootstrap now persists its local session snapshot and resumes the correct onboarding/home state after reopening the app
+- When a saved home already exists, the app now refreshes the same home data again from `vm2` before rendering the main dashboard
 - As of `2026-03-26`, mobile development should no longer depend on a local backend fallback; VM remains the only canonical backend target
 - Unity mobile build modules are now present in the validated editor install through the editor-root `PlaybackEngines/` layout
 - A second SSD-backed shell for `6000.0.71f1` exists, but it currently fails signature validation and should not be used until it is reinstalled cleanly
@@ -72,6 +74,13 @@
   - canonical Unity editor has Android/iOS support
   - graphical bootstrap sign-off reached `state=ready` against the VM runtime
 - After the machine reboot later on `2026-03-26`, `vm2` had to be started again from `~/leggau`, and the refreshed batch validation still reached:
+  - `state=ready`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
+- After the persistence cut later on `2026-03-26`, a new batch validation still reached:
   - `state=ready`
   - `parentName=Responsavel Demo`
   - `childName=Gau`

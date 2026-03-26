@@ -118,6 +118,7 @@ namespace Leggau.App
         public void SelectNextGauVariant()
         {
             sessionState.SelectNextGauVariant();
+            PersistLocalSession();
             if (sessionState.HomeReady)
             {
                 dashboardPresenter?.Render(sessionState);
@@ -135,6 +136,7 @@ namespace Leggau.App
         public void SelectPreviousGauVariant()
         {
             sessionState.SelectPreviousGauVariant();
+            PersistLocalSession();
             if (sessionState.HomeReady)
             {
                 dashboardPresenter?.Render(sessionState);
@@ -169,19 +171,66 @@ namespace Leggau.App
 
             apiClient.SetBaseUrls(currentEnvironment.apiBaseUrl, currentEnvironment.fallbackApiBaseUrl);
             TryLoadLocalGauCatalog();
-            ApplyDevelopmentDefaults(currentEnvironment);
+            var restoredSession = TryRestoreLocalSession();
+            if (!restoredSession)
+            {
+                ApplyDevelopmentDefaults(currentEnvironment);
+            }
 
-            dashboardPresenter?.SetHero("Onboarding pronto para comecar", "Preencha os dados do responsavel, confirme consentimentos e prepare a crianca.");
-            dashboardPresenter?.RenderLoadingState(sessionState, $"Conectado a {apiClient.ActiveBaseUrl}. Aguardando seu primeiro passo.");
+            SyncFlowFromSession();
+
+            if (restoredSession)
+            {
+                dashboardPresenter?.SetHero("Bem-vindo de volta", "Sua jornada foi retomada do ultimo ponto salvo com o Gau.");
+                dashboardPresenter?.RenderLoadingState(sessionState, BuildResumeStatus());
+            }
+            else
+            {
+                dashboardPresenter?.SetHero("Onboarding pronto para comecar", "Preencha os dados do responsavel, confirme consentimentos e prepare a crianca.");
+                dashboardPresenter?.RenderLoadingState(sessionState, $"Conectado a {apiClient.ActiveBaseUrl}. Aguardando seu primeiro passo.");
+            }
 
             environmentReady = true;
             isBusy = false;
             dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+            PersistLocalSession();
+
+            if (restoredSession)
+            {
+                if (sessionState.HomeReady && sessionState.ActiveChild != null)
+                {
+                    StartCoroutine(ResumePersistedHomeRoutine());
+                    yield break;
+                }
+
+                if (sessionState.IsAuthenticated)
+                {
+                    StartCoroutine(ResumePersistedOnboardingRoutine());
+                    yield break;
+                }
+            }
 
             if (ConsumeAutomatedDevelopmentRunFlag())
             {
                 StartCoroutine(RunDevelopmentOnboardingRoutine());
             }
+        }
+
+        private void OnApplicationPause(bool pauseStatus)
+        {
+            if (!pauseStatus)
+            {
+                return;
+            }
+
+            dashboardPresenter?.ReadOnboardingDrafts(sessionState);
+            PersistLocalSession();
+        }
+
+        private void OnApplicationQuit()
+        {
+            dashboardPresenter?.ReadOnboardingDrafts(sessionState);
+            PersistLocalSession();
         }
 
         private static bool ConsumeAutomatedDevelopmentRunFlag()
@@ -195,6 +244,7 @@ namespace Leggau.App
         private IEnumerator SubmitResponsibleStepRoutine(bool allowDevFallback)
         {
             dashboardPresenter?.ReadOnboardingDrafts(sessionState);
+            PersistLocalSession();
 
             if (string.IsNullOrWhiteSpace(sessionState.DraftParentEmail) ||
                 string.IsNullOrWhiteSpace(sessionState.DraftParentName) ||
@@ -223,6 +273,7 @@ namespace Leggau.App
 
             dashboardPresenter?.MarkFlowDone("Auth", sessionState.UsedDevLoginFallback ? "login dev" : "autenticado");
             dashboardPresenter?.MarkFlowLoading("Legal", "carregando documentos");
+            PersistLocalSession();
             yield return LoadLegalDocumentsOnly(value => requestFailed = value);
 
             if (requestFailed)
@@ -241,11 +292,13 @@ namespace Leggau.App
             dashboardPresenter?.RenderLoadingState(sessionState, "Responsavel autenticado. Aguarde a confirmacao dos consentimentos.");
             isBusy = false;
             dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+            PersistLocalSession();
         }
 
         private IEnumerator SubmitConsentStepRoutine()
         {
             dashboardPresenter?.ReadOnboardingDrafts(sessionState);
+            PersistLocalSession();
 
             if (!sessionState.IsAuthenticated)
             {
@@ -291,11 +344,13 @@ namespace Leggau.App
             dashboardPresenter?.RenderLoadingState(sessionState, "Consentimentos salvos. Prepare a crianca.");
             isBusy = false;
             dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+            PersistLocalSession();
         }
 
         private IEnumerator SubmitChildStepRoutine()
         {
             dashboardPresenter?.ReadOnboardingDrafts(sessionState);
+            PersistLocalSession();
 
             if (!sessionState.IsAuthenticated)
             {
@@ -361,6 +416,7 @@ namespace Leggau.App
             dashboardPresenter?.RenderLoadingState(sessionState, "Crianca preparada. Entre na home para concluir o onboarding.");
             isBusy = false;
             dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+            PersistLocalSession();
         }
 
         private IEnumerator CompleteHomeStepRoutine()
@@ -464,6 +520,7 @@ namespace Leggau.App
             dashboardPresenter?.SyncOnboardingControls(sessionState, false);
             gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
             isBusy = false;
+            PersistLocalSession();
         }
 
         private IEnumerator RunDevelopmentOnboardingRoutine()
@@ -559,6 +616,7 @@ namespace Leggau.App
 
             if (registerSucceeded)
             {
+                PersistLocalSession();
                 setFailed?.Invoke(false);
                 yield break;
             }
@@ -607,6 +665,7 @@ namespace Leggau.App
             }
 
             dashboardPresenter?.MarkFlowDone("Auth", "login dev");
+            PersistLocalSession();
             setFailed?.Invoke(false);
         }
 
@@ -623,6 +682,7 @@ namespace Leggau.App
                     sessionState.SetLegalDocuments(documents?.items);
                     sessionState.SetDraftConsentsAccepted(false);
                     dashboardPresenter?.SetConsentAccepted(false);
+                    PersistLocalSession();
                 },
                 error =>
                 {
@@ -696,6 +756,7 @@ namespace Leggau.App
                 {
                     var family = JsonUtility.FromJson<FamilyOverviewResponse>(response);
                     sessionState.SetFamily(family);
+                    PersistLocalSession();
                 },
                 error =>
                 {
@@ -734,6 +795,7 @@ namespace Leggau.App
                 {
                     var child = JsonUtility.FromJson<ChildProfile>(response);
                     sessionState.SetActiveChild(child);
+                    PersistLocalSession();
                 },
                 error =>
                 {
@@ -773,6 +835,7 @@ namespace Leggau.App
                 {
                     var result = JsonUtility.FromJson<CreateCheckinResponse>(response);
                     sessionState.ApplyCheckin(result);
+                    PersistLocalSession();
                 },
                 error =>
                 {
@@ -793,6 +856,7 @@ namespace Leggau.App
                 {
                     var rewards = JsonUtility.FromJson<RewardsResponse>(response);
                     sessionState.SetRewards(rewards.items, rewards.availablePoints);
+                    PersistLocalSession();
                 },
                 error =>
                 {
@@ -826,6 +890,7 @@ namespace Leggau.App
                 {
                     var summary = JsonUtility.FromJson<ProgressSummaryResponse>(response);
                     sessionState.SetProgressSummary(summary);
+                    PersistLocalSession();
                 },
                 error =>
                 {
@@ -848,6 +913,155 @@ namespace Leggau.App
             sessionState.SetDraftResponsible(email, name, password);
             sessionState.SetDraftChildName("Gau");
             sessionState.SetDraftConsentsAccepted(false);
+        }
+
+        private bool TryRestoreLocalSession()
+        {
+            if (!LeggauLocalSessionStore.TryLoad(out var snapshot))
+            {
+                return false;
+            }
+
+            sessionState.RestoreFromSnapshot(snapshot);
+
+            if (string.IsNullOrWhiteSpace(sessionState.DraftParentEmail))
+            {
+                sessionState.SetDraftResponsible(
+                    sessionState.CurrentUserEmail,
+                    sessionState.Parent?.name ?? sessionState.User?.displayName,
+                    sessionState.DraftPassword);
+            }
+
+            if (string.IsNullOrWhiteSpace(sessionState.DraftChildName) && sessionState.ActiveChild != null)
+            {
+                sessionState.SetDraftChildName(sessionState.ActiveChild.name);
+            }
+
+            return true;
+        }
+
+        private void PersistLocalSession()
+        {
+            if (sessionState.HasPersistableState)
+            {
+                LeggauLocalSessionStore.Save(sessionState);
+            }
+        }
+
+        private IEnumerator ResumePersistedOnboardingRoutine()
+        {
+            if (isBusy)
+            {
+                yield break;
+            }
+
+            isBusy = true;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, true);
+            dashboardPresenter?.SetHero("Retomando sua jornada", "Encontramos um progresso salvo e estamos posicionando voce no proximo passo.");
+            dashboardPresenter?.RenderLoadingState(sessionState, BuildResumeStatus());
+
+            var requestFailed = false;
+
+            if (sessionState.IsAuthenticated && sessionState.LegalDocuments == null)
+            {
+                dashboardPresenter?.MarkFlowLoading("Legal", "carregando documentos");
+                yield return LoadLegalDocumentsOnly(value => requestFailed = value);
+            }
+
+            if (!requestFailed &&
+                sessionState.IsAuthenticated &&
+                (sessionState.ConsentsRecorded || sessionState.LegalDocuments == null || sessionState.LegalDocuments.Length == 0) &&
+                sessionState.ActiveChild == null)
+            {
+                dashboardPresenter?.MarkFlowLoading("Familia", "overview");
+                yield return LoadFamilyOverview(value => requestFailed = value);
+            }
+
+            SyncFlowFromSession();
+            isBusy = false;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+            dashboardPresenter?.RenderLoadingState(sessionState, requestFailed ? "Retomada parcial concluida. Revise a etapa destacada." : BuildResumeStatus());
+            PersistLocalSession();
+        }
+
+        private IEnumerator ResumePersistedHomeRoutine()
+        {
+            if (isBusy)
+            {
+                yield break;
+            }
+
+            dashboardPresenter?.SetHero("Sua home esta de volta", "Atualizando atividades, progresso e recompensas direto da vm2.");
+            yield return CompleteHomeStepRoutine();
+        }
+
+        private void SyncFlowFromSession()
+        {
+            dashboardPresenter?.ResetFlow();
+
+            if (sessionState.IsAuthenticated)
+            {
+                dashboardPresenter?.MarkFlowDone("Auth", sessionState.UsedDevLoginFallback ? "login de desenvolvimento" : "responsavel autenticado");
+            }
+
+            if (sessionState.LegalDocuments != null)
+            {
+                if (sessionState.LegalDocuments.Length == 0)
+                {
+                    dashboardPresenter?.MarkFlowDone("Legal", "sem consentimentos extras");
+                }
+                else if (sessionState.ConsentsRecorded)
+                {
+                    dashboardPresenter?.MarkFlowDone("Legal", "consentimentos confirmados");
+                }
+                else if (sessionState.IsAuthenticated)
+                {
+                    dashboardPresenter?.MarkFlowLoading("Legal", "aguardando aceite");
+                }
+            }
+
+            if (sessionState.Parent != null)
+            {
+                dashboardPresenter?.MarkFlowDone("Familia", "responsavel identificado");
+            }
+
+            if (sessionState.ActiveChild != null)
+            {
+                dashboardPresenter?.MarkFlowDone("Crianca", "perfil infantil pronto");
+            }
+            else if (sessionState.IsAuthenticated && (sessionState.ConsentsRecorded || sessionState.LegalDocuments == null || sessionState.LegalDocuments.Length == 0))
+            {
+                dashboardPresenter?.MarkFlowLoading("Crianca", "aguardando definicao");
+            }
+
+            if (sessionState.Activities != null)
+            {
+                dashboardPresenter?.MarkFlowDone("Atividades", $"{sessionState.Activities.Length} carregadas");
+            }
+
+            if (sessionState.Rewards != null)
+            {
+                dashboardPresenter?.MarkFlowDone("Recompensas", $"{sessionState.Rewards.Length} prontas");
+            }
+
+            if (sessionState.HomeReady)
+            {
+                dashboardPresenter?.MarkFlowDone("Progresso", "home pronta");
+            }
+        }
+
+        private string BuildResumeStatus()
+        {
+            return sessionState.ResolveResumeStep() switch
+            {
+                "Home" => "Voltamos direto para a home salva. Atualizando dados do dia...",
+                "Entrada" => "A crianca ja esta pronta. Falta apenas entrar na home.",
+                "Crianca" => sessionState.ActiveChild != null
+                    ? $"Encontramos a crianca {sessionState.ActiveChild.name}. Confirme para continuar."
+                    : "Seu onboarding continua na etapa da crianca.",
+                "Legal" => "Seu onboarding continua na confirmacao dos consentimentos.",
+                _ => "Seu onboarding continua na etapa do responsavel.",
+            };
         }
 
         private void TryLoadLocalGauCatalog()

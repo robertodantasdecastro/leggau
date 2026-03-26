@@ -60,6 +60,12 @@
 - Latest validated probe snapshot reached:
   - `state=ready`
   - `status=Dashboard carregado.`
+- After the persistence/resume cut on `2026-03-26`, the same probe path again reached:
+  - `state=ready`
+  - `status=Dashboard carregado.`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
 - Latest graphical Play Mode validation against `vm2` also reached:
   - `state=ready`
   - `parentName=Responsavel Demo`

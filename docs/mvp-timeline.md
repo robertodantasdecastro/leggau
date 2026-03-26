@@ -103,9 +103,12 @@
   - the bootstrap scene now exposes interactive inputs for responsible auth, consent confirmation and child naming
   - the editor driver now supports an automated development pass for repeatable validation of the onboarding flow
   - after the machine reboot and VM restart on `2026-03-26`, batch validation again reached `state=ready` against `vm2`
+  - onboarding and first-home state now persist locally between app launches
+  - reopening the app now resumes the pending onboarding step or refreshes the saved home directly from `vm2`
+  - the child step now makes reuse of an existing child profile explicit in the onboarding summary
 - Remaining:
   - refine the onboarding layout from functional UI into stronger product UI
-  - persist the first-home experience as the main entry state after onboarding
+  - add richer in-home interactions beyond the first persistent summary
   - keep validating the same flow in the graphical editor after each major UI pass
 
 ### Phase 6 and beyond
@@ -120,7 +123,7 @@
    - stronger visual treatment for responsible/session entry
    - clearer consent review and acceptance copy
    - child selection/creation affordances
-2. Consolidate the first persistent home as the main MVP entry experience.
+2. Enrich the persistent home with more product-like actions and less text-heavy presentation.
 3. Keep `vm2` as the only development backend and continue feature work from the VM runtime.
 4. Prepare Android/iOS build validation on top of the now-complete Phase 0 toolchain.
 

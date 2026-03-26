@@ -189,34 +189,34 @@ namespace Leggau.Editor
             var homePanel = CreatePanel("HomePanel", parent, new Vector2(0.36f, 0.05f), new Vector2(0.66f, 0.95f), new Color(1f, 0.99f, 0.96f, 0.92f));
             var actionPanel = CreatePanel("ActionPanel", parent, new Vector2(0.68f, 0.05f), new Vector2(0.96f, 0.95f), new Color(0.99f, 0.98f, 0.94f, 0.92f));
 
-            CreateLabel("ActionTitle", actionPanel.transform, new Vector2(0.08f, 0.92f), new Vector2(0.92f, 0.98f), 22, FontStyle.Bold, TextAnchor.MiddleLeft, "Mascote e acoes");
-            CreateLabel("ActionHint", actionPanel.transform, new Vector2(0.08f, 0.86f), new Vector2(0.92f, 0.92f), 13, FontStyle.Italic, TextAnchor.MiddleLeft, "Valide onboarding, check-ins e variantes do Gau");
+            CreateLabel("ActionTitle", actionPanel.transform, new Vector2(0.08f, 0.92f), new Vector2(0.92f, 0.98f), 22, FontStyle.Bold, TextAnchor.MiddleLeft, "Gau e jornada");
+            CreateLabel("ActionHint", actionPanel.transform, new Vector2(0.08f, 0.86f), new Vector2(0.92f, 0.92f), 13, FontStyle.Italic, TextAnchor.MiddleLeft, "Acompanhe a jornada, registre check-ins e troque o mascote.");
 
             var authCard = CreatePanel("AuthCard", onboardingPanel.transform, new Vector2(0.06f, 0.53f), new Vector2(0.94f, 0.82f), new Color(1f, 1f, 1f, 0.74f));
             var legalCard = CreatePanel("LegalCard", onboardingPanel.transform, new Vector2(0.06f, 0.34f), new Vector2(0.94f, 0.51f), new Color(1f, 1f, 1f, 0.74f));
             var childCard = CreatePanel("ChildCard", onboardingPanel.transform, new Vector2(0.06f, 0.14f), new Vector2(0.94f, 0.32f), new Color(1f, 1f, 1f, 0.74f));
             var entryCard = CreatePanel("EntryCard", onboardingPanel.transform, new Vector2(0.06f, 0.02f), new Vector2(0.94f, 0.12f), new Color(1f, 1f, 1f, 0.74f));
 
-            var authStep = CreateLabel("AuthStepValue", authCard.transform, new Vector2(0.04f, 0.7f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.UpperLeft, "Identificacao do responsavel");
+            var authStep = CreateLabel("AuthStepValue", authCard.transform, new Vector2(0.04f, 0.7f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.UpperLeft, "1. Conta do responsavel");
             var parentEmailInput = CreateInputField("ParentEmailInput", authCard.transform, new Vector2(0.04f, 0.43f), new Vector2(0.96f, 0.61f), "Email do responsavel");
             var parentNameInput = CreateInputField("ParentNameInput", authCard.transform, new Vector2(0.04f, 0.24f), new Vector2(0.96f, 0.42f), "Nome do responsavel");
             var passwordInput = CreateInputField("ParentPasswordInput", authCard.transform, new Vector2(0.04f, 0.05f), new Vector2(0.96f, 0.23f), "Senha");
             passwordInput.contentType = InputField.ContentType.Password;
             passwordInput.ForceLabelUpdate();
 
-            var legalStep = CreateLabel("LegalStepValue", legalCard.transform, new Vector2(0.04f, 0.72f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.UpperLeft, "Consentimentos e documentos");
-            var legalDocuments = CreateLabel("LegalDocumentsValue", legalCard.transform, new Vector2(0.04f, 0.24f), new Vector2(0.96f, 0.72f), 12, FontStyle.Normal, TextAnchor.UpperLeft, "Documentos legais");
+            var legalStep = CreateLabel("LegalStepValue", legalCard.transform, new Vector2(0.04f, 0.72f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.UpperLeft, "2. Consentimentos");
+            var legalDocuments = CreateLabel("LegalDocumentsValue", legalCard.transform, new Vector2(0.04f, 0.24f), new Vector2(0.96f, 0.72f), 12, FontStyle.Normal, TextAnchor.UpperLeft, "Consentimentos");
             var legalConsentToggle = CreateToggleField("LegalConsentToggle", legalCard.transform, new Vector2(0.04f, 0.05f), new Vector2(0.96f, 0.22f), "Confirmo os consentimentos desta etapa");
 
-            var childStep = CreateLabel("ChildStepValue", childCard.transform, new Vector2(0.04f, 0.64f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.UpperLeft, "Criacao ou selecao da crianca");
+            var childStep = CreateLabel("ChildStepValue", childCard.transform, new Vector2(0.04f, 0.64f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.UpperLeft, "3. Perfil da crianca");
             var childNameInput = CreateInputField("ChildNameInput", childCard.transform, new Vector2(0.04f, 0.18f), new Vector2(0.96f, 0.52f), "Nome da crianca");
 
-            var homeStep = CreateLabel("HomeStepValue", entryCard.transform, new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.92f), 12, FontStyle.Normal, TextAnchor.UpperLeft, "Entrada na home");
+            var homeStep = CreateLabel("HomeStepValue", entryCard.transform, new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.92f), 12, FontStyle.Normal, TextAnchor.UpperLeft, "4. Entrada na home");
 
-            var authAction = BuildPrimaryButton(authCard.transform, "SubmitAuthButton", new Vector2(0.55f, 0.05f), new Vector2(0.96f, 0.2f), "Entrar / cadastrar");
-            var legalAction = BuildPrimaryButton(legalCard.transform, "SubmitLegalButton", new Vector2(0.55f, 0.05f), new Vector2(0.96f, 0.2f), "Confirmar consentimentos");
-            var childAction = BuildPrimaryButton(childCard.transform, "SubmitChildButton", new Vector2(0.55f, 0.56f), new Vector2(0.96f, 0.82f), "Preparar crianca");
-            var homeAction = BuildPrimaryButton(entryCard.transform, "EnterHomeButton", new Vector2(0.04f, 0.12f), new Vector2(0.58f, 0.88f), "Entrar na home");
+            var authAction = BuildPrimaryButton(authCard.transform, "SubmitAuthButton", new Vector2(0.55f, 0.05f), new Vector2(0.96f, 0.2f), "Continuar");
+            var legalAction = BuildPrimaryButton(legalCard.transform, "SubmitLegalButton", new Vector2(0.55f, 0.05f), new Vector2(0.96f, 0.2f), "Aceitar e continuar");
+            var childAction = BuildPrimaryButton(childCard.transform, "SubmitChildButton", new Vector2(0.55f, 0.56f), new Vector2(0.96f, 0.82f), "Confirmar crianca");
+            var homeAction = BuildPrimaryButton(entryCard.transform, "EnterHomeButton", new Vector2(0.04f, 0.12f), new Vector2(0.58f, 0.88f), "Abrir minha home");
             var devAction = BuildSecondaryButton(
                 entryCard.transform,
                 "FastDevButton",
@@ -232,11 +232,11 @@ namespace Leggau.Editor
             {
                 onboardingRoot = onboardingPanel.transform,
                 homeRoot = homePanel.transform,
-                heroTitle = CreateLabel("HomeTitle", homePanel.transform, new Vector2(0.05f, 0.93f), new Vector2(0.95f, 0.99f), 25, FontStyle.Bold, TextAnchor.MiddleLeft, "Primeira home do Leggau"),
-                heroBody = CreateLabel("HomeSubtitle", homePanel.transform, new Vector2(0.05f, 0.87f), new Vector2(0.95f, 0.93f), 14, FontStyle.Italic, TextAnchor.UpperLeft, "Responsavel, crianca, progresso e recompensas no mesmo fluxo"),
-                status = CreateCardLabel("StatusCard", "Status do app", actionPanel.transform, new Vector2(0.08f, 0.74f), new Vector2(0.92f, 0.84f), 15, "Status"),
-                onboardingTitle = CreateLabel("OnboardingTitle", onboardingPanel.transform, new Vector2(0.06f, 0.91f), new Vector2(0.94f, 0.98f), 24, FontStyle.Bold, TextAnchor.MiddleLeft, "Onboarding do responsavel"),
-                onboardingBody = CreateLabel("OnboardingBody", onboardingPanel.transform, new Vector2(0.06f, 0.84f), new Vector2(0.94f, 0.91f), 14, FontStyle.Italic, TextAnchor.UpperLeft, "Autenticacao, consentimentos e crianca inicial."),
+                heroTitle = CreateLabel("HomeTitle", homePanel.transform, new Vector2(0.05f, 0.93f), new Vector2(0.95f, 0.99f), 25, FontStyle.Bold, TextAnchor.MiddleLeft, "Sua home no Leggau"),
+                heroBody = CreateLabel("HomeSubtitle", homePanel.transform, new Vector2(0.05f, 0.87f), new Vector2(0.95f, 0.93f), 14, FontStyle.Italic, TextAnchor.UpperLeft, "Responsavel, crianca, progresso e recompensas no mesmo fluxo."),
+                status = CreateCardLabel("StatusCard", "Status da jornada", actionPanel.transform, new Vector2(0.08f, 0.74f), new Vector2(0.92f, 0.84f), 15, "Status"),
+                onboardingTitle = CreateLabel("OnboardingTitle", onboardingPanel.transform, new Vector2(0.06f, 0.91f), new Vector2(0.94f, 0.98f), 24, FontStyle.Bold, TextAnchor.MiddleLeft, "Vamos comecar"),
+                onboardingBody = CreateLabel("OnboardingBody", onboardingPanel.transform, new Vector2(0.06f, 0.84f), new Vector2(0.94f, 0.91f), 14, FontStyle.Italic, TextAnchor.UpperLeft, "Organize o responsavel, os consentimentos e a primeira crianca."),
                 authStep = authStep,
                 legalStep = legalStep,
                 childStep = childStep,
@@ -248,7 +248,7 @@ namespace Leggau.Editor
                 progress = CreateCardLabel("ProgressCard", "Progresso", homePanel.transform, new Vector2(0.05f, 0.18f), new Vector2(0.95f, 0.32f), 12, "Progresso"),
                 activities = CreateCardLabel("ActivitiesCard", "Atividades do dia", homePanel.transform, new Vector2(0.05f, 0.02f), new Vector2(0.48f, 0.17f), 12, "Atividades"),
                 rewards = CreateCardLabel("RewardsCard", "Recompensas", homePanel.transform, new Vector2(0.52f, 0.02f), new Vector2(0.95f, 0.17f), 12, "Recompensas"),
-                flow = CreateCardLabel("FlowCard", "Checklist tecnico", actionPanel.transform, new Vector2(0.08f, 0.49f), new Vector2(0.92f, 0.72f), 12, "Etapas"),
+                flow = CreateCardLabel("FlowCard", "Checklist da jornada", actionPanel.transform, new Vector2(0.08f, 0.49f), new Vector2(0.92f, 0.72f), 12, "Etapas"),
                 gauVariant = CreateCardLabel("GauVariantCard", "Mascote ativo", actionPanel.transform, new Vector2(0.08f, 0.31f), new Vector2(0.92f, 0.48f), 13, "Mascote"),
                 catalog = CreateCardLabel("CatalogCard", "Catalogo 3D", actionPanel.transform, new Vector2(0.08f, 0.14f), new Vector2(0.92f, 0.3f), 12, "Catalogo"),
                 legalDocuments = legalDocuments,

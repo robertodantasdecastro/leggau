@@ -45,8 +45,9 @@ namespace Leggau.UI
         [SerializeField] private GameObject homeRoot;
 
         private readonly string[] flowStates = new string[FlowOrder.Length];
+        private LeggauSessionState latestSession;
         private string onboardingTitle = "Onboarding do responsavel";
-        private string onboardingBody = "Preparando autenticacao, consentimentos e perfil infantil.";
+        private string onboardingBody = "Vamos preparar a conta do responsavel, os consentimentos e a primeira crianca.";
 
         public void BindViews(
             TextValueView heroTitle,
@@ -109,7 +110,7 @@ namespace Leggau.UI
             }
 
             onboardingTitle = "Onboarding do responsavel";
-            onboardingBody = "Preparando autenticacao, consentimentos e perfil infantil.";
+            onboardingBody = "Vamos preparar a conta do responsavel, os consentimentos e a primeira crianca.";
             RenderOnboardingSteps();
             SetPanelState(false);
             RenderFlow();
@@ -117,6 +118,7 @@ namespace Leggau.UI
 
         public void SyncOnboardingControls(LeggauSessionState session, bool busy)
         {
+            latestSession = session;
             onboardingControls?.PopulateFromSession(session);
             onboardingControls?.ApplyState(session, busy);
         }
@@ -196,10 +198,10 @@ namespace Leggau.UI
         {
             onboardingTitleLabel?.SetText(onboardingTitle);
             onboardingBodyLabel?.SetText(onboardingBody);
-            authStepLabel?.SetText(BuildStepLabel("Auth", "Identificacao do responsavel"));
-            legalStepLabel?.SetText(BuildStepLabel("Legal", "Consentimentos e documentos"));
-            childStepLabel?.SetText(BuildStepLabel("Crianca", "Criacao ou selecao da crianca"));
-            homeStepLabel?.SetText(BuildHomeStepLabel());
+            authStepLabel?.SetText(BuildAuthStepLabel(latestSession));
+            legalStepLabel?.SetText(BuildLegalStepLabel(latestSession));
+            childStepLabel?.SetText(BuildChildStepLabel(latestSession));
+            homeStepLabel?.SetText(BuildHomeStepLabel(latestSession));
         }
 
         private string BuildStepLabel(string step, string title)
@@ -208,11 +210,48 @@ namespace Leggau.UI
             return $"{title}\n{state}";
         }
 
-        private string BuildHomeStepLabel()
+        private string BuildAuthStepLabel(LeggauSessionState session)
+        {
+            var title = string.IsNullOrWhiteSpace(session?.DraftParentName)
+                ? "1. Conta do responsavel"
+                : $"1. Conta do responsavel\nNome pronto: {session.DraftParentName}";
+            return BuildStepLabel("Auth", title);
+        }
+
+        private string BuildLegalStepLabel(LeggauSessionState session)
+        {
+            if (session?.LegalDocuments == null || session.LegalDocuments.Length == 0)
+            {
+                return BuildStepLabel("Legal", "2. Consentimentos");
+            }
+
+            return BuildStepLabel("Legal", $"2. Consentimentos\n{session.LegalDocuments.Length} documento(s) para revisar");
+        }
+
+        private string BuildChildStepLabel(LeggauSessionState session)
+        {
+            if (session?.ActiveChild != null)
+            {
+                return $"3. Perfil da crianca\nUsaremos {session.ActiveChild.name} nesta jornada.\n{ResolveFlowState("Crianca")}";
+            }
+
+            if (!string.IsNullOrWhiteSpace(session?.DraftChildName))
+            {
+                return $"3. Perfil da crianca\nNome preparado: {session.DraftChildName}\n{ResolveFlowState("Crianca")}";
+            }
+
+            return BuildStepLabel("Crianca", "3. Perfil da crianca");
+        }
+
+        private string BuildHomeStepLabel(LeggauSessionState session)
         {
             var progressState = ResolveFlowState("Progresso");
             var rewardsState = ResolveFlowState("Recompensas");
-            return $"Entrada na home\nAtividades: {ResolveFlowState("Atividades")}\nRecompensas: {rewardsState}\nProgresso: {progressState}";
+            var activityState = ResolveFlowState("Atividades");
+            var headline = session != null && session.HomeReady
+                ? "4. Home pronta para continuar"
+                : "4. Entrada na home";
+            return $"{headline}\nAtividades: {activityState}\nRecompensas: {rewardsState}\nProgresso: {progressState}";
         }
 
         private string ResolveFlowState(string step)
@@ -256,6 +295,7 @@ namespace Leggau.UI
 
         public void RenderLoadingState(LeggauSessionState session, string status)
         {
+            latestSession = session;
             ApplySessionSnapshot(session);
             if (session != null && session.HomeReady)
             {
@@ -268,6 +308,7 @@ namespace Leggau.UI
 
         public void Render(LeggauSessionState session)
         {
+            latestSession = session;
             ApplySessionSnapshot(session);
             runtimeProbe?.ReportSession(session);
             SetPanelState(session != null && session.HomeReady);
@@ -293,11 +334,11 @@ namespace Leggau.UI
         private static string BuildLegal(LeggauSessionState session)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("Consentimentos legais");
+            builder.AppendLine("Consentimentos da familia");
 
             if (session.LegalDocuments == null || session.LegalDocuments.Length == 0)
             {
-                builder.AppendLine("Nenhum documento carregado ainda.");
+                builder.AppendLine("Nenhum documento extra foi exigido nesta etapa.");
                 return builder.ToString();
             }
 
@@ -320,7 +361,7 @@ namespace Leggau.UI
         private static string BuildGauVariant(LeggauSessionState session)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("Mascote ativo");
+            builder.AppendLine("Gau ao seu lado");
 
             if (session.ActiveGauVariant == null)
             {
@@ -337,8 +378,8 @@ namespace Leggau.UI
         private static string BuildProgress(LeggauSessionState session)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("Progresso da crianca");
-            builder.AppendLine($"{session.CompletedActivities} check-ins e {session.TotalPoints} pontos acumulados");
+            builder.AppendLine("Resumo do progresso");
+            builder.AppendLine($"{session.CompletedActivities} check-ins e {session.TotalPoints} pontos acumulados ate agora");
 
             if (session.LatestEntries == null || session.LatestEntries.Length == 0)
             {
@@ -362,7 +403,7 @@ namespace Leggau.UI
         private static string BuildActivities(LeggauSessionState session)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("Atividades do dia");
+            builder.AppendLine("Atividades de hoje");
 
             if (session.Activities == null || session.Activities.Length == 0)
             {
@@ -381,7 +422,7 @@ namespace Leggau.UI
         private static string BuildRewards(LeggauSessionState session)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("Recompensas");
+            builder.AppendLine("Recompensas da crianca");
 
             if (session.Rewards == null || session.Rewards.Length == 0)
             {
@@ -401,7 +442,7 @@ namespace Leggau.UI
         private static string BuildCatalog(LeggauSessionState session)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("Catalogo da experiencia");
+            builder.AppendLine("Cenario da experiencia");
 
             if (session.AssetsCatalog?.mascot == null)
             {
@@ -444,25 +485,27 @@ namespace Leggau.UI
         {
             if (session.Parent == null)
             {
-                return "Responsavel\nAguardando autenticacao.";
+                return "Responsavel\nAinda vamos identificar quem acompanha esta crianca.";
             }
 
-            return $"Responsavel\n{session.Parent.name}\n{session.Parent.email}";
+            return $"Responsavel da jornada\n{session.Parent.name}\n{session.Parent.email}";
         }
 
         private static string BuildChild(LeggauSessionState session)
         {
             if (session.ActiveChild == null)
             {
-                return "Crianca\nAinda nao preparada.";
+                var draftName = string.IsNullOrWhiteSpace(session?.DraftChildName) ? "Nome ainda nao informado" : session.DraftChildName;
+                return $"Perfil infantil\n{draftName}\nAguardando confirmacao da etapa da crianca.";
             }
 
-            return $"Crianca ativa\n{session.ActiveChild.name} · {session.ActiveChild.age} anos\nAvatar: {session.ActiveChild.avatar}";
+            return $"Crianca ativa\n{session.ActiveChild.name} · {session.ActiveChild.age} anos\nAvatar atual: {session.ActiveChild.avatar}";
         }
 
         private static string BuildPoints(LeggauSessionState session)
         {
-            return $"Home inicial\nPontos disponiveis: {session.AvailablePoints}\nPontos totais: {session.TotalPoints}\nMascote: {session.ActiveGauVariant?.displayName ?? "-"}";
+            var headline = session.HomeReady ? "Sua home do dia" : "Destino da home";
+            return $"{headline}\nPontos disponiveis: {session.AvailablePoints}\nPontos totais: {session.TotalPoints}\nMascote: {session.ActiveGauVariant?.displayName ?? "-"}";
         }
     }
 }

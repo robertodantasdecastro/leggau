@@ -51,10 +51,10 @@
 
 ## Immediate Next UI Targets
 
-1. Interactive responsible/session entry
-2. Explicit legal acceptance
-3. Child creation or reuse
-4. Persistent first-home flow
+1. Stronger product styling for the onboarding cards and home
+2. Clearer consent review and acceptance affordances
+3. Richer child reuse/selection affordance
+4. More interactive first-home experience
 5. Check-in and reward refresh
 
 ## Current Recommended Next Step
@@ -120,6 +120,10 @@
   - child naming field
   - per-step action buttons
   - a fast dev action for controlled validation against the VM backend
+- The bootstrap now also persists a local session snapshot so the app can:
+  - resume the pending onboarding step after reopening
+  - return directly to the saved home when onboarding is already complete
+  - preserve the active Gau variant between launches
 - The regenerated bootstrap scene still validates in batch against `vm2`, and the latest probe on `2026-03-26` again reached `state=ready`
 - After the machine reboot on `2026-03-26`, the VM stack had to be restarted and a fresh batch validation still reached:
   - `state=ready`
@@ -131,6 +135,14 @@
   - `rewardCount=2`
 - A graphical editor validation using `Leggau > Run Bootstrap Play Mode` was completed on `2026-03-26`
 - That graphical validation reached `state=ready` against the VM-backed API with:
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
+- After the persistence/resume cut later on `2026-03-26`, a new batch validation still reached:
+  - `state=ready`
+  - `status=Dashboard carregado.`
   - `parentName=Responsavel Demo`
   - `childName=Gau`
   - `activeGauVariant=gau-rounded-pixel`
