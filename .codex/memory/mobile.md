@@ -31,6 +31,7 @@
 - Blender `4.5.1 LTS`: installed
 - `xcodebuild`: only the command line tools path is active
 - Full Xcode app installation is still missing
+- `/Applications/Xcode.app` is still absent
 
 ## Current Frontend Goal
 
@@ -110,6 +111,7 @@
   - a first-home panel for responsible, child, points, progress, activities and rewards
   - a side panel for Gau preview, variant switching, retry and dev check-in
 - The regenerated bootstrap scene still validates in batch against `vm2`, and the latest probe on `2026-03-26` again reached `state=ready`
+- A graphical editor launch using `Leggau.Editor.UnityRuntimeDriver.RunBootstrapPlayMode` was exercised on `2026-03-26`, but a final visual sign-off for the new onboarding/home layout is still pending
 - The Unity workspace had to be reopened on `2026-03-26` through the canonical `-projectPath` flow after a temporary nested project folder appeared under `mobile/`; that stray folder was removed
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination

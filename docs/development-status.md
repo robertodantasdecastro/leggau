@@ -104,9 +104,11 @@ Date checked: `2026-03-26`
 - `xcodes` CLI is installed and available
 - Xcode CLI / `xcodebuild`: available only through Command Line Tools
 - Full Xcode app install is still missing
+- `/Applications/Xcode.app` is still absent as of `2026-03-26`
 - A direct Xcode download attempt through `xcodes` now writes to the SSD-backed tooling tree, but still requires an authenticated Apple ID session before it can proceed
 - The validated Unity editor currently exposes only `MacStandaloneSupport`
 - `AndroidPlayer` and `iOSSupport` playback modules are still missing from the currently validated editor install
+- A direct Unity Hub module-install attempt targeted at `6000.4.0f1` returned `Editor already installed in this location` and did not add `AndroidPlayer` or `iOSSupport` to the canonical editor
 - A headless Unity Hub installation of `6000.0.71f1` with:
   - `android`
   - `android-sdk-ndk-tools`
@@ -214,6 +216,9 @@ Date checked: `2026-03-26`
 - The bootstrap scene was regenerated after that UI change and the batch validation against `vm2` again reached:
   - `state=ready`
   - `status=Dashboard carregado.`
+- A graphical Unity validation attempt was also launched on `2026-03-26` using:
+  - `-executeMethod Leggau.Editor.UnityRuntimeDriver.RunBootstrapPlayMode`
+- That launch confirmed the graphical editor opened with the canonical project path, but it did not yet re-create the runtime probe in a way that can be treated as a completed visual sign-off
 - On `2026-03-26`, the Unity workspace was reopened from the correct `-projectPath` after a temporary accidental nested project under `mobile/Leggau`; that stray project directory was removed
 - Local catalog validation is now reproducible through:
   - `scripts/check-gau-runtime-catalog.sh`
@@ -252,6 +257,10 @@ Date checked: `2026-03-26`
 ## Current Conclusion
 
 - The official development backend is now operational on `vm2` under `~/leggau`.
+- The current remaining blockers to close the operational phase are now strictly toolchain + visual confirmation:
+  - full `Xcode.app`
+  - `AndroidPlayer` and `iOSSupport` on the canonical Unity editor
+  - manual visual sign-off of the bootstrap flow in the graphical editor
 - The mobile repository now has the first Gau 3D asset pipeline in place, including `.blend` and `.fbx`.
 - The Gau pipeline now includes a pixel-textured 3D variant alongside the base `.blend`, `.fbx` and 2D pixel-art copy.
 - The Gau pipeline now also includes a blocky Roblox-style pixel variant for alternate in-game presentation.

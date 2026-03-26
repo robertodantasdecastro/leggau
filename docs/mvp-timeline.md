@@ -27,12 +27,14 @@
 - Blocked:
   - full Xcode app installation
   - Unity Android/iOS build support modules are still missing from the validated editor
+  - final visual sign-off of the bootstrap flow in the graphical editor is still pending
 - Current Unity state:
   - `6000.4.0f1` is the validated runnable editor on the SSD
   - `6000.0.71f1` exists on the SSD but currently fails signature validation and should not be used yet
   - package resolution now succeeds in batchmode after cleaning `._*` artifacts from the Unity SSD install
   - the first `AssetDatabase Initial Refresh` must happen in the graphical editor
   - after that first import, `./scripts/build-unity-bootstrap.sh` now succeeds
+  - a graphical launch with `RunBootstrapPlayMode` has already been exercised, but it has not yet yielded a final visual sign-off checkpoint
 - Exit criteria:
   - full Xcode app install
   - Unity Android/iOS modules present in the validated editor
@@ -113,15 +115,14 @@
 
 ## Next Execution Step
 
-1. Reopen the Unity project in the graphical editor and visually review the new onboarding/home composition against `http://10.211.55.22:8080/api`.
-2. Add the next layer of interactive UI:
+1. Install and select the full `Xcode.app`.
+2. Attach Android/iOS support modules to the canonical Unity editor `6000.4.0f1`.
+3. Reopen the Unity project in the graphical editor and complete the visual review/sign-off of the onboarding/home composition against `http://10.211.55.22:8080/api`.
+4. Add the next layer of interactive UI:
    - explicit responsible/session entry
    - consent confirmation actions
    - child naming/selection controls
-3. Finish the Apple/mobile toolchain:
-   - install full Xcode
-   - validate Android/iOS Unity support modules in the canonical editor
-4. Keep `vm2` as the only development backend and continue feature work from the VM runtime.
+5. Keep `vm2` as the only development backend and continue feature work from the VM runtime.
 
 ## Branch and Delivery Rule
 
