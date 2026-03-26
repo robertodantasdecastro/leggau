@@ -6,6 +6,14 @@ import { CareTeamMembership } from '../common/entities/care-team-membership.enti
 import { CreateCareTeamMembershipDto } from './dto/create-care-team-membership.dto';
 import { UpdateCareTeamMembershipDto } from './dto/update-care-team-membership.dto';
 
+type CareTeamFilters = {
+  minorProfileId?: string;
+  status?: string;
+  parentApprovalStatus?: string;
+  adminApprovalStatus?: string;
+  minorRole?: string;
+};
+
 @Injectable()
 export class CareTeamService {
   constructor(
@@ -42,10 +50,18 @@ export class CareTeamService {
     return saved;
   }
 
-  async list(minorProfileId?: string) {
+  async list(filters: CareTeamFilters = {}) {
     return this.careTeamRepository.find({
       where: {
-        ...(minorProfileId ? { minorProfileId } : {}),
+        ...(filters.minorProfileId ? { minorProfileId: filters.minorProfileId } : {}),
+        ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.parentApprovalStatus
+          ? { parentApprovalStatus: filters.parentApprovalStatus }
+          : {}),
+        ...(filters.adminApprovalStatus
+          ? { adminApprovalStatus: filters.adminApprovalStatus }
+          : {}),
+        ...(filters.minorRole ? { minorRole: filters.minorRole } : {}),
       },
       order: { createdAt: 'DESC' },
     });

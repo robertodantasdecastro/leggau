@@ -149,7 +149,11 @@ As of `2026-03-26`:
   - `leggau-redis`
 - Gateway validation now passes on `10.211.55.22:8080` for:
   - `/`
+  - `/pais`
+  - `/profissionais`
   - `/admin`
+  - `/manifest.webmanifest`
+  - `/sw.js`
   - `/api/health`
   - onboarding and content endpoints used by the Unity runtime
 - `leggau` production alias is still reserved as future target, not validated here.
@@ -172,9 +176,12 @@ As of `2026-03-26`:
   - `scripts/test-social-auth-security.mjs` validates social auth, legal gates, actor links, OCR and biometrics against `vm2`
   - `npm audit --omit=dev` is clean for `backend`, `web/admin` and `web/portal`
 - Phase C is now partially advanced in `web/portal`:
-  - `/pais` is a live parent shell for auth, consent, family overview, minor provisioning and parent-side care-team approvals
-  - `/profissionais` is a live therapist shell for auth, family lookup, care-team requests and session management
+  - `/pais` is a live parent shell for auth, consent, family overview, minor provisioning, parent-side care-team approvals, reports, invites and permission ledger
+  - `/profissionais` is a live therapist shell for auth, family lookup, invite acceptance, care-team requests and clinical-context timeline
+  - `web/admin` is now the live governance console for care-team review, audit, incidents, moderation, provider config and verification jobs
+  - `web/portal` now ships `manifest.webmanifest` and `sw.js` for the adult PWA shell
   - the automated security script restores the Google/Apple catalog after negative-path checks so the adult shells stay operational
+- Phase C is now effectively closed; the next critical path returns to Phase D on Unity while adult web/admin move into maintenance and continued polish.
 - Mac toolchain status:
   - Docker: ready
   - Java 17: present
@@ -209,6 +216,8 @@ As of `2026-03-26`:
 - Heavy project files must stay on the external SSD under `/Volumes/SSDExterno/Desenvolvimento/Leggau`.
 - Local Docker persistence must stay under `./.data/docker/`, not Docker named volumes on the internal disk.
 - Cleanup and sync routines are now repository-owned scripts so the Mac coordinator and remote agents can rerun them consistently.
+- `scripts/promote-stack-to-vm.sh` now syncs project surfaces into canonical remote directories and the no-cache VM rebuild fallback is:
+  - `ssh vm2 'cd ~/leggau && docker compose build --no-cache api portal admin && docker compose up -d --force-recreate api portal admin nginx'`
 
 ## Secrets Policy
 

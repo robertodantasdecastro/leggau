@@ -426,6 +426,97 @@ async function main() {
   assert(adminApproval.status === 'active', 'admin approval should activate care-team');
   logStep('care-team approvals', 'parent and admin approvals enforced separately');
 
+  const adminCareTeamReview = await request(
+    `/care-team/admin?status=active&parentApprovalStatus=approved&adminApprovalStatus=approved&minorRole=adolescent`,
+    {
+      headers: authHeaders(adminToken),
+    },
+  );
+  assert(
+    adminCareTeamReview.some(
+      (membership) =>
+        membership.id === careTeamMembership.id &&
+        membership.status === 'active' &&
+        membership.minorRole === 'adolescent',
+    ),
+    'admin care-team review should filter and expose approved adolescent memberships',
+  );
+  logStep('care-team admin review', 'admin can filter and review active care-team memberships');
+
+  const incident = await request('/incidents', {
+    method: 'POST',
+    headers: authHeaders(adminToken),
+    body: JSON.stringify({
+      severity: 'medium',
+      sourceType: 'care_team',
+      sourceId: careTeamMembership.id,
+      summary: 'Vinculo clinico aguardando verificacao operacional',
+    }),
+  });
+  const filteredIncidents = await request(
+    '/incidents?status=open&severity=medium&sourceType=care_team',
+    {
+      headers: authHeaders(adminToken),
+    },
+  );
+  assert(
+    filteredIncidents.some((item) => item.id === incident.id),
+    'admin incident view should support filtered listing',
+  );
+  const updatedIncident = await request(`/incidents/${incident.id}`, {
+    method: 'PATCH',
+    headers: authHeaders(adminToken),
+    body: JSON.stringify({
+      status: 'triaged',
+      severity: 'high',
+    }),
+  });
+  assert(
+    updatedIncident.status === 'triaged' && updatedIncident.severity === 'high',
+    'incident update should persist status and severity changes',
+  );
+  logStep('incident governance', 'incidents can be created, filtered and triaged');
+
+  const moderationCase = await request('/moderation/cases', {
+    method: 'POST',
+    headers: authHeaders(adminToken),
+    body: JSON.stringify({
+      sourceType: 'care_team',
+      sourceId: careTeamMembership.id,
+      severity: 'medium',
+      policyCode: 'guardian-review-required',
+      humanReviewRequired: true,
+      aiDecision: {
+        channel: 'admin-test-suite',
+        disposition: 'hold',
+      },
+    }),
+  });
+  const filteredModerationCases = await request(
+    '/moderation/cases?status=open&severity=medium&sourceType=care_team',
+    {
+      headers: authHeaders(adminToken),
+    },
+  );
+  assert(
+    filteredModerationCases.some((item) => item.id === moderationCase.id),
+    'moderation cases should support filtered listing',
+  );
+  const updatedModerationCase = await request(`/moderation/cases/${moderationCase.id}`, {
+    method: 'PATCH',
+    headers: authHeaders(adminToken),
+    body: JSON.stringify({
+      status: 'triaged',
+      severity: 'high',
+    }),
+  });
+  assert(
+    updatedModerationCase.status === 'triaged' &&
+      updatedModerationCase.severity === 'high',
+    'moderation update should persist new review state',
+  );
+  logStep('moderation governance', 'moderation cases can be created, filtered and updated');
+
   const activities = await request('/activities');
   await request('/progress/checkins', {
     method: 'POST',
@@ -549,6 +640,18 @@ async function main() {
     'audit events should contain social auth and media verification traces',
   );
   logStep('audit trail', 'critical social auth and verification events are recorded');
+
+  const filteredAuditEvents = await request(
+    '/audit/events?eventType=incident.created&resourceType=incident&actorRole=admin',
+    {
+      headers: authHeaders(adminToken),
+    },
+  );
+  assert(
+    filteredAuditEvents.some((event) => event.resourceId === incident.id),
+    'audit trail should support targeted filtering for admin governance events',
+  );
+  logStep('audit filters', 'admin audit filters narrow the operational trace correctly');
 
   console.log('\nSummary');
   console.table(results);

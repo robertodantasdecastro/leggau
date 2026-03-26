@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AdminTokenGuard } from '../admin/admin-token.guard';
 import { CreateIncidentDto } from './dto/create-incident.dto';
 import { UpdateIncidentDto } from './dto/update-incident.dto';
@@ -10,8 +10,16 @@ export class IncidentsController {
   constructor(private readonly incidentsService: IncidentsService) {}
 
   @Get()
-  list() {
-    return this.incidentsService.list();
+  list(
+    @Query('status') status?: string,
+    @Query('severity') severity?: string,
+    @Query('sourceType') sourceType?: string,
+  ) {
+    return this.incidentsService.list({
+      status,
+      severity,
+      sourceType,
+    });
   }
 
   @Post()
@@ -24,4 +32,3 @@ export class IncidentsController {
     return this.incidentsService.update(id, dto);
   }
 }
-

@@ -53,6 +53,15 @@ a {
   flex-wrap: wrap;
 }
 
+.links a {
+  padding: 10px 12px;
+  border-radius: 999px;
+}
+
+.links a:hover {
+  background: rgba(255, 255, 255, 0.72);
+}
+
 .hero {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
@@ -328,9 +337,36 @@ select.input {
   gap: 14px;
 }
 
+.taskGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .compactList {
   display: grid;
   gap: 12px;
+}
+
+.timeline {
+  display: grid;
+  gap: 12px;
+}
+
+.timelineItem {
+  border-left: 4px solid rgba(22, 50, 79, 0.16);
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.timelineItem.done {
+  border-left-color: var(--accent-2);
+  background:
+    linear-gradient(135deg, rgba(62, 142, 208, 0.12), rgba(255, 255, 255, 0.92)),
+    white;
 }
 
 .providerCard,
@@ -433,7 +469,8 @@ select.input {
   .grid2,
   .statusRail,
   .responsive,
-  .reportGrid {
+  .reportGrid,
+  .taskGrid {
     grid-template-columns: 1fr;
   }
 
@@ -444,5 +481,17 @@ select.input {
   .nav {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .links {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .links a {
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.76);
   }
 }

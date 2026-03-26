@@ -54,9 +54,19 @@
 - `GET /api/sessions`
 - `DELETE /api/sessions/:id`
 - `POST /api/care-team`
+- `GET /api/care-team/admin`
 - `PATCH /api/care-team/:id`
 - `PATCH /api/care-team/:id/admin`
+- `GET /api/audit/events`
+- `GET /api/incidents`
+- `POST /api/incidents`
+- `PATCH /api/incidents/:id`
+- `GET /api/moderation/cases`
+- `POST /api/moderation/cases`
+- `PATCH /api/moderation/cases/:id`
 - `POST /api/media-verification`
+- `GET /manifest.webmanifest`
+- `GET /sw.js`
 
 ## Persistence
 
@@ -169,6 +179,12 @@
   - `/pais` rendering reports, permissions and therapist invite sections
   - `/profissionais` rendering invite inbox and clinical context sections
   - the public provider catalog again exposing both Google and Apple after the scripted negative-path checks finish
+- The admin-governance runtime is now also validated on the VM for:
+  - filtered `care-team` review through `/api/care-team/admin`
+  - filtered audit reading through `/api/audit/events`
+  - incident creation and triage through `/api/incidents`
+  - moderation-case creation and triage through `/api/moderation/cases`
+  - PWA shell publication through `/manifest.webmanifest` and `/sw.js`
 - Postgres on the VM now contains and validates the new core tables:
   - `guardian_links`
   - `care_team_memberships`
@@ -189,3 +205,7 @@
 - Full Phase 0 promotion should use:
   - `./scripts/promote-stack-to-vm.sh`
 - `scripts/deploy-vm.sh` now supports `LEGGAU_SKIP_REMOTE_GIT_PULL=1` so rsync-driven VM promotion can avoid remote worktree conflicts.
+- `scripts/promote-stack-to-vm.sh` now syncs `backend/`, `web/`, `infra/`, `docs/`, `scripts/` and `.codex/` into their canonical remote directories instead of flattening directory contents into the VM root.
+- If freshly synced code still appears stale in runtime, the authoritative cache-recovery command is:
+  - `ssh vm2 'cd ~/leggau && docker compose build --no-cache api portal admin && docker compose up -d --force-recreate api portal admin nginx'`
+- `web/portal/.dockerignore` and `web/admin/.dockerignore` now keep VM Docker build contexts significantly smaller for future promotions.

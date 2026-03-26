@@ -39,18 +39,46 @@ echo "[leggau] Cloning repository on VM when needed..."
 ssh "${SSH_OPTS[@]}" "${REMOTE}" "if [ ! -d ${REMOTE_ROOT_RESOLVED}/.git ]; then git clone '${REPO_URL}' ${REMOTE_ROOT_RESOLVED}; fi"
 
 echo "[leggau] Syncing project surfaces to VM..."
+ssh "${SSH_OPTS[@]}" "${REMOTE}" "
+  mkdir -p \
+    ${REMOTE_ROOT_RESOLVED}/backend \
+    ${REMOTE_ROOT_RESOLVED}/web \
+    ${REMOTE_ROOT_RESOLVED}/infra \
+    ${REMOTE_ROOT_RESOLVED}/docs \
+    ${REMOTE_ROOT_RESOLVED}/scripts \
+    ${REMOTE_ROOT_RESOLVED}/.codex
+"
+
 rsync "${RSYNC_OPTS[@]}" \
   "${PROJECT_ROOT}/AGENTS.md" \
   "${PROJECT_ROOT}/README.md" \
   "${PROJECT_ROOT}/docker-compose.yml" \
   "${PROJECT_ROOT}/.env.example" \
-  "${PROJECT_ROOT}/backend/" \
-  "${PROJECT_ROOT}/web/" \
-  "${PROJECT_ROOT}/infra/" \
-  "${PROJECT_ROOT}/docs/" \
-  "${PROJECT_ROOT}/scripts/" \
-  "${PROJECT_ROOT}/.codex/" \
   "${REMOTE}:${REMOTE_ROOT_RESOLVED}/"
+
+rsync "${RSYNC_OPTS[@]}" \
+  "${PROJECT_ROOT}/backend/" \
+  "${REMOTE}:${REMOTE_ROOT_RESOLVED}/backend/"
+
+rsync "${RSYNC_OPTS[@]}" \
+  "${PROJECT_ROOT}/web/" \
+  "${REMOTE}:${REMOTE_ROOT_RESOLVED}/web/"
+
+rsync "${RSYNC_OPTS[@]}" \
+  "${PROJECT_ROOT}/infra/" \
+  "${REMOTE}:${REMOTE_ROOT_RESOLVED}/infra/"
+
+rsync "${RSYNC_OPTS[@]}" \
+  "${PROJECT_ROOT}/docs/" \
+  "${REMOTE}:${REMOTE_ROOT_RESOLVED}/docs/"
+
+rsync "${RSYNC_OPTS[@]}" \
+  "${PROJECT_ROOT}/scripts/" \
+  "${REMOTE}:${REMOTE_ROOT_RESOLVED}/scripts/"
+
+rsync "${RSYNC_OPTS[@]}" \
+  "${PROJECT_ROOT}/.codex/" \
+  "${REMOTE}:${REMOTE_ROOT_RESOLVED}/.codex/"
 
 echo "[leggau] Preparing remote environment..."
 ssh "${SSH_OPTS[@]}" "${REMOTE}" "

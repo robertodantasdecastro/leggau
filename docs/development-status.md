@@ -144,6 +144,26 @@ Date checked: `2026-03-26`
   - invite creation and acceptance between guardian and therapist
   - parent-approval ledger isolation
   - adolescent progress/check-in compatibility
+- The admin-governance cut on `2026-03-26` now also validates against the VM for:
+  - `GET /api/care-team/admin`
+  - `GET /api/audit/events`
+  - `GET /api/incidents`
+  - `POST /api/incidents`
+  - `PATCH /api/incidents/:id`
+  - `GET /api/moderation/cases`
+  - `POST /api/moderation/cases`
+  - `PATCH /api/moderation/cases/:id`
+  - `GET /manifest.webmanifest`
+  - `GET /sw.js`
+- The same security script now also covers:
+  - admin-filtered `care-team` review
+  - incident creation, filtering and triage
+  - moderation-case creation, filtering and triage
+  - audit filtering by `eventType`, `actorRole` and `resourceType`
+- `scripts/promote-stack-to-vm.sh` was corrected on `2026-03-26` to rsync `backend/`, `web/`, `infra/`, `docs/`, `scripts/` and `.codex/` into their canonical remote directories instead of flattening directory contents into the VM root
+- When stale Docker cache prevented new runtime routes from surfacing after the corrected sync, the authoritative recovery path became:
+  - `ssh vm2 'cd ~/leggau && docker compose build --no-cache api portal admin && docker compose up -d --force-recreate api portal admin nginx'`
+- `web/portal/.dockerignore` and `web/admin/.dockerignore` now exist to keep future VM rebuild contexts smaller and faster
 - Dependency audit checks now also pass with zero production vulnerabilities in:
   - `backend`
   - `web/admin`
@@ -177,7 +197,7 @@ Date checked: `2026-03-26`
   - `PolicyVersion`-backed legal projection
   - `AuditEvent` coverage across auth, legal, sessions and links
   - compatibility-preserving `families/overview` and `children` responses for the Unity app
-- Phase C is now started through adult-auth groundwork:
+- Phase C is now completed:
   - Google and Apple/iCloud quick auth is live for `parent_guardian` and `therapist`
   - the admin already exposes provider configuration and verification-job monitoring
   - actor dependency rules are now explicit in auth responses and runtime gates
@@ -185,14 +205,18 @@ Date checked: `2026-03-26`
   - `web/portal/profissionais` now exposes a therapist shell for password/social auth, family lookup by guardian email, care-team request and session revoke
   - the parent shell now also exposes reports, quick check-in, permission ledger and scoped therapist invites
   - the therapist shell now also exposes invite inbox handling and a clearer family/minor context before care-team requests
+  - the parent shell now also exposes a clearer family radar with pending tasks and supervision priorities
+  - the therapist shell now also exposes a clearer clinical timeline for invite, guardian gate and admin gate state
+  - the portal now ships an installable online-first PWA shell with `manifest.webmanifest`, `sw.js` and responsive navigation for mobile adult usage
+  - `web/admin` now exposes care-team review, audit trail, incidents and moderation in the same operational console as provider governance and verification jobs
 - Phase F also has first operational groundwork in place:
   - provider secret masking in the admin surface
   - simulated OCR and biometric verification jobs
   - scripted security validation for auth, legal, links and verification flows
-- The next execution step remains Phase C:
-  - deepen the new `parent_guardian` and `therapist` shells in `web/portal`
-  - add reports, permissions, invite-driven family/professional flows and stronger PWA polish
-  - expand admin review around approvals, audit, moderation and incidents on top of the now-governed auth base
+- The next execution step now shifts to Phase D:
+  - split the Unity experience into clearer `child` and `adolescent` shells
+  - add the age-profile presentation system
+  - preserve the completed Phase C adult web/PWA and admin-governance surfaces as the stable companion layer
 
 ## Adult Portal Status
 
@@ -221,6 +245,27 @@ Date checked: `2026-03-26`
   - `care-team` request creation
   - family/minor context summary before clinical request
   - persistent session listing and revoke
+  - product-readable task timeline for invite, guardian approval and admin approval
+- The adult portal now also ships:
+  - responsive task/radar cards for parent and therapist
+  - stronger mobile navigation treatment
+  - installable PWA metadata and service worker shell caching
+
+## Web Admin Status
+
+- `npm run build` passes in `web/admin`
+- The admin console now covers:
+  - provider configuration for Google and Apple/iCloud
+  - OCR and biometric verification-job monitoring
+  - `care-team` review with filters for `status`, `parentApprovalStatus`, `adminApprovalStatus` and `minorRole`
+  - audit trail reading with filters for `eventType`, `actorRole` and `resourceType`
+  - incident creation and triage updates
+  - moderation-case creation and triage updates
+- Admin governance now validates against the VM runtime through the canonical namespaces:
+  - `/api/care-team/admin`
+  - `/api/audit/events`
+  - `/api/incidents`
+  - `/api/moderation/cases`
 
 ## Mobile Mac Status
 

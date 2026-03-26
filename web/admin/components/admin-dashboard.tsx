@@ -69,6 +69,62 @@ type MediaVerificationJob = {
   notes?: string | null;
 };
 
+type CareTeamMembership = {
+  id: string;
+  therapistUserId: string;
+  therapistProfileId?: string | null;
+  parentUserId: string;
+  parentProfileId: string;
+  minorProfileId: string;
+  minorRole: string;
+  status: string;
+  adminApprovalStatus: string;
+  parentApprovalStatus: string;
+  scope?: Record<string, unknown> | null;
+  approvedAt?: string | null;
+  revokedAt?: string | null;
+  createdAt: string;
+};
+
+type AuditEvent = {
+  id: string;
+  eventType: string;
+  actorRole: string;
+  actorUserId?: string | null;
+  resourceType: string;
+  resourceId?: string | null;
+  outcome: string;
+  severity: string;
+  occurredAt: string;
+  metadata?: Record<string, unknown> | null;
+};
+
+type IncidentRecord = {
+  id: string;
+  sourceType: string;
+  sourceId?: string | null;
+  severity: string;
+  status: string;
+  summary: string;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  createdAt: string;
+};
+
+type ModerationCase = {
+  id: string;
+  sourceType: string;
+  sourceId?: string | null;
+  status: string;
+  severity: string;
+  policyCode?: string | null;
+  humanReviewRequired: boolean;
+  aiDecision?: Record<string, unknown> | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  createdAt: string;
+};
+
 type ProviderFormState = {
   enabled: boolean;
   verificationMode: 'mock' | 'live';
@@ -80,6 +136,43 @@ type ProviderFormState = {
   allowedAudiences: string;
   scopes: string;
   metadataJson: string;
+};
+
+type CareTeamFilters = {
+  status: string;
+  parentApprovalStatus: string;
+  adminApprovalStatus: string;
+  minorRole: string;
+};
+
+type AuditFilters = {
+  eventType: string;
+  actorRole: string;
+  resourceType: string;
+};
+
+type IncidentFilters = {
+  status: string;
+  severity: string;
+  sourceType: string;
+};
+
+type ModerationFilters = {
+  status: string;
+  severity: string;
+  sourceType: string;
+};
+
+type IncidentDraft = {
+  severity: string;
+  sourceType: string;
+  summary: string;
+};
+
+type ModerationDraft = {
+  severity: string;
+  sourceType: string;
+  policyCode: string;
 };
 
 const apiBase = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL ?? '/api';
@@ -115,6 +208,42 @@ function safeJson(value: string) {
   return JSON.parse(trimmed) as Record<string, unknown>;
 }
 
+function formatCurrency(cents: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(cents / 100);
+}
+
+function formatDate(value?: string | null) {
+  if (!value) {
+    return '-';
+  }
+
+  return new Date(value).toLocaleString('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
+}
+
+function slugToLabel(value: string) {
+  if (!value) {
+    return 'Todos';
+  }
+
+  return value
+    .replace(/[_-]/g, ' ')
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function compactId(value?: string | null) {
+  if (!value) {
+    return '-';
+  }
+
+  return value.slice(0, 8);
+}
+
 function buildProviderForm(config?: AuthProviderConfig): ProviderFormState {
   return {
     enabled: config?.enabled ?? false,
@@ -128,6 +257,46 @@ function buildProviderForm(config?: AuthProviderConfig): ProviderFormState {
     scopes: csvJoin(config?.scopes),
     metadataJson: JSON.stringify(config?.metadata ?? {}, null, 2),
   };
+}
+
+function buildQuery(params: Record<string, string>) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value.trim()) {
+      query.set(key, value.trim());
+    }
+  });
+
+  const result = query.toString();
+  return result ? `?${result}` : '';
+}
+
+function ScopeSummary({ scope }: { scope?: Record<string, unknown> | null }) {
+  if (!scope || Object.keys(scope).length === 0) {
+    return <span className="muted">Escopo padrao</span>;
+  }
+
+  return (
+    <div className="chipRow">
+      {Object.entries(scope).map(([key, value]) => (
+        <span key={key} className="chip">
+          {slugToLabel(key)}: {String(value)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function StatusTag({
+  value,
+  tone,
+}: {
+  value: string;
+  tone?: 'neutral' | 'success' | 'warning' | 'danger';
+}) {
+  return (
+    <span className={`tag ${tone ? `tag-${tone}` : ''}`}>{slugToLabel(value)}</span>
+  );
 }
 
 function ProviderConfigCard({
@@ -208,9 +377,7 @@ function ProviderConfigCard({
           <span>Audiencias (CSV)</span>
           <input
             value={form.allowedAudiences}
-            onChange={(event) =>
-              onChange({ allowedAudiences: event.target.value })
-            }
+            onChange={(event) => onChange({ allowedAudiences: event.target.value })}
           />
         </label>
         <label className="field">
@@ -270,19 +437,63 @@ export function AdminDashboard() {
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [busyAction, setBusyAction] = useState('');
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [realtime, setRealtime] = useState<Realtime | null>(null);
   const [billing, setBilling] = useState<BillingOverview | null>(null);
   const [users, setUsers] = useState<Record<string, unknown> | null>(null);
   const [providers, setProviders] = useState<AuthProviderConfig[]>([]);
-  const [providerForms, setProviderForms] = useState<
-    Record<string, ProviderFormState>
-  >({});
+  const [providerForms, setProviderForms] = useState<Record<string, ProviderFormState>>(
+    {},
+  );
   const [providerSaving, setProviderSaving] = useState<Record<string, boolean>>({});
   const [providerErrors, setProviderErrors] = useState<Record<string, string | null>>(
     {},
   );
   const [mediaJobs, setMediaJobs] = useState<MediaVerificationJob[]>([]);
+  const [careTeamMemberships, setCareTeamMemberships] = useState<CareTeamMembership[]>(
+    [],
+  );
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+  const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
+  const [moderationCases, setModerationCases] = useState<ModerationCase[]>([]);
+  const [careTeamFilters, setCareTeamFilters] = useState<CareTeamFilters>({
+    status: '',
+    parentApprovalStatus: '',
+    adminApprovalStatus: '',
+    minorRole: '',
+  });
+  const [auditFilters, setAuditFilters] = useState<AuditFilters>({
+    eventType: '',
+    actorRole: '',
+    resourceType: '',
+  });
+  const [incidentFilters, setIncidentFilters] = useState<IncidentFilters>({
+    status: '',
+    severity: '',
+    sourceType: '',
+  });
+  const [moderationFilters, setModerationFilters] = useState<ModerationFilters>({
+    status: '',
+    severity: '',
+    sourceType: '',
+  });
+  const [incidentDraft, setIncidentDraft] = useState<IncidentDraft>({
+    severity: 'medium',
+    sourceType: 'care_team',
+    summary: 'Revisao manual solicitada pelo operador',
+  });
+  const [moderationDraft, setModerationDraft] = useState<ModerationDraft>({
+    severity: 'medium',
+    sourceType: 'care_team',
+    policyCode: 'guardian-review-required',
+  });
+  const [incidentEdits, setIncidentEdits] = useState<
+    Record<string, { severity?: string; status?: string }>
+  >({});
+  const [moderationEdits, setModerationEdits] = useState<
+    Record<string, { severity?: string; status?: string }>
+  >({});
 
   const stats = useMemo(() => {
     if (!overview) {
@@ -299,6 +510,24 @@ export function AdminDashboard() {
     ];
   }, [overview]);
 
+  const governanceStats = useMemo(() => {
+    const pendingCareTeam = careTeamMemberships.filter(
+      (membership) => membership.status === 'pending',
+    ).length;
+    const openIncidents = incidents.filter((incident) => incident.status === 'open').length;
+    const openModeration = moderationCases.filter(
+      (item) => item.status === 'open' || item.status === 'triaged',
+    ).length;
+    const flaggedMedia = mediaJobs.filter((job) => job.reviewRequired).length;
+
+    return [
+      ['Care-team pendente', pendingCareTeam],
+      ['Incidentes abertos', openIncidents],
+      ['Moderacao ativa', openModeration],
+      ['OCR/biometria em revisao', flaggedMedia],
+    ];
+  }, [careTeamMemberships, incidents, mediaJobs, moderationCases]);
+
   async function loadDashboard(activeToken: string) {
     const [
       overviewResponse,
@@ -307,14 +536,31 @@ export function AdminDashboard() {
       usersResponse,
       providerResponse,
       mediaResponse,
+      careTeamResponse,
+      auditResponse,
+      incidentsResponse,
+      moderationResponse,
     ] = await Promise.all([
       apiRequest<AdminOverview>('/admin/overview', activeToken),
       apiRequest<Realtime>('/admin/realtime', activeToken),
       apiRequest<BillingOverview>('/admin/billing/overview', activeToken),
       apiRequest<Record<string, unknown>>('/admin/users', activeToken),
       apiRequest<AuthProviderConfig[]>('/admin/auth/providers', activeToken),
-      apiRequest<MediaVerificationJob[]>(
-        '/admin/media-verification/jobs',
+      apiRequest<MediaVerificationJob[]>('/admin/media-verification/jobs', activeToken),
+      apiRequest<CareTeamMembership[]>(
+        `/care-team/admin${buildQuery(careTeamFilters)}`,
+        activeToken,
+      ),
+      apiRequest<AuditEvent[]>(
+        `/audit/events${buildQuery(auditFilters)}`,
+        activeToken,
+      ),
+      apiRequest<IncidentRecord[]>(
+        `/incidents${buildQuery(incidentFilters)}`,
+        activeToken,
+      ),
+      apiRequest<ModerationCase[]>(
+        `/moderation/cases${buildQuery(moderationFilters)}`,
         activeToken,
       ),
     ]);
@@ -330,6 +576,10 @@ export function AdminDashboard() {
       ),
     );
     setMediaJobs(mediaResponse);
+    setCareTeamMemberships(careTeamResponse);
+    setAuditEvents(auditResponse);
+    setIncidents(incidentsResponse);
+    setModerationCases(moderationResponse);
   }
 
   useEffect(() => {
@@ -372,6 +622,22 @@ export function AdminDashboard() {
       setError((reason as Error).message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function refreshDashboard() {
+    if (!token) {
+      return;
+    }
+
+    setBusyAction('refresh');
+    setError(null);
+    try {
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
     }
   }
 
@@ -419,14 +685,175 @@ export function AdminDashboard() {
     }
   }
 
+  async function approveMembership(id: string) {
+    if (!token) {
+      return;
+    }
+
+    setBusyAction(`care-team-approve-${id}`);
+    try {
+      await apiRequest(`/care-team/${id}/admin`, token, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          adminApprovalStatus: 'approved',
+        }),
+      });
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function revokeMembership(id: string) {
+    if (!token) {
+      return;
+    }
+
+    setBusyAction(`care-team-revoke-${id}`);
+    try {
+      await apiRequest(`/care-team/${id}/admin`, token, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'revoked',
+        }),
+      });
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function createIncident() {
+    if (!token) {
+      return;
+    }
+
+    setBusyAction('incident-create');
+    try {
+      await apiRequest('/incidents', token, {
+        method: 'POST',
+        body: JSON.stringify(incidentDraft),
+      });
+      setIncidentDraft({
+        severity: 'medium',
+        sourceType: incidentDraft.sourceType,
+        summary: '',
+      });
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function updateIncident(id: string) {
+    if (!token) {
+      return;
+    }
+
+    const draft = incidentEdits[id];
+    if (!draft || (!draft.severity && !draft.status)) {
+      return;
+    }
+
+    setBusyAction(`incident-update-${id}`);
+    try {
+      await apiRequest(`/incidents/${id}`, token, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          severity: draft.severity,
+          status: draft.status,
+        }),
+      });
+      setIncidentEdits((current) => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function createModerationCase() {
+    if (!token) {
+      return;
+    }
+
+    setBusyAction('moderation-create');
+    try {
+      await apiRequest('/moderation/cases', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          severity: moderationDraft.severity,
+          sourceType: moderationDraft.sourceType,
+          policyCode: moderationDraft.policyCode || undefined,
+          humanReviewRequired: true,
+          aiDecision: {
+            channel: 'admin-console',
+            disposition: 'hold',
+          },
+        }),
+      });
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function updateModerationCase(id: string) {
+    if (!token) {
+      return;
+    }
+
+    const draft = moderationEdits[id];
+    if (!draft || (!draft.severity && !draft.status)) {
+      return;
+    }
+
+    setBusyAction(`moderation-update-${id}`);
+    try {
+      await apiRequest(`/moderation/cases/${id}`, token, {
+        method: 'PATCH',
+        body: JSON.stringify(draft),
+      });
+      setModerationEdits((current) => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  function logout() {
+    window.localStorage.removeItem('leggau-admin-token');
+    setToken(null);
+    setError(null);
+  }
+
   if (!token) {
     return (
       <div className="panel hero">
         <div>
           <h1>Leggau Admin</h1>
           <p className="muted">
-            Painel operacional com visao de usuarios, seguranca, provedores de
-            conta e verificacao documental.
+            Console operacional de governanca, identidade, OCR/biometria,
+            auditoria e triagem da plataforma.
           </p>
         </div>
         <form className="form" onSubmit={handleSubmit}>
@@ -454,18 +881,38 @@ export function AdminDashboard() {
   return (
     <div className="stack">
       <section className="panel hero">
-        <div>
-          <h1>Leggau Admin</h1>
-          <p className="muted">
-            Operacao unificada do app, do backend na VM, dos provedores sociais e
-            dos testes de verificacao.
-          </p>
+        <div className="row spread">
+          <div>
+            <h1>Leggau Admin</h1>
+            <p className="muted">
+              Governanca operacional da Fase C: provedores sociais, care-team,
+              auditoria, incidentes, moderacao e verificacao documental.
+            </p>
+          </div>
+          <div className="actionRow">
+            <button type="button" onClick={() => void refreshDashboard()}>
+              {busyAction === 'refresh' ? 'Atualizando...' : 'Atualizar'}
+            </button>
+            <button type="button" className="secondaryButton" onClick={logout}>
+              Sair
+            </button>
+          </div>
         </div>
+        {error ? <p className="error">{error}</p> : null}
       </section>
 
       <section className="grid">
         {stats.map(([label, value]) => (
           <article key={label} className="card">
+            <div className="muted">{label}</div>
+            <div className="metric">{value}</div>
+          </article>
+        ))}
+      </section>
+
+      <section className="grid">
+        {governanceStats.map(([label, value]) => (
+          <article key={label} className="card governanceMetric">
             <div className="muted">{label}</div>
             <div className="metric">{value}</div>
           </article>
@@ -491,17 +938,690 @@ export function AdminDashboard() {
           <h2>Billing sandbox</h2>
           <p className="muted">Providers: {billing?.providers ?? 0}</p>
           <p className="muted">Planos: {billing?.plans ?? 0}</p>
-          <p className="muted">
-            Neto: R$ {((billing?.totals.netCents ?? 0) / 100).toFixed(2)}
-          </p>
+          <p className="muted">Neto: {formatCurrency(billing?.totals.netCents ?? 0)}</p>
         </article>
         <article className="card">
-          <h2>API</h2>
+          <h2>API e ambiente</h2>
           <p className="muted">{overview?.app.apiBaseUrl ?? apiBase}</p>
           <p className="muted">
-            A mesma base agora serve auth multiactor, vinculos, consentimento,
-            provedores sociais e verificacao de midia.
+            Backend unico na VM com auth multiactor, trilha auditavel, provedores
+            sociais e base de moderacao.
           </p>
+        </article>
+      </section>
+
+      <section className="panel stack">
+        <div className="row spread">
+          <div>
+            <h2>Review de care-team</h2>
+            <p className="muted">
+              Aprove ou revogue pedidos clinicos com filtros por estado do vinculo e
+              aprovacoes separadas.
+            </p>
+          </div>
+          <button type="button" onClick={() => void refreshDashboard()}>
+            Atualizar governanca
+          </button>
+        </div>
+        <div className="filterBar">
+          <label className="field smallField">
+            <span>Status</span>
+            <select
+              value={careTeamFilters.status}
+              onChange={(event) =>
+                setCareTeamFilters((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
+              }
+            >
+              <option value="">Todos</option>
+              <option value="pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="revoked">Revoked</option>
+            </select>
+          </label>
+          <label className="field smallField">
+            <span>Aprov. responsavel</span>
+            <select
+              value={careTeamFilters.parentApprovalStatus}
+              onChange={(event) =>
+                setCareTeamFilters((current) => ({
+                  ...current,
+                  parentApprovalStatus: event.target.value,
+                }))
+              }
+            >
+              <option value="">Todos</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </label>
+          <label className="field smallField">
+            <span>Aprov. admin</span>
+            <select
+              value={careTeamFilters.adminApprovalStatus}
+              onChange={(event) =>
+                setCareTeamFilters((current) => ({
+                  ...current,
+                  adminApprovalStatus: event.target.value,
+                }))
+              }
+            >
+              <option value="">Todos</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </label>
+          <label className="field smallField">
+            <span>Papel do menor</span>
+            <select
+              value={careTeamFilters.minorRole}
+              onChange={(event) =>
+                setCareTeamFilters((current) => ({
+                  ...current,
+                  minorRole: event.target.value,
+                }))
+              }
+            >
+              <option value="">Todos</option>
+              <option value="child">Child</option>
+              <option value="adolescent">Adolescent</option>
+            </select>
+          </label>
+          <button type="button" onClick={() => void refreshDashboard()}>
+            Aplicar filtros
+          </button>
+        </div>
+        <div className="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Pedido</th>
+                <th>Perfis</th>
+                <th>Aprovacoes</th>
+                <th>Escopo</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {careTeamMemberships.map((membership) => (
+                <tr key={membership.id}>
+                  <td>
+                    <strong>{formatDate(membership.createdAt)}</strong>
+                    <div className="tableMeta">
+                      {compactId(membership.id)} · {slugToLabel(membership.minorRole)}
+                    </div>
+                    <div className="chipRow">
+                      <StatusTag
+                        value={membership.status}
+                        tone={
+                          membership.status === 'active'
+                            ? 'success'
+                            : membership.status === 'revoked'
+                              ? 'danger'
+                              : 'warning'
+                        }
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <div className="stackCompact">
+                      <span>Terapeuta {compactId(membership.therapistUserId)}</span>
+                      <span>Responsavel {compactId(membership.parentUserId)}</span>
+                      <span>Menor {compactId(membership.minorProfileId)}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="chipRow">
+                      <StatusTag
+                        value={`resp ${membership.parentApprovalStatus}`}
+                        tone={
+                          membership.parentApprovalStatus === 'approved'
+                            ? 'success'
+                            : membership.parentApprovalStatus === 'rejected'
+                              ? 'danger'
+                              : 'warning'
+                        }
+                      />
+                      <StatusTag
+                        value={`admin ${membership.adminApprovalStatus}`}
+                        tone={
+                          membership.adminApprovalStatus === 'approved'
+                            ? 'success'
+                            : membership.adminApprovalStatus === 'rejected'
+                              ? 'danger'
+                              : 'warning'
+                        }
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <ScopeSummary scope={membership.scope} />
+                  </td>
+                  <td>
+                    <div className="actionColumn">
+                      <button
+                        type="button"
+                        disabled={
+                          membership.adminApprovalStatus === 'approved' ||
+                          busyAction === `care-team-approve-${membership.id}`
+                        }
+                        onClick={() => void approveMembership(membership.id)}
+                      >
+                        {busyAction === `care-team-approve-${membership.id}`
+                          ? 'Aprovando...'
+                          : 'Aprovar'}
+                      </button>
+                      <button
+                        type="button"
+                        className="secondaryButton"
+                        disabled={busyAction === `care-team-revoke-${membership.id}`}
+                        onClick={() => void revokeMembership(membership.id)}
+                      >
+                        {busyAction === `care-team-revoke-${membership.id}`
+                          ? 'Revogando...'
+                          : 'Revogar'}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="panel stack">
+        <div className="row spread">
+          <div>
+            <h2>Audit trail</h2>
+            <p className="muted">
+              Leitura cronologica de auth, convites, aprovacoes, care-team e media
+              verification com filtro por ator e recurso.
+            </p>
+          </div>
+        </div>
+        <div className="filterBar">
+          <label className="field smallField">
+            <span>Evento</span>
+            <input
+              value={auditFilters.eventType}
+              onChange={(event) =>
+                setAuditFilters((current) => ({
+                  ...current,
+                  eventType: event.target.value,
+                }))
+              }
+              placeholder="auth.social_login"
+            />
+          </label>
+          <label className="field smallField">
+            <span>Ator</span>
+            <input
+              value={auditFilters.actorRole}
+              onChange={(event) =>
+                setAuditFilters((current) => ({
+                  ...current,
+                  actorRole: event.target.value,
+                }))
+              }
+              placeholder="parent_guardian"
+            />
+          </label>
+          <label className="field smallField">
+            <span>Recurso</span>
+            <input
+              value={auditFilters.resourceType}
+              onChange={(event) =>
+                setAuditFilters((current) => ({
+                  ...current,
+                  resourceType: event.target.value,
+                }))
+              }
+              placeholder="care_team_membership"
+            />
+          </label>
+          <button type="button" onClick={() => void refreshDashboard()}>
+            Aplicar filtros
+          </button>
+        </div>
+        <div className="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Quando</th>
+                <th>Evento</th>
+                <th>Ator</th>
+                <th>Recurso</th>
+                <th>Resultado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {auditEvents.map((event) => (
+                <tr key={event.id}>
+                  <td>{formatDate(event.occurredAt)}</td>
+                  <td>
+                    <strong>{event.eventType}</strong>
+                    <div className="tableMeta">{event.severity}</div>
+                  </td>
+                  <td>
+                    {event.actorRole}
+                    <div className="tableMeta">{compactId(event.actorUserId)}</div>
+                  </td>
+                  <td>
+                    {event.resourceType}
+                    <div className="tableMeta">{compactId(event.resourceId)}</div>
+                  </td>
+                  <td>
+                    <StatusTag
+                      value={event.outcome}
+                      tone={event.outcome === 'success' ? 'success' : 'danger'}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="grid governanceGrid">
+        <article className="panel stack">
+          <div className="row spread">
+            <div>
+              <h2>Incidentes</h2>
+              <p className="muted">
+                Triagem operacional para riscos, acessos sensiveis e excecoes que
+                exigem revisao humana.
+              </p>
+            </div>
+          </div>
+          <div className="card stack">
+            <h3>Novo incidente</h3>
+            <div className="provider-grid">
+              <label className="field">
+                <span>Severidade</span>
+                <select
+                  value={incidentDraft.severity}
+                  onChange={(event) =>
+                    setIncidentDraft((current) => ({
+                      ...current,
+                      severity: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>Origem</span>
+                <select
+                  value={incidentDraft.sourceType}
+                  onChange={(event) =>
+                    setIncidentDraft((current) => ({
+                      ...current,
+                      sourceType: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="care_team">Care-team</option>
+                  <option value="auth">Auth</option>
+                  <option value="media_verification">Media verification</option>
+                  <option value="parent_approval">Parent approval</option>
+                </select>
+              </label>
+            </div>
+            <label className="field">
+              <span>Resumo</span>
+              <textarea
+                rows={4}
+                value={incidentDraft.summary}
+                onChange={(event) =>
+                  setIncidentDraft((current) => ({
+                    ...current,
+                    summary: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <div className="row spread">
+              <div className="muted">Cria um caso operacional para a fila do admin.</div>
+              <button type="button" onClick={() => void createIncident()}>
+                {busyAction === 'incident-create' ? 'Criando...' : 'Abrir incidente'}
+              </button>
+            </div>
+          </div>
+          <div className="filterBar">
+            <label className="field smallField">
+              <span>Status</span>
+              <select
+                value={incidentFilters.status}
+                onChange={(event) =>
+                  setIncidentFilters((current) => ({
+                    ...current,
+                    status: event.target.value,
+                  }))
+                }
+              >
+                <option value="">Todos</option>
+                <option value="open">Open</option>
+                <option value="triaged">Triaged</option>
+                <option value="blocked">Blocked</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </label>
+            <label className="field smallField">
+              <span>Severidade</span>
+              <select
+                value={incidentFilters.severity}
+                onChange={(event) =>
+                  setIncidentFilters((current) => ({
+                    ...current,
+                    severity: event.target.value,
+                  }))
+                }
+              >
+                <option value="">Todas</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+            <label className="field smallField">
+              <span>Origem</span>
+              <input
+                value={incidentFilters.sourceType}
+                onChange={(event) =>
+                  setIncidentFilters((current) => ({
+                    ...current,
+                    sourceType: event.target.value,
+                  }))
+                }
+                placeholder="care_team"
+              />
+            </label>
+            <button type="button" onClick={() => void refreshDashboard()}>
+              Aplicar filtros
+            </button>
+          </div>
+          <div className="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Incidente</th>
+                  <th>Estado</th>
+                  <th>Resumo</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {incidents.map((incident) => {
+                  const draft = incidentEdits[incident.id] ?? {};
+                  return (
+                    <tr key={incident.id}>
+                      <td>
+                        <strong>{incident.sourceType}</strong>
+                        <div className="tableMeta">
+                          {compactId(incident.id)} · {formatDate(incident.createdAt)}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="stackCompact">
+                          <StatusTag value={incident.status} tone="warning" />
+                          <select
+                            value={draft.status ?? incident.status}
+                            onChange={(event) =>
+                              setIncidentEdits((current) => ({
+                                ...current,
+                                [incident.id]: {
+                                  ...(current[incident.id] ?? {}),
+                                  status: event.target.value,
+                                },
+                              }))
+                            }
+                          >
+                            <option value="open">Open</option>
+                            <option value="triaged">Triaged</option>
+                            <option value="blocked">Blocked</option>
+                            <option value="resolved">Resolved</option>
+                          </select>
+                          <select
+                            value={draft.severity ?? incident.severity}
+                            onChange={(event) =>
+                              setIncidentEdits((current) => ({
+                                ...current,
+                                [incident.id]: {
+                                  ...(current[incident.id] ?? {}),
+                                  severity: event.target.value,
+                                },
+                              }))
+                            }
+                          >
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                          </select>
+                        </div>
+                      </td>
+                      <td>{incident.summary}</td>
+                      <td>
+                        <button type="button" onClick={() => void updateIncident(incident.id)}>
+                          {busyAction === `incident-update-${incident.id}`
+                            ? 'Salvando...'
+                            : 'Atualizar'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article className="panel stack">
+          <div className="row spread">
+            <div>
+              <h2>Moderacao</h2>
+              <p className="muted">
+                Cases de politica, triagem automatizada e bloqueio preventivo sob
+                revisao humana.
+              </p>
+            </div>
+          </div>
+          <div className="card stack">
+            <h3>Novo caso de moderacao</h3>
+            <div className="provider-grid">
+              <label className="field">
+                <span>Severidade</span>
+                <select
+                  value={moderationDraft.severity}
+                  onChange={(event) =>
+                    setModerationDraft((current) => ({
+                      ...current,
+                      severity: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>Origem</span>
+                <select
+                  value={moderationDraft.sourceType}
+                  onChange={(event) =>
+                    setModerationDraft((current) => ({
+                      ...current,
+                      sourceType: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="care_team">Care-team</option>
+                  <option value="media_verification">Media verification</option>
+                  <option value="auth">Auth</option>
+                </select>
+              </label>
+            </div>
+            <label className="field">
+              <span>Policy code</span>
+              <input
+                value={moderationDraft.policyCode}
+                onChange={(event) =>
+                  setModerationDraft((current) => ({
+                    ...current,
+                    policyCode: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <div className="row spread">
+              <div className="muted">
+                Casos novos entram em hold com revisao humana obrigatoria.
+              </div>
+              <button type="button" onClick={() => void createModerationCase()}>
+                {busyAction === 'moderation-create' ? 'Criando...' : 'Abrir caso'}
+              </button>
+            </div>
+          </div>
+          <div className="filterBar">
+            <label className="field smallField">
+              <span>Status</span>
+              <select
+                value={moderationFilters.status}
+                onChange={(event) =>
+                  setModerationFilters((current) => ({
+                    ...current,
+                    status: event.target.value,
+                  }))
+                }
+              >
+                <option value="">Todos</option>
+                <option value="open">Open</option>
+                <option value="triaged">Triaged</option>
+                <option value="blocked">Blocked</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </label>
+            <label className="field smallField">
+              <span>Severidade</span>
+              <select
+                value={moderationFilters.severity}
+                onChange={(event) =>
+                  setModerationFilters((current) => ({
+                    ...current,
+                    severity: event.target.value,
+                  }))
+                }
+              >
+                <option value="">Todas</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+            <label className="field smallField">
+              <span>Origem</span>
+              <input
+                value={moderationFilters.sourceType}
+                onChange={(event) =>
+                  setModerationFilters((current) => ({
+                    ...current,
+                    sourceType: event.target.value,
+                  }))
+                }
+                placeholder="media_verification"
+              />
+            </label>
+            <button type="button" onClick={() => void refreshDashboard()}>
+              Aplicar filtros
+            </button>
+          </div>
+          <div className="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Caso</th>
+                  <th>Estado</th>
+                  <th>Policy</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {moderationCases.map((item) => {
+                  const draft = moderationEdits[item.id] ?? {};
+                  return (
+                    <tr key={item.id}>
+                      <td>
+                        <strong>{item.sourceType}</strong>
+                        <div className="tableMeta">
+                          {compactId(item.id)} · {formatDate(item.createdAt)}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="stackCompact">
+                          <StatusTag value={item.status} tone="warning" />
+                          <select
+                            value={draft.status ?? item.status}
+                            onChange={(event) =>
+                              setModerationEdits((current) => ({
+                                ...current,
+                                [item.id]: {
+                                  ...(current[item.id] ?? {}),
+                                  status: event.target.value,
+                                },
+                              }))
+                            }
+                          >
+                            <option value="open">Open</option>
+                            <option value="triaged">Triaged</option>
+                            <option value="blocked">Blocked</option>
+                            <option value="resolved">Resolved</option>
+                          </select>
+                          <select
+                            value={draft.severity ?? item.severity}
+                            onChange={(event) =>
+                              setModerationEdits((current) => ({
+                                ...current,
+                                [item.id]: {
+                                  ...(current[item.id] ?? {}),
+                                  severity: event.target.value,
+                                },
+                              }))
+                            }
+                          >
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                          </select>
+                        </div>
+                      </td>
+                      <td>
+                        {item.policyCode ?? '-'}
+                        <div className="tableMeta">
+                          Revisao humana: {item.humanReviewRequired ? 'sim' : 'nao'}
+                        </div>
+                      </td>
+                      <td>
+                        <button type="button" onClick={() => void updateModerationCase(item.id)}>
+                          {busyAction === `moderation-update-${item.id}`
+                            ? 'Salvando...'
+                            : 'Atualizar'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </article>
       </section>
 
@@ -540,61 +1660,70 @@ export function AdminDashboard() {
 
       <section className="panel">
         <h2>Jobs de OCR e biometria</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Quando</th>
-              <th>Tipo</th>
-              <th>Amostra</th>
-              <th>Status</th>
-              <th>Score</th>
-              <th>Match</th>
-            </tr>
-          </thead>
-          <tbody>
-            {mediaJobs.map((job) => (
-              <tr key={job.id}>
-                <td>{new Date(job.createdAt).toLocaleString('pt-BR')}</td>
-                <td>{job.verificationType}</td>
-                <td>{job.sampleKey ?? '-'}</td>
-                <td>{job.status}</td>
-                <td>{job.confidenceScore?.toFixed(2) ?? '-'}</td>
-                <td>
-                  {job.matched === undefined || job.matched === null
-                    ? '-'
-                    : job.matched
-                      ? 'sim'
-                      : 'nao'}
-                </td>
+        <div className="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Quando</th>
+                <th>Tipo</th>
+                <th>Amostra</th>
+                <th>Status</th>
+                <th>Score</th>
+                <th>Match</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {mediaJobs.map((job) => (
+                <tr key={job.id}>
+                  <td>{formatDate(job.createdAt)}</td>
+                  <td>{job.verificationType}</td>
+                  <td>{job.sampleKey ?? '-'}</td>
+                  <td>
+                    <StatusTag
+                      value={job.status}
+                      tone={job.reviewRequired ? 'warning' : 'success'}
+                    />
+                  </td>
+                  <td>{job.confidenceScore?.toFixed(2) ?? '-'}</td>
+                  <td>
+                    {job.matched === undefined || job.matched === null
+                      ? '-'
+                      : job.matched
+                        ? 'sim'
+                        : 'nao'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="panel">
         <h2>Usuarios</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Grupo</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(overview?.counts ?? {}).map(([key, value]) => (
-              <tr key={key}>
-                <td>{key}</td>
-                <td>{value}</td>
+        <div className="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Grupo</th>
+                <th>Total</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {Object.entries(overview?.counts ?? {}).map(([key, value]) => (
+                <tr key={key}>
+                  <td>{key}</td>
+                  <td>{value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="panel">
         <h2>Snapshot bruto</h2>
-        <pre>{JSON.stringify(users, null, 2)}</pre>
+        <pre className="debug">{JSON.stringify(users, null, 2)}</pre>
       </section>
     </div>
   );

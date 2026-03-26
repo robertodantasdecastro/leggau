@@ -11,6 +11,9 @@ Own the public Leggau web surface for institutional narrative, legal publication
 - Host and evolve the first live adult shells now exposed through:
   - `/pais`
   - `/profissionais`
+- Keep the installable shell healthy through:
+  - `/manifest.webmanifest`
+  - `/sw.js`
 - Preserve the portal route strategy for:
   - `/`
   - `/pais`
@@ -33,3 +36,4 @@ Own the public Leggau web surface for institutional narrative, legal publication
 - Public product, legal and distribution surfaces stay coherent with the mobile beta.
 - Adult shell routes stay aligned with the live social-auth catalog, legal gates and `care-team` flows.
 - Adult shell routes also need to stay aligned with scoped invites, parent approvals and selected-minor reporting.
+- Adult shell routes remain installable and responsive as the web/PWA surface for adults.

@@ -31,10 +31,13 @@ This directory defines the local agent architecture for Leggau.
 ## Current Baton
 
 - Phase B is completed and establishes the shared backend core on `vm2`.
-- Phase C is now partially advanced:
-  - `vm-backend.md` owns the canonical runtime and migration validation
-  - `api-integration.md` owns compatibility between Unity, the adult portal shells and the multiactor namespaces
-  - `adult-web.md` owns the next wave on top of the live `parent_guardian` and `therapist` shells in `web/portal`, including invites, permission ledger and reports
-  - `web-portal.md` owns the hosted experience for `/pais` and `/profissionais` plus the public narrative routes
-  - `web-admin.md` owns the admin surfaces for provider governance, approvals, audit, moderation and policy operations exposed by the runtime
+- Phase C is now completed:
+  - `vm-backend.md` owns the canonical runtime, the corrected VM promotion path and no-cache rebuild recovery
+  - `api-integration.md` owns compatibility between Unity, the completed adult portal/admin surfaces and the multiactor namespaces
+  - `adult-web.md` owns ongoing polish of the live `parent_guardian` and `therapist` shells plus their PWA behavior
+  - `web-portal.md` owns the hosted experience for `/pais`, `/profissionais`, the public narrative routes and the installable shell
+  - `web-admin.md` owns the live governance console for provider config, care-team review, audit, incidents, moderation and verification jobs
   - `safety-compliance.md` owns the legal gates, provider-secret handling expectations and OCR/biometric simulation rules that now back both auth and the live adult shells
+- The next critical-path baton now shifts back to Phase D:
+  - `frontend-mobile.md` leads the split between `child` and `adolescent` Unity shells
+  - `adult-web.md` and `web-admin.md` continue as maintenance and product-polish companions while Unity becomes the main delivery track again

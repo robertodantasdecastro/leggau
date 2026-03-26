@@ -1022,6 +1022,104 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
   const inviteInbox = isParent
     ? invites.filter((invite) => invite.creatorActorRole === 'parent_guardian')
     : invites.filter((invite) => invite.targetEmail === session?.user.email);
+  const parentTasks = [
+    {
+      title: 'Consentimentos legais',
+      done: !currentRequirements?.legalConsentRequired,
+      detail: currentRequirements?.legalConsentRequired
+        ? 'As policies publicadas ainda precisam de aceite explicito.'
+        : 'Policies em dia para continuar a jornada da familia.',
+    },
+    {
+      title: 'Perfis vinculados',
+      done: Boolean(familyOverview?.minorProfiles.length),
+      detail: familyOverview?.minorProfiles.length
+        ? `${familyOverview.minorProfiles.length} perfis infantojuvenis prontos para acompanhamento.`
+        : 'Crie o primeiro perfil para destravar relatorios e permissoes.',
+    },
+    {
+      title: 'Convites enviados',
+      done: inviteInbox.some((invite) => invite.status === 'accepted'),
+      detail: inviteInbox.length
+        ? `${inviteInbox.length} convites rastreaveis em andamento com terapeutas.`
+        : 'Nenhum convite emitido ainda para a equipe de cuidado.',
+    },
+    {
+      title: 'Permissoes explicitas',
+      done: activeApprovals.length > 0,
+      detail: activeApprovals.length
+        ? `${activeApprovals.length} permissoes auditaveis ja registradas.`
+        : 'Registre OCR, presenca e vinculacao clinica quando necessario.',
+    },
+  ];
+  const therapistTasks = [
+    {
+      title: 'Conta profissional',
+      done: Boolean(session),
+      detail: session
+        ? `Sessao ativa para ${session.user.displayName}.`
+        : 'Entre por senha ou provedor social para abrir o shell clinico.',
+    },
+    {
+      title: 'Convites rastreaveis',
+      done: inviteInbox.some((invite) => invite.status === 'accepted'),
+      detail: inviteInbox.length
+        ? `${inviteInbox.length} convites recebidos para triagem.`
+        : 'Nenhum convite recebido ainda.',
+    },
+    {
+      title: 'Contexto da familia',
+      done: Boolean(lookupFamily?.parent),
+      detail: lookupFamily?.parent
+        ? `${lookupFamily.parent.name} carregada para pedido clinico.`
+        : 'Busque a familia ou aceite um convite para carregar o contexto.',
+    },
+    {
+      title: 'Gate clinico',
+      done: careTeamMemberships.some((membership) => membership.status === 'active'),
+      detail: careTeamMemberships.length
+        ? 'O pedido atual depende do lado responsavel e do admin.'
+        : 'Nenhum pedido clinico aberto ainda para esta familia.',
+    },
+  ];
+  const therapistTimeline = [
+    {
+      label: 'Convite aceito',
+      done: inviteInbox.some((invite) => invite.status === 'accepted'),
+      detail: inviteInbox.some((invite) => invite.status === 'accepted')
+        ? 'O contexto da familia ja pode ser reutilizado.'
+        : 'Aceite um convite ou busque a familia manualmente.',
+    },
+    {
+      label: 'Pedido enviado',
+      done: careTeamMemberships.length > 0,
+      detail: careTeamMemberships.length
+        ? `${careTeamMemberships.length} pedido(s) clinico(s) rastreaveis nesta visao.`
+        : 'O backend ainda nao recebeu um pedido clinico para o menor selecionado.',
+    },
+    {
+      label: 'Responsavel aprovou',
+      done: careTeamMemberships.some(
+        (membership) => membership.parentApprovalStatus === 'approved',
+      ),
+      detail: careTeamMemberships.some(
+        (membership) => membership.parentApprovalStatus === 'approved',
+      )
+        ? 'O gate do responsavel ja foi cumprido.'
+        : 'Aguardando aprovacao explicita do lado responsavel.',
+    },
+    {
+      label: 'Admin aprovou',
+      done: careTeamMemberships.some(
+        (membership) => membership.adminApprovalStatus === 'approved',
+      ),
+      detail: careTeamMemberships.some(
+        (membership) => membership.adminApprovalStatus === 'approved',
+      )
+        ? 'O gate operacional final ja esta fechado.'
+        : 'Aguardando triagem e aprovacao administrativa.',
+    },
+  ];
 
   return (
     <section className="actorFrame">
@@ -1289,6 +1387,43 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
               Assim que voce autenticar, o portal passa a mostrar dependencias legais, sessoes e o fluxo do seu papel.
             </div>
           )}
+        </article>
+
+        <article className="stageCard card">
+          <div className="spread">
+            <div>
+              <h2>{isParent ? 'Radar do responsavel' : 'Agenda do profissional'}</h2>
+              <p className="subtle">
+                {isParent
+                  ? 'Os blocos abaixo deixam clara a fila de tarefas da familia antes de chegar no app infantil.'
+                  : 'Os blocos abaixo mostram o que falta para o vinculo clinico sair do estado pendente.'}
+              </p>
+            </div>
+            <span className="badge">
+              {isParent
+                ? `${familyOverview?.minorProfiles.length ?? 0} perfis em supervisao`
+                : `${careTeamMemberships.length} pedidos em contexto`}
+            </span>
+          </div>
+          <div className="taskGrid">
+            {(isParent ? parentTasks : therapistTasks).map((task) => (
+              <div key={task.title} className={task.done ? 'miniCard selected' : 'miniCard'}>
+                <span className="microLabel">{task.done ? 'Concluido' : 'Pendente'}</span>
+                <strong>{task.title}</strong>
+                <span>{task.detail}</span>
+              </div>
+            ))}
+          </div>
+          {!isParent ? (
+            <div className="timeline">
+              {therapistTimeline.map((step) => (
+                <div key={step.label} className={step.done ? 'timelineItem done' : 'timelineItem'}>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </article>
 
         {isParent ? (

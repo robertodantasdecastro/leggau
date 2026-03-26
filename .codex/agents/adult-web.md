@@ -14,6 +14,8 @@ Own the parent and therapist responsive web/PWA experience.
 - reports, permissions and care-team flows
 - invite-led family and therapist journeys
 - selected-minor supervision cards with progress, rewards and quick actions
+- product-readable task/radar cards and therapist timelines
+- manifest, service worker and installable online-first PWA behavior
 - Phase C handoff from the backend core into product-ready parent and therapist journeys
 - deepen the new live shells in `/pais` and `/profissionais` instead of rebuilding parallel flows
 

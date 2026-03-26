@@ -20,8 +20,38 @@ export class CareTeamController {
 
   @UseGuards(AppTokenGuard)
   @Get()
-  list(@Query('minorProfileId') minorProfileId?: string) {
-    return this.careTeamService.list(minorProfileId);
+  list(
+    @Query('minorProfileId') minorProfileId?: string,
+    @Query('status') status?: string,
+    @Query('parentApprovalStatus') parentApprovalStatus?: string,
+    @Query('adminApprovalStatus') adminApprovalStatus?: string,
+    @Query('minorRole') minorRole?: string,
+  ) {
+    return this.careTeamService.list({
+      minorProfileId,
+      status,
+      parentApprovalStatus,
+      adminApprovalStatus,
+      minorRole,
+    });
+  }
+
+  @UseGuards(AdminTokenGuard)
+  @Get('admin')
+  listForAdmin(
+    @Query('minorProfileId') minorProfileId?: string,
+    @Query('status') status?: string,
+    @Query('parentApprovalStatus') parentApprovalStatus?: string,
+    @Query('adminApprovalStatus') adminApprovalStatus?: string,
+    @Query('minorRole') minorRole?: string,
+  ) {
+    return this.careTeamService.list({
+      minorProfileId,
+      status,
+      parentApprovalStatus,
+      adminApprovalStatus,
+      minorRole,
+    });
   }
 
   @UseGuards(AppTokenGuard)

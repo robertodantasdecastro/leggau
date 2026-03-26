@@ -75,7 +75,7 @@
 
 ### Phase C — Adult web/PWA surfaces
 
-- Status: `partially advanced`
+- Status: `completed`
 - Completed:
   - provider-backed quick-auth foundation is live for `parent_guardian` and `therapist`
   - web admin already exposes provider configuration for Google and Apple/iCloud
@@ -87,11 +87,21 @@
   - therapist shell now also ships invite inbox handling and clearer selected-family context before care-team requests
   - invite and parent-approval backend contracts are now consumable from the portal without breaking Unity compatibility
   - adolescent progress and check-in now work in the canonical backend runtime
-- Remaining:
-  - responsive/PWA behavior
-  - richer supervision polish and more visual reporting treatment
-  - product polish for invite-led family and therapist journeys
-  - stronger product polish for the adult shells
+  - `web/admin` now exposes the operational governance console for:
+    - `care-team` review and admin approvals
+    - audit trail filtering
+    - incident creation and triage
+    - moderation-case creation and triage
+  - `/pais` now exposes a parent radar with clearer tasks and supervision priorities
+  - `/profissionais` now exposes a therapist timeline for invite, guardian approval and admin approval
+  - `web/portal` now ships as an installable online-first PWA with `manifest.webmanifest`, `sw.js` and responsive navigation tuned for adult mobile usage
+  - the VM runtime now validates the governance routes:
+    - `GET /api/care-team/admin`
+    - `GET /api/audit/events`
+    - `GET|POST|PATCH /api/incidents`
+    - `GET|POST|PATCH /api/moderation/cases`
+- Exit criteria:
+  - satisfied
 
 ### Phase D — Child and adolescent Unity app
 
@@ -130,10 +140,10 @@
 
 ## Next Execution Step
 
-1. Continue Phase C on top of the completed Phase B backend core, the social-auth checkpoint and the first live adult shells.
-2. Deepen the `parent_guardian` and `therapist` shells in `web/portal` with stronger PWA polish and more product-facing reporting/supervision treatment.
-3. Expand web/admin from provider governance into approvals, audit, incidents, moderation and care-team review.
-4. Preserve the current Unity child flow as a compatibility client while the adult surfaces continue catching up to the backend runtime now live on `vm2`.
+1. Start Phase D on top of the now-completed adult web/PWA and admin-governance layer.
+2. Split the Unity runtime into clearer `child` and `adolescent` shells with age-profile presentation.
+3. Preserve the completed Phase C portal/admin surfaces as stable companions while Unity becomes the critical path again.
+4. Keep Phase F admin/compliance/billing hardening as a parallel operational thread on top of the live governance console.
 
 ## Branch and Delivery Rule
 

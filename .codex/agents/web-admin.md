@@ -40,4 +40,9 @@ Own the technical and commercial admin surface of Leggau, including operations, 
 - Admin reflects operational and billing sandbox status from the API without hardcoded-only mocks.
 - Admin can manage Google/Apple provider configs without exposing raw secrets back to the browser.
 - Admin can inspect verification-job activity for OCR and biometric simulations.
-- Admin is ready to consume the broader Phase C/F governance endpoints as the next execution wave starts.
+- Admin can review and operate:
+  - `care-team` approval and revocation
+  - filtered audit traces
+  - incident creation and triage
+  - moderation-case creation and triage
+- Admin is now a live governance surface for the completed Phase C checkpoint and should continue as a Phase F hardening thread.

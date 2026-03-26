@@ -35,11 +35,19 @@ export class AuditService {
     );
   }
 
-  async listEvents() {
+  async listEvents(filters: {
+    eventType?: string;
+    actorRole?: string;
+    resourceType?: string;
+  } = {}) {
     return this.auditEventRepository.find({
+      where: {
+        ...(filters.eventType ? { eventType: filters.eventType } : {}),
+        ...(filters.actorRole ? { actorRole: filters.actorRole } : {}),
+        ...(filters.resourceType ? { resourceType: filters.resourceType } : {}),
+      },
       order: { occurredAt: 'DESC' },
       take: 200,
     });
   }
 }
-

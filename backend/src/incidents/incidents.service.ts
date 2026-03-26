@@ -14,8 +14,13 @@ export class IncidentsService {
     private readonly incidentRepository: Repository<Incident>,
   ) {}
 
-  async list() {
+  async list(filters: { status?: string; severity?: string; sourceType?: string } = {}) {
     return this.incidentRepository.find({
+      where: {
+        ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.severity ? { severity: filters.severity } : {}),
+        ...(filters.sourceType ? { sourceType: filters.sourceType } : {}),
+      },
       order: { createdAt: 'DESC' },
     });
   }

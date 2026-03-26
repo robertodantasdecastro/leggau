@@ -121,6 +121,17 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.secondaryButton {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
 .provider-grid {
   display: grid;
   gap: 12px;
@@ -145,6 +156,106 @@ button {
   margin: 0;
 }
 
+.governanceMetric {
+  background:
+    linear-gradient(135deg, rgba(17, 103, 177, 0.08), rgba(242, 139, 48, 0.08)),
+    white;
+}
+
+.filterBar {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.smallField {
+  min-width: 180px;
+  flex: 1 1 180px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.tableMeta {
+  color: var(--muted);
+  font-size: 0.87rem;
+  margin-top: 4px;
+}
+
+.chipRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip,
+.tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.chip {
+  background: rgba(86, 112, 143, 0.1);
+  color: var(--ink);
+}
+
+.tag {
+  background: rgba(17, 103, 177, 0.1);
+  color: var(--accent);
+}
+
+.tag-success {
+  background: rgba(53, 162, 107, 0.12);
+  color: #18794e;
+}
+
+.tag-warning {
+  background: rgba(242, 139, 48, 0.14);
+  color: #a45f18;
+}
+
+.tag-danger {
+  background: rgba(196, 60, 47, 0.12);
+  color: #a43c2f;
+}
+
+.actionRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.actionColumn {
+  display: grid;
+  gap: 10px;
+}
+
+.stackCompact {
+  display: grid;
+  gap: 6px;
+}
+
+.governanceGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.debug {
+  max-height: 420px;
+  overflow: auto;
+  margin: 0;
+  padding: 16px;
+  background: #0f1d31;
+  color: #dce8f9;
+  border-radius: 18px;
+  font-size: 0.82rem;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -166,8 +277,16 @@ td {
     grid-template-columns: 1fr;
   }
 
+  .governanceGrid {
+    grid-template-columns: 1fr;
+  }
+
   .row {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filterBar {
     align-items: stretch;
   }
 }

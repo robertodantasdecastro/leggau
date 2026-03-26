@@ -39,4 +39,5 @@ This directory is the canonical Codex memory for the Leggau repository.
 - `../docs/beta-feature-flags.md`: sensitive capability flags and beta boundaries
 - `../docs/phase-b-module-map.md`: backend module ownership and Phase C consumer handoff
 - `../docs/social-auth-operations.md`: Google/Apple provider governance, legal gates and verification operations
+- `../docs/architecture.md`: live runtime shape across Unity, adult web/PWA and admin governance
 - `docs/art-pipeline.md`: Gau Blender to Unity workflow

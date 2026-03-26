@@ -173,13 +173,21 @@
   - persistent opaque sessions compatible with resume/retry behavior
   - adolescent provisioning returned through the legacy-compatible `children` projection
 - Adult-oriented quick auth is now available in the backend through Google and Apple/iCloud plus admin-managed provider configuration, but the Unity app should remain focused on the child/adolescent surface while Phase C advances in `web/portal`
-- The first live adult shells now exist in `web/portal/pais` and `web/portal/profissionais`, so parental and therapist bootstrap work can move web-first while Unity keeps ownership of the child/adolescent experience
+- The completed Phase C adult surfaces now live in `web/portal/pais` and `web/portal/profissionais`, so parental and therapist bootstrap work can stay web-first while Unity keeps ownership of the child/adolescent experience
 - The adult portal now also owns:
   - selected-minor reports
   - explicit guardian approvals for OCR/presence/therapist linking
   - scoped therapist invites
   - therapist invite inbox handling
+- The adult layer now also includes:
+  - product-readable parent and therapist task/radar cards
+  - installable PWA metadata and service worker shell caching
+  - admin governance for care-team review, audit, incidents and moderation in `web/admin`
 - Backend progress now supports adolescent summary and check-in on the canonical runtime, which keeps the cross-surface child/adolescent model coherent while Unity remains the primary experience for minors
+- With Phase C completed, the next critical path for mobile is now Phase D:
+  - explicit `child` shell
+  - explicit `adolescent` shell
+  - age-profile presentation system on top of the already-compatible Phase B backend
 - The Unity workspace had to be reopened on `2026-03-26` through the canonical `-projectPath` flow after a temporary nested project folder appeared under `mobile/`; that stray folder was removed
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination
