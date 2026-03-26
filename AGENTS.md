@@ -189,4 +189,9 @@ As of `2026-03-26`:
 - Keep VM bootstrap rooted at `~/leggau`.
 - Treat `.codex/AGENTS.md` and `.codex/memory/*.md` as the primary agent memory for this repository.
 - Treat `docs/mvp-timeline.md` as the authoritative delivery timeline document.
-- On each completed delivery, update recursive project memory and create a Git commit.
+- On each completed delivery, execute the full completion protocol:
+  - update the global development plan in `docs/mvp-timeline.md`
+  - update status and canonical docs when the delivery changes project direction or scope
+  - refresh recursive memory in `.codex/memory/`
+  - refresh agent and sub-agent continuity when topology, ownership or execution order changes
+  - save the checkpoint in Git and push `main`, `backend`, `frontend-android` and `frontend-ios`

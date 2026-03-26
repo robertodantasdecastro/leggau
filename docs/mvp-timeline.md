@@ -117,6 +117,10 @@
   - `.codex/memory/project.md`
   - `.codex/memory/infra.md`
   - `docs/mvp-timeline.md`
+- Every completed delivery must also:
+  - refresh canonical docs affected by the delivery
+  - refresh agent and sub-agent continuity when topology or sequencing changed
+  - preserve repository memory as the source of truth before closing the checkpoint
 - Every checkpoint is committed and pushed to:
   - `main`
   - `backend`

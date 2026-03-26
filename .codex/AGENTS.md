@@ -15,7 +15,12 @@ This directory is the canonical Codex memory for the Leggau repository.
 - Avoid dependence on global Codex memory
 - Preserve non-sensitive operational context for continuity
 - Keep heavy project data rooted in `/Volumes/SSDExterno/Desenvolvimento/Leggau`
-- Require memory refresh and Git commit at the end of each completed delivery
+- Require the full completion protocol at the end of each completed delivery:
+  - update the global plan in `docs/mvp-timeline.md`
+  - update status and canonical docs
+  - refresh `.codex/memory/`
+  - synchronize agent and sub-agent context
+  - commit and push all published branches
 
 ## Files
 
