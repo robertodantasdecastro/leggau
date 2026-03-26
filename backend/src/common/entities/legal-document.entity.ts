@@ -29,7 +29,7 @@ export class LegalDocument {
   @Column({ default: true })
   isActive: boolean;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   effectiveAt?: Date | null;
 
   @CreateDateColumn()

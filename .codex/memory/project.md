@@ -40,7 +40,7 @@
 - Portal institucional and web admin now exist as repository surfaces and must be treated as first-class parts of the MVP
 - Billing enters in sandbox mode only during this phase
 - Portal and admin Next.js builds have already passed locally
-- Remote VM development is blocked by SSH authentication
+- Remote VM development is now operational through SSH on `vm2`
 - Heavy local files must stay on the external SSD, not on the internal disk
 - Unity Hub templates and downloads are now redirected to the SSD-backed project tree
 - The canonical validated Unity editor is now `6000.4.0f1` on the SSD-backed install tree
@@ -49,7 +49,7 @@
 - Unity project setup and validation are now reproducible through `./scripts/configure-unity-project.sh`
 - The mobile bootstrap now covers first-access auth, legal consent and initial child creation against the backend
 - Unity bootstrap runtime validation now uses a persisted probe file under `.data/runtime/unity/bootstrap-playmode-status.json`
-- The latest validated bootstrap runtime reached `ready` with dashboard data loaded through the real auth/legal/child flow using local fallback
+- The latest validated bootstrap runtime reached `ready` against the VM-backed API with dashboard data loaded
 - The bootstrap scene now includes an in-editor retry path and a more structured HUD for faster Play Mode iteration after interruptions or environment restarts
 - The bootstrap HUD now tracks the onboarding pipeline step-by-step so auth/legal/family progress is visible during Play Mode
 - As of `2026-03-26`, mobile development should no longer depend on a local backend fallback; VM remains the only canonical backend target
@@ -57,7 +57,7 @@
 - A second SSD-backed shell for `6000.0.71f1` exists, but it currently fails signature validation and should not be used until it is reinstalled cleanly
 - Full Xcode is still not installed; `xcodes` is available and is the preferred reproducible path for downloading to the SSD-backed tooling tree
 - The current delivery already includes the first Gau `.blend` and `.fbx`
-- VM promotion should now prefer `./scripts/promote-stack-to-vm.sh` once SSH access is restored
+- VM promotion is now validated through `./scripts/promote-stack-to-vm.sh`
 
 ## Delivery Workflow
 

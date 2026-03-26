@@ -32,8 +32,11 @@ ssh "${SSH_OPTS[@]}" "${REMOTE}" "printf 'remote=%s\n' \"\$(hostname)\""
 echo "[leggau] Ensuring remote root ${REMOTE_ROOT}..."
 ssh "${SSH_OPTS[@]}" "${REMOTE}" "mkdir -p ${REMOTE_ROOT}"
 
+echo "[leggau] Resolving remote root path..."
+REMOTE_ROOT_RESOLVED="$(ssh "${SSH_OPTS[@]}" "${REMOTE}" "cd ${REMOTE_ROOT} && pwd")"
+
 echo "[leggau] Cloning repository on VM when needed..."
-ssh "${SSH_OPTS[@]}" "${REMOTE}" "if [ ! -d ${REMOTE_ROOT}/.git ]; then git clone '${REPO_URL}' ${REMOTE_ROOT}; fi"
+ssh "${SSH_OPTS[@]}" "${REMOTE}" "if [ ! -d ${REMOTE_ROOT_RESOLVED}/.git ]; then git clone '${REPO_URL}' ${REMOTE_ROOT_RESOLVED}; fi"
 
 echo "[leggau] Syncing project surfaces to VM..."
 rsync "${RSYNC_OPTS[@]}" \
@@ -47,11 +50,11 @@ rsync "${RSYNC_OPTS[@]}" \
   "${PROJECT_ROOT}/docs/" \
   "${PROJECT_ROOT}/scripts/" \
   "${PROJECT_ROOT}/.codex/" \
-  "${REMOTE}:${REMOTE_ROOT}/"
+  "${REMOTE}:${REMOTE_ROOT_RESOLVED}/"
 
 echo "[leggau] Preparing remote environment..."
 ssh "${SSH_OPTS[@]}" "${REMOTE}" "
-  cd ${REMOTE_ROOT} && \
+  cd ${REMOTE_ROOT_RESOLVED} && \
   chmod +x ./scripts/*.sh && \
   ./scripts/bootstrap-vm.sh '${REPO_URL}' '${VM_IP}' && \
   [ -f .env ] || cp .env.example .env && \
@@ -59,4 +62,4 @@ ssh "${SSH_OPTS[@]}" "${REMOTE}" "
   ./scripts/deploy-vm.sh
 "
 
-echo "[leggau] Remote promotion finished for ${REMOTE}:${REMOTE_ROOT}"
+echo "[leggau] Remote promotion finished for ${REMOTE}:${REMOTE_ROOT_RESOLVED}"

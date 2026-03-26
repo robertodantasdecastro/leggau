@@ -5,7 +5,7 @@
 - Timeline baseline: `16 weeks`
 - Cadence: `sustained`
 - Target: `closed beta`
-- Current checkpoint date: `2026-03-25`
+- Current checkpoint date: `2026-03-26`
 
 ## Current Phase Status
 
@@ -21,8 +21,10 @@
   - `web/portal` and `web/admin` foundations are implemented
   - local builds passed for backend, portal and admin
   - Nginx and Compose are prepared for portal/admin/API routing
+  - SSH automation to `vm2` is working
+  - current stack is deployed to `~/leggau`
+  - portal, admin and API now validate through the VM gateway
 - Blocked:
-  - `vm2` SSH access
   - full Xcode app installation
   - Unity Android/iOS build support modules are still missing from the validated editor
 - Current Unity state:
@@ -32,9 +34,9 @@
   - the first `AssetDatabase Initial Refresh` must happen in the graphical editor
   - after that first import, `./scripts/build-unity-bootstrap.sh` now succeeds
 - Exit criteria:
-  - access `vm2`
-  - deploy current stack to `~/leggau`
-  - validate portal/admin/API through the VM runtime
+  - full Xcode app install
+  - Unity Android/iOS modules present in the validated editor
+  - Unity onboarding flow visually revalidated in the graphical editor against the VM runtime
 
 ### Phase 1 — Backend identity, legal and RBAC
 
@@ -96,9 +98,10 @@
   - Unity Play Mode runtime reached `ready` through the bootstrap flow, with dashboard loaded and Gau session data present
   - bootstrap HUD is now organized for in-editor iteration and supports runtime retry without restarting the scene
   - onboarding/bootstrap progress is now visible as a live checklist inside the Unity HUD
+  - the same backend contract is now validated on `vm2`
 - Remaining:
   - replace the current runtime probe-based validation with direct visual confirmation of the same flow in editor Play Mode
-  - validate the mobile flow against the VM backend only, once `vm2` access is restored
+  - evolve the bootstrap HUD into persistent auth, consent and child-onboarding UI
 
 ### Phase 6 and beyond
 
@@ -109,13 +112,12 @@
 
 ## Next Execution Step
 
-1. Restore operational access to `vm2` by authorizing the current Mac key fingerprint `SHA256:Q1Z01LuZT82w7xYeXdICxgqqcVGPUKu4Fx6Vz2f6tYo`.
-2. Run `./scripts/promote-stack-to-vm.sh` to deploy the current `portal + admin + api` stack into `~/leggau` on the VM.
-3. Validate:
-   - `http://10.211.55.22:8080/api`
-   - portal via VM gateway
-   - admin via VM gateway
-4. Keep the graphical Unity project open path stable, use the runtime probe to confirm `ready`, then finish mobile modules and install the full Xcode app.
+1. Reopen the Unity project in the graphical editor and visually confirm the bootstrap flow against `http://10.211.55.22:8080/api`.
+2. Replace the current bootstrap cards with persistent onboarding UI for auth, consents and child setup.
+3. Finish the Apple/mobile toolchain:
+   - install full Xcode
+   - validate Android/iOS Unity support modules in the canonical editor
+4. Keep `vm2` as the only development backend and continue feature work from the VM runtime.
 
 ## Branch and Delivery Rule
 

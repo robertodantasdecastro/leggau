@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-Date checked: `2026-03-25`
+Date checked: `2026-03-26`
 
 ## Repository
 
@@ -40,17 +40,35 @@ Date checked: `2026-03-25`
 
 - SSH alias `vm2` resolves to `10.211.55.22`
 - Official dev backend target: `http://10.211.55.22:8080/api`
-- Current `~/.ssh/config` points `vm2` to `~/.ssh/id_ed25519`
-- Authentication fails with:
-  - `id_ed25519`
-  - `ChaveRobertoMrQuentinha`
-  - `rdc_id_rsa`
-- Real status of `~/leggau`, Docker, Compose and runtime on `vm2` is still unknown because login is blocked
-- Latest SSH debug confirms the server accepts `publickey,password` but rejects the current `id_ed25519` key
-- Current offered key fingerprint: `SHA256:Q1Z01LuZT82w7xYeXdICxgqqcVGPUKu4Fx6Vz2f6tYo`
-- Phase 0 promotion helper is now ready locally:
+- Codex automation now accesses `vm2` over SSH successfully through `~/.ssh/id_ed25519`
+- `~/leggau` is now the active backend runtime root on the VM
+- Docker and Docker Compose are installed and validated on the VM
+- The full remote stack is now up on `vm2`:
+  - `leggau-api`
+  - `leggau-portal`
+  - `leggau-admin`
+  - `leggau-nginx`
+  - `leggau-postgres`
+  - `leggau-redis`
+- Gateway validation on `10.211.55.22:8080` now passes for:
+  - `/`
+  - `/admin`
+  - `/api/health`
+  - `/api/legal/documents`
+  - `/api/assets-catalog`
+- Full onboarding-related API flow now validates against the VM:
+  - `POST /api/auth/register`
+  - `POST /api/auth/login`
+  - `POST /api/legal/consents`
+  - `POST /api/children`
+  - `GET /api/families/overview`
+  - `GET /api/activities`
+  - `GET /api/rewards`
+  - `GET /api/progress/summary`
+- During the first VM deploy on `2026-03-26`, the API initially failed behind Nginx because TypeORM used `datetime` columns incompatible with Postgres; this was corrected to `timestamp` in the shared entities and the API now boots cleanly
+- Phase 0 promotion helper is now validated end-to-end:
   - `scripts/promote-stack-to-vm.sh`
-- The VM preflight helper now checks host, user, `~/leggau`, Docker, Compose and free space when SSH becomes available:
+- The VM preflight helper remains available for spot checks:
   - `scripts/check-vm2-access.sh`
 
 ## Mobile Mac Status
@@ -161,7 +179,7 @@ Date checked: `2026-03-25`
   - reload family overview with child data
 - Unity runtime validation now writes a probe snapshot to:
   - `.data/runtime/unity/bootstrap-playmode-status.json`
-- Latest validated runtime probe on `2026-03-25` reached:
+- Latest validated runtime probe on `2026-03-26` reached against the VM backend:
   - `state=ready`
   - `status=Dashboard carregado.`
   - `parentName=Responsavel Demo`
@@ -226,7 +244,7 @@ Date checked: `2026-03-25`
 
 ## Current Conclusion
 
-- Backend local remains a fallback path, but the official development backend on `vm2` is still blocked by SSH access.
+- The official development backend is now operational on `vm2` under `~/leggau`.
 - The mobile repository now has the first Gau 3D asset pipeline in place, including `.blend` and `.fbx`.
 - The Gau pipeline now includes a pixel-textured 3D variant alongside the base `.blend`, `.fbx` and 2D pixel-art copy.
 - The Gau pipeline now also includes a blocky Roblox-style pixel variant for alternate in-game presentation.
@@ -246,7 +264,7 @@ Date checked: `2026-03-25`
 - Unity mobile tooling still requires:
   - full Xcode app install and selection
   - completion of the headless Unity mobile module installation now in progress
-- Remote backend validation on `vm2` remains blocked by SSH authentication.
+- Remote backend validation on `vm2` now passes through the official VM runtime.
 - Project memory is now intended to live primarily inside the repository, not in global Codex state.
 - Heavy project files are now standardized to live inside `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data`.
 - The repository now includes a local agent registry under `.codex/agents/`.

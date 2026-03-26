@@ -35,7 +35,7 @@ export class BillingTransaction {
   @Column({ type: 'simple-json', nullable: true })
   metadata?: Record<string, string | number | boolean> | null;
 
-  @Column({ type: 'datetime' })
+  @Column({ type: 'timestamp' })
   occurredAt: Date;
 
   @CreateDateColumn()

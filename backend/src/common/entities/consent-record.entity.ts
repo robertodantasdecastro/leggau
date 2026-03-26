@@ -25,7 +25,7 @@ export class ConsentRecord {
   @Column()
   documentVersion: string;
 
-  @Column({ type: 'datetime' })
+  @Column({ type: 'timestamp' })
   acceptedAt: Date;
 
   @CreateDateColumn()

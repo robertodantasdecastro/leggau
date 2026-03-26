@@ -87,7 +87,7 @@
 - The bootstrap now loads the local Gau variants catalog through `GauVariantsCatalogLoader`
 - The bootstrap now tries `auth/register`, falls back to `auth/login` for existing accounts, records legal consents, and only then falls back to `auth/dev-login` when configured
 - The bootstrap now auto-creates the first child profile through `POST /api/children` when a newly authenticated family still has no child
-- The real-auth bootstrap path is now validated locally for first access: parent register -> consent -> child create -> family overview
+- The real-auth bootstrap path is now validated against `vm2` for first access: parent register -> consent -> child create -> family overview
 - Unity Play Mode runtime now persists status snapshots through `BootstrapRuntimeProbe` at `.data/runtime/unity/bootstrap-playmode-status.json`
 - The latest validated probe reached `ready` with:
   - `parentName=Responsavel Demo`
@@ -95,6 +95,7 @@
   - `activeGauVariant=gau-rounded-pixel`
   - `activityCount=3`
   - `rewardCount=2`
+- On `2026-03-26`, a batch Play Mode validation was rerun against the VM-backed API and wrote a fresh `state=ready` probe snapshot under `.data/runtime/unity/bootstrap-playmode-status.json`
 - The dashboard now renders the count and style tags of the local Gau variants
 - The bootstrap now supports selecting the active Gau variant with previous/next actions
 - The dashboard now shows the active Gau variant name, style and recommendation

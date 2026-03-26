@@ -11,7 +11,7 @@
 - Official dev backend target: `http://10.211.55.22:8080/api`
 - Mobile development should treat the VM as the only canonical backend target
 - Backend code build passes with `cd backend && npm run build`
-- Backend runtime is intended to live on `vm2`; the local stack is fallback-only
+- Backend runtime now lives on `vm2`; the local stack is fallback-only
 
 ## Validated Services
 
@@ -84,10 +84,17 @@
 - Alias: `vm2`
 - Host: `10.211.55.22`
 - Root expected: `~/leggau`
-- Backend development should run fully on this VM when SSH is available
-- Current blocker: SSH authentication rejected for all tested local keys
-- Latest SSH debug confirms the server offers `publickey,password`, but rejects the current `id_ed25519` identity
-- Current offered key fingerprint: `SHA256:Q1Z01LuZT82w7xYeXdICxgqqcVGPUKu4Fx6Vz2f6tYo`
-- VM memory and docs sync should use `./scripts/sync-codex-to-vm.sh` once SSH access is restored
+- Backend development now runs fully on this VM
+- SSH automation now works with the current `id_ed25519` identity
+- Docker and Docker Compose are installed and validated on `vm2`
+- Remote stack now runs from `/home/roberto/leggau`
+- Remote gateway validation currently passes for:
+  - `http://10.211.55.22:8080/`
+  - `http://10.211.55.22:8080/admin`
+  - `http://10.211.55.22:8080/api/health`
+  - `http://10.211.55.22:8080/api/legal/documents`
+  - `http://10.211.55.22:8080/api/assets-catalog`
+- End-to-end onboarding contracts now validate on VM for register, login, consents, child create, family overview, activities, rewards and progress
+- VM memory and docs sync should continue through `./scripts/sync-codex-to-vm.sh`
 - Full Phase 0 promotion should use:
   - `./scripts/promote-stack-to-vm.sh`
