@@ -48,9 +48,13 @@ namespace Leggau.Editor
             var views = BuildHud(canvas.transform);
             rewardHud.BindPointsLabel(views.points);
             dashboard.BindViews(
+                views.heroTitle,
+                views.heroBody,
                 views.status,
                 views.parent,
                 views.child,
+                views.legal,
+                views.points,
                 views.progress,
                 views.activities,
                 views.rewards,
@@ -159,8 +163,6 @@ namespace Leggau.Editor
         private static HudViews BuildHud(Transform parent)
         {
             var panelObject = CreatePanel("DashboardPanel", parent, new Vector2(0.04f, 0.05f), new Vector2(0.46f, 0.95f), new Color(1f, 0.99f, 0.96f, 0.9f));
-            CreateLabel("DashboardTitle", panelObject.transform, new Vector2(0.05f, 0.93f), new Vector2(0.95f, 0.99f), 26, FontStyle.Bold, TextAnchor.MiddleLeft, "Leggau MVP");
-            CreateLabel("DashboardSubtitle", panelObject.transform, new Vector2(0.05f, 0.88f), new Vector2(0.95f, 0.93f), 14, FontStyle.Italic, TextAnchor.MiddleLeft, "Bootstrap de autenticacao, familia e mascote");
 
             var actionPanel = CreatePanel("ActionPanel", parent, new Vector2(0.67f, 0.08f), new Vector2(0.96f, 0.92f), new Color(0.99f, 0.98f, 0.94f, 0.92f));
             CreateLabel("ActionTitle", actionPanel.transform, new Vector2(0.08f, 0.9f), new Vector2(0.92f, 0.97f), 22, FontStyle.Bold, TextAnchor.MiddleLeft, "Mascote e acoes");
@@ -168,13 +170,16 @@ namespace Leggau.Editor
 
             return new HudViews
             {
-                status = CreateCardLabel("StatusCard", "Status da sessao", panelObject.transform, new Vector2(0.05f, 0.76f), new Vector2(0.95f, 0.87f), 18, "Status"),
-                parent = CreateCardLabel("ParentCard", "Responsavel", panelObject.transform, new Vector2(0.05f, 0.66f), new Vector2(0.95f, 0.76f), 16, "Responsavel"),
-                child = CreateCardLabel("ChildCard", "Crianca ativa", panelObject.transform, new Vector2(0.05f, 0.56f), new Vector2(0.95f, 0.66f), 16, "Crianca"),
-                points = CreateCardLabel("PointsCard", "Saldo atual", panelObject.transform, new Vector2(0.05f, 0.48f), new Vector2(0.95f, 0.56f), 16, "Pontos"),
-                progress = CreateCardLabel("ProgressCard", "Progresso recente", panelObject.transform, new Vector2(0.05f, 0.31f), new Vector2(0.95f, 0.48f), 14, "Progresso"),
-                activities = CreateCardLabel("ActivitiesCard", "Atividades do dia", panelObject.transform, new Vector2(0.05f, 0.16f), new Vector2(0.95f, 0.31f), 14, "Atividades"),
-                rewards = CreateCardLabel("RewardsCard", "Recompensas", panelObject.transform, new Vector2(0.05f, 0.02f), new Vector2(0.95f, 0.16f), 14, "Recompensas"),
+                heroTitle = CreateLabel("DashboardTitle", panelObject.transform, new Vector2(0.05f, 0.93f), new Vector2(0.95f, 0.99f), 26, FontStyle.Bold, TextAnchor.MiddleLeft, "Leggau MVP"),
+                heroBody = CreateLabel("DashboardSubtitle", panelObject.transform, new Vector2(0.05f, 0.87f), new Vector2(0.95f, 0.93f), 14, FontStyle.Italic, TextAnchor.UpperLeft, "Bootstrap de autenticacao, familia e mascote"),
+                status = CreateCardLabel("StatusCard", "Status da sessao", panelObject.transform, new Vector2(0.05f, 0.76f), new Vector2(0.95f, 0.86f), 16, "Status"),
+                parent = CreateCardLabel("ParentCard", "Responsavel", panelObject.transform, new Vector2(0.05f, 0.66f), new Vector2(0.95f, 0.76f), 15, "Responsavel"),
+                child = CreateCardLabel("ChildCard", "Crianca ativa", panelObject.transform, new Vector2(0.05f, 0.57f), new Vector2(0.95f, 0.66f), 15, "Crianca"),
+                points = CreateCardLabel("PointsCard", "Saldo atual", panelObject.transform, new Vector2(0.05f, 0.5f), new Vector2(0.95f, 0.57f), 15, "Pontos"),
+                legal = CreateCardLabel("LegalCard", "Consentimentos", panelObject.transform, new Vector2(0.05f, 0.35f), new Vector2(0.95f, 0.5f), 13, "Consentimentos"),
+                progress = CreateCardLabel("ProgressCard", "Progresso recente", panelObject.transform, new Vector2(0.05f, 0.23f), new Vector2(0.95f, 0.35f), 13, "Progresso"),
+                activities = CreateCardLabel("ActivitiesCard", "Atividades do dia", panelObject.transform, new Vector2(0.05f, 0.12f), new Vector2(0.95f, 0.23f), 13, "Atividades"),
+                rewards = CreateCardLabel("RewardsCard", "Recompensas", panelObject.transform, new Vector2(0.05f, 0.02f), new Vector2(0.95f, 0.12f), 13, "Recompensas"),
                 flow = CreateCardLabel("FlowCard", "Checklist do bootstrap", actionPanel.transform, new Vector2(0.08f, 0.58f), new Vector2(0.92f, 0.82f), 13, "Etapas"),
                 gauVariant = CreateCardLabel("GauVariantCard", "Mascote ativo", actionPanel.transform, new Vector2(0.08f, 0.39f), new Vector2(0.92f, 0.58f), 14, "Mascote"),
                 catalog = CreateCardLabel("CatalogCard", "Catalogo 3D", actionPanel.transform, new Vector2(0.08f, 0.22f), new Vector2(0.92f, 0.39f), 13, "Catalogo"),
@@ -410,9 +415,12 @@ namespace Leggau.Editor
 
         private sealed class HudViews
         {
+            public TextValueView heroTitle;
+            public TextValueView heroBody;
             public TextValueView status;
             public TextValueView parent;
             public TextValueView child;
+            public TextValueView legal;
             public TextValueView points;
             public TextValueView progress;
             public TextValueView activities;

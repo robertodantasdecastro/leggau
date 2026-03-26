@@ -42,6 +42,7 @@ namespace Leggau.App
 
             isBusy = true;
             dashboardPresenter?.ResetFlow();
+            dashboardPresenter?.SetHero("Bem-vindo ao Leggau", "Preparando o ambiente de desenvolvimento e o mascote Gau.");
             dashboardPresenter?.RenderLoadingState(sessionState, "Carregando ambiente...");
 
             var environment = environmentAsset != null
@@ -54,11 +55,13 @@ namespace Leggau.App
 
             if (environment.useRealAuthBootstrap)
             {
+                dashboardPresenter?.SetHero("Entrando como responsavel", "Criando ou reutilizando a sessao de desenvolvimento.");
                 dashboardPresenter?.MarkFlowLoading("Auth", "registro/login");
                 yield return AuthenticateWithRealAuth(environment, value => requestFailed = value);
             }
             else
             {
+                dashboardPresenter?.SetHero("Ativando login dev", "Usando a trilha rapida de desenvolvimento para liberar o app.");
                 dashboardPresenter?.MarkFlowLoading("Auth", "fallback dev");
                 yield return AuthenticateWithDevLogin(environment, value => requestFailed = value);
             }
@@ -73,6 +76,7 @@ namespace Leggau.App
 
             if (environment.autoAcceptLegalConsents && !sessionState.UsedDevLoginFallback)
             {
+                dashboardPresenter?.SetHero("Revisando consentimentos", "Carregando os documentos legais e registrando os aceites.");
                 dashboardPresenter?.MarkFlowLoading("Legal", "consentimentos");
                 yield return LoadAndAcceptLegalConsents(value => requestFailed = value);
             }
@@ -93,6 +97,7 @@ namespace Leggau.App
             }
 
             dashboardPresenter?.MarkFlowLoading("Familia", "overview");
+            dashboardPresenter?.SetHero("Preparando a familia", "Buscando o responsavel e organizando o espaco infantil.");
             dashboardPresenter?.SetStatus($"Carregando familia via {apiClient.ActiveBaseUrl}...");
 
             yield return apiClient.GetJson(
@@ -131,6 +136,7 @@ namespace Leggau.App
             }
 
             dashboardPresenter?.MarkFlowDone("Crianca", "perfil ativo");
+            dashboardPresenter?.SetHero("Montando a primeira home", "Carregando atividades, catalogo, recompensas e progresso.");
             dashboardPresenter?.SetStatus("Carregando atividades...");
             dashboardPresenter?.MarkFlowLoading("Atividades", "catalogo diario");
 
@@ -211,6 +217,7 @@ namespace Leggau.App
             }
 
             dashboardPresenter?.MarkFlowDone("Progresso", "painel pronto");
+            dashboardPresenter?.SetHero("Tudo pronto", "Responsavel, consentimentos, crianca e dashboard preparados para o MVP.");
             dashboardPresenter?.Render(sessionState);
             gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
             isBusy = false;

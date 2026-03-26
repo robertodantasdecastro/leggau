@@ -19,8 +19,12 @@ namespace Leggau.UI
         };
 
         [SerializeField] private TextValueView statusLabel;
+        [SerializeField] private TextValueView heroTitleLabel;
+        [SerializeField] private TextValueView heroBodyLabel;
         [SerializeField] private TextValueView parentLabel;
         [SerializeField] private TextValueView childLabel;
+        [SerializeField] private TextValueView legalLabel;
+        [SerializeField] private TextValueView pointsLabel;
         [SerializeField] private TextValueView progressLabel;
         [SerializeField] private TextValueView activitiesLabel;
         [SerializeField] private TextValueView rewardsLabel;
@@ -32,9 +36,13 @@ namespace Leggau.UI
         private readonly string[] flowStates = new string[FlowOrder.Length];
 
         public void BindViews(
+            TextValueView heroTitle,
+            TextValueView heroBody,
             TextValueView status,
             TextValueView parent,
             TextValueView child,
+            TextValueView legal,
+            TextValueView points,
             TextValueView progress,
             TextValueView activities,
             TextValueView rewards,
@@ -44,9 +52,13 @@ namespace Leggau.UI
             RewardHudPresenter rewardHud,
             BootstrapRuntimeProbe probe)
         {
+            heroTitleLabel = heroTitle;
+            heroBodyLabel = heroBody;
             statusLabel = status;
             parentLabel = parent;
             childLabel = child;
+            legalLabel = legal;
+            pointsLabel = points;
             progressLabel = progress;
             activitiesLabel = activities;
             rewardsLabel = rewards;
@@ -66,6 +78,12 @@ namespace Leggau.UI
             }
 
             RenderFlow();
+        }
+
+        public void SetHero(string title, string body)
+        {
+            heroTitleLabel?.SetText(title);
+            heroBodyLabel?.SetText(body);
         }
 
         public void MarkFlowLoading(string step, string detail = null)
@@ -147,6 +165,8 @@ namespace Leggau.UI
         {
             parentLabel?.SetText(session.Parent != null ? $"Responsavel: {session.Parent.name}" : "Responsavel: -");
             childLabel?.SetText(session.ActiveChild != null ? $"Crianca: {session.ActiveChild.name} ({session.ActiveChild.age} anos)" : "Crianca: -");
+            legalLabel?.SetText(BuildLegal(session));
+            pointsLabel?.SetText($"Pontos disponiveis: {session.AvailablePoints}");
             progressLabel?.SetText(BuildProgress(session));
             activitiesLabel?.SetText(BuildActivities(session));
             rewardsLabel?.SetText(BuildRewards(session));
@@ -154,6 +174,34 @@ namespace Leggau.UI
             catalogLabel?.SetText(BuildCatalog(session));
 
             rewardHudPresenter?.SetPoints(session.AvailablePoints);
+        }
+
+        private static string BuildLegal(LeggauSessionState session)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("Consentimentos:");
+
+            if (session.LegalDocuments == null || session.LegalDocuments.Length == 0)
+            {
+                builder.AppendLine("- Ainda nao carregados");
+                return builder.ToString();
+            }
+
+            foreach (var document in session.LegalDocuments)
+            {
+                if (document == null)
+                {
+                    continue;
+                }
+
+                builder.Append("- ");
+                builder.Append(document.title);
+                builder.Append(" (");
+                builder.Append(session.ConsentsRecorded ? "aceito" : "pendente");
+                builder.AppendLine(")");
+            }
+
+            return builder.ToString();
         }
 
         private static string BuildGauVariant(LeggauSessionState session)

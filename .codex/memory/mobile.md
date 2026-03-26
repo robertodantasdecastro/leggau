@@ -5,7 +5,7 @@
 - Engine: `Unity`
 - Targets: `Android`, `iOS`
 - Current API base for development: `http://10.211.55.22:8080/api`
-- Local API fallback for Unity bootstrap validation: `http://localhost:3000/api`
+- Backend for mobile development must stay on `vm2`; no local API fallback is canonical now
 - Heavy mobile artifacts must stay under `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/mobile`
 
 ## Current Mac Status
@@ -104,6 +104,7 @@
 - The bootstrap now exposes `RetryBootstrap` so the full auth/legal/family bootstrap can be rerun during Play Mode without reopening the scene
 - The generated HUD now uses card-style sections and a dedicated mascot/actions panel to make Unity iteration easier after editor or SSD interruptions
 - The HUD now also shows a live bootstrap checklist for `Auth`, `Legal`, `Familia`, `Crianca`, `Atividades`, `Recompensas` and `Progresso`
+- The Unity workspace had to be reopened on `2026-03-26` through the canonical `-projectPath` flow after a temporary nested project folder appeared under `mobile/`; that stray folder was removed
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination
 - `~/Library/Application Support/UnityHub/secondaryInstallPath.json` now points to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors`

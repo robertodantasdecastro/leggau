@@ -151,7 +151,9 @@ Date checked: `2026-03-25`
   - `POST /api/legal/consents`
   - `POST /api/children` when the authenticated family still has no child profile
   - fallback to `POST /api/auth/dev-login` only when configured and needed
-- For Unity Play Mode validation on the Mac, the primary VM URL still points to `http://10.211.55.22:8080/api`, but the local development fallback used by the mobile bootstrap is now `http://localhost:3000/api`
+- For the mobile app, the backend is now treated as VM-only development infrastructure:
+  - primary API target: `http://10.211.55.22:8080/api`
+  - no local API fallback should be considered canonical for frontend development
 - The real-auth first-access path is now validated locally:
   - register parent
   - record legal consent
@@ -187,6 +189,7 @@ Date checked: `2026-03-25`
   - activities
   - rewards
   - progress
+- On `2026-03-26`, the Unity workspace was reopened from the correct `-projectPath` after a temporary accidental nested project under `mobile/Leggau`; that stray project directory was removed
 - Local catalog validation is now reproducible through:
   - `scripts/check-gau-runtime-catalog.sh`
 

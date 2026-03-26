@@ -9,7 +9,7 @@
 - Local portal gateway: `http://localhost:8080/`
 - Local admin gateway: `http://localhost:8080/admin/`
 - Official dev backend target: `http://10.211.55.22:8080/api`
-- Unity mobile runtime fallback target on the Mac: `http://localhost:3000/api`
+- Mobile development should treat the VM as the only canonical backend target
 - Backend code build passes with `cd backend && npm run build`
 - Backend runtime is intended to live on `vm2`; the local stack is fallback-only
 

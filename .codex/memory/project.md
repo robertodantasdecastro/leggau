@@ -34,7 +34,7 @@
 
 ## Development Focus
 
-- Backend local remains a fallback; official dev backend target is `vm2` at `10.211.55.22`
+- Official dev backend target is `vm2` at `10.211.55.22`
 - Backend infrastructure and services must live on the VM, not on the MacBook
 - Unity mobile frontend is moving from code-first bootstrap to first imported scene and Gau asset delivery
 - Portal institucional and web admin now exist as repository surfaces and must be treated as first-class parts of the MVP
@@ -52,6 +52,7 @@
 - The latest validated bootstrap runtime reached `ready` with dashboard data loaded through the real auth/legal/child flow using local fallback
 - The bootstrap scene now includes an in-editor retry path and a more structured HUD for faster Play Mode iteration after interruptions or environment restarts
 - The bootstrap HUD now tracks the onboarding pipeline step-by-step so auth/legal/family progress is visible during Play Mode
+- As of `2026-03-26`, mobile development should no longer depend on a local backend fallback; VM remains the only canonical backend target
 - Unity mobile build modules are still not present in the validated editor install
 - A second SSD-backed shell for `6000.0.71f1` exists, but it currently fails signature validation and should not be used until it is reinstalled cleanly
 - Full Xcode is still not installed; `xcodes` is available and is the preferred reproducible path for downloading to the SSD-backed tooling tree

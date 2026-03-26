@@ -98,7 +98,7 @@
   - onboarding/bootstrap progress is now visible as a live checklist inside the Unity HUD
 - Remaining:
   - replace the current runtime probe-based validation with direct visual confirmation of the same flow in editor Play Mode
-  - replace temporary development fallback with remote VM backend as primary once `vm2` is available
+  - validate the mobile flow against the VM backend only, once `vm2` access is restored
 
 ### Phase 6 and beyond
 
