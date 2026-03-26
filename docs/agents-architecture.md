@@ -8,6 +8,8 @@ The Leggau project uses a local, repository-backed agent model. The MacBook acts
 flowchart LR
   Mac["Mac Coordinator"]
   Frontend["Frontend Mobile Agent"]
+  AdultWeb["Adult Web Agent"]
+  Safety["Safety and Compliance Agent"]
   Blender["Blender 3D Agent"]
   Platform["Android and iOS Agent"]
   API["API Integration Agent"]
@@ -17,6 +19,8 @@ flowchart LR
   Prod["Production EC2 Agent"]
 
   Mac --> Frontend
+  Mac --> AdultWeb
+  Mac --> Safety
   Mac --> Blender
   Mac --> Platform
   Mac --> API
@@ -25,6 +29,9 @@ flowchart LR
   Mac --> VM
   Portal --> API
   Admin --> API
+  AdultWeb --> API
+  Safety --> API
+  Safety --> Admin
   VM --> Prod
 ```
 
@@ -32,6 +39,8 @@ flowchart LR
 
 - `Mac Coordinator`: assign work, preserve memory, keep git and docs synchronized.
 - `Frontend Mobile`: own Unity scenes, UI, bootstrap flow and runtime session state.
+- `Adult Web`: own parent and therapist responsive web/PWA surfaces.
+- `Safety and Compliance`: own rulebook, moderation architecture, consent policy and security gates.
 - `Blender 3D`: own Gau source art, variants, rigging and FBX exports.
 - `Android and iOS`: keep target settings, SDKs and build readiness aligned.
 - `API Integration`: keep frontend and backend contracts stable and versioned.

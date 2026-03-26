@@ -11,6 +11,11 @@ Date checked: `2026-03-26`
 - Monorepo structure present: `backend`, `mobile`, `web`, `infra`, `docs`, `scripts`
 - Local Codex memory structure present in `.codex/`
 - SSD storage policy documented in `docs/storage-policy.md`
+- Platform replan artifacts now documented in:
+  - `docs/platform-blueprint.md`
+  - `docs/actor-matrix.md`
+  - `docs/compliance-rulebook.md`
+  - `docs/platform-backlog.md`
 
 ## Backend Local Status
 
@@ -71,6 +76,20 @@ Date checked: `2026-03-26`
   - `scripts/promote-stack-to-vm.sh`
 - The VM preflight helper remains available for spot checks:
   - `scripts/check-vm2-access.sh`
+
+## Platform Replan Status
+
+- The project has now been reframed as a multiactor platform, not only a child-facing mobile MVP
+- Frozen direction:
+  - Unity for `child` and `adolescent`
+  - web responsiva/PWA for `parent_guardian` and `therapist`
+  - web admin for operations, compliance, billing and support
+- Compliance, moderation, auditing and security are now treated as platform-core workstreams
+- The next execution step is now Phase A:
+  - actor matrix
+  - rulebook
+  - moderation boundaries
+  - implementation-ready backlog
 
 ## Mobile Mac Status
 

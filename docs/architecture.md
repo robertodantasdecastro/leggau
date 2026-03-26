@@ -1,35 +1,58 @@
-# Arquitetura Inicial
+# Arquitetura da Plataforma
+
+## Referencias principais
+
+- blueprint: `docs/platform-blueprint.md`
+- matriz de atores: `docs/actor-matrix.md`
+- rulebook: `docs/compliance-rulebook.md`
+- backlog: `docs/platform-backlog.md`
 
 ## Camadas
 
-- `mobile/`: cliente Unity para Android/iOS com cenas 3D e overlays 2D
-- `backend/`: API NestJS para autenticacao, familia, atividades, progresso, recompensas, legal, admin e billing sandbox
-- `web/portal`: portal institucional, legal e de distribuicao
-- `web/admin`: web admin tecnico-operacional e comercial
+- `mobile/`: cliente Unity para `child` e `adolescent`
+- `backend/`: API NestJS multiactor para identidade, vínculos, legal, moderação, experiência, admin e billing
+- `web/portal`: portal institucional e base para entrada web responsiva/PWA
+- `web/admin`: web admin tecnico-operacional, compliance e billing
 - `postgres`: persistencia principal
-- `redis`: cache leve e base para futuras filas/sessoes
+- `redis`: cache leve, sessões e futura base de presença/filas
 - `nginx`: reverse proxy e entrega de portal, admin, API e uploads
 
-## Fluxo principal
+## Superfícies por ator
 
-1. O app Unity autentica com `POST /api/auth/login` ou usa `dev-login` em ambiente tecnico.
-2. O app busca perfil, familia, atividades e catalogo de assets.
-3. Ao concluir uma atividade, envia `POST /api/progress/checkins`.
-4. A API registra o evento, soma pontos e libera recompensas.
-5. O portal publica narrativa, download, termos e privacidade.
-6. O web admin consome `admin/*` para operacao, usuarios, recursos da VM e billing sandbox.
+- `child` e `adolescent`: Unity
+- `parent_guardian`: web responsiva/PWA
+- `therapist`: web responsiva/PWA
+- `admin` e `support_admin`: web admin
+
+## Fluxo principal revisado
+
+1. O responsável cria conta, aceita consentimentos e cria/vincula perfis infantis.
+2. O terapeuta entra por fluxo próprio e só acessa dados após vínculo aprovado.
+3. A criança/adolescente entra no app Unity apenas com vínculo e política válidos.
+4. O app carrega perfil, faixa etária, atividades, progresso, recompensas e Gau.
+5. Interações, salas e comunicação dependem de `InteractionPolicy`.
+6. Admin opera usuários, vínculos, billing, moderação, auditoria e incidentes.
 
 ## Dados persistidos
 
 - `parent_profiles`
+- `therapist_profiles`
 - `app_users`
 - `admin_users`
 - `child_profiles`
+- `adolescent_profiles`
+- `guardian_links`
+- `care_team_memberships`
 - `activities`
 - `rewards`
 - `progress_entries`
 - `legal_documents`
 - `consent_records`
+- `interaction_policies`
+- `audit_events`
+- `moderation_cases`
+- `device_sessions`
+- `media_verification_jobs`
 - `billing_providers`
 - `billing_plans`
 - `billing_transactions`
@@ -38,11 +61,13 @@
 
 - `DEV_API_BASE_URL` aponta para `http://10.211.55.22:8080/api`.
 - `DEV_PORTAL_ALIAS_URL` e `DEV_ADMIN_ALIAS_URL` representam aliases temporarios `trycloudflare.com` para a `vm2`.
-- O frontend mobile deve usar localhost apenas como fallback quando a `vm2` estiver indisponivel.
+- O backend de desenvolvimento continua centralizado na `vm2`.
+- As superfícies adultas seguem direção `web/PWA-first`.
 - O portal local responde em `/` e o admin local responde em `/admin/` via Nginx.
 - Uploads ficam fora do codigo-fonte e sao servidos por `/uploads/`.
 - Arquivos pesados de desenvolvimento devem permanecer no SSD externo, dentro de `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/`.
 - Postgres e Redis locais usam bind mounts em `./.data/docker/` para evitar consumo do disco interno.
 - O runtime de aliases Cloudflare dev deve persistir em `./.data/runtime/cloudflare/`.
 - Builds mobile, cache local do Unity e artefatos do Blender devem usar diretorios dentro de `./.data/`.
+- Processamento deve priorizar execução no dispositivo quando seguro e viável.
 - A EC2 de producao deve replicar essa topologia antes de endurecer a operacao.

@@ -1,13 +1,13 @@
 # Leggau
 
-Monorepo inicial do Leggau com:
+Monorepo do Leggau para uma plataforma multiactor com:
 
-- `mobile/`: base do projeto Unity para Android/iOS
+- `mobile/`: app Unity para `child` e `adolescent`
 - `backend/`: API NestJS com Postgres e Redis
-- `web/portal`: portal institucional, legal e de distribuicao
-- `web/admin`: web admin tecnico-operacional e billing sandbox
+- `web/portal`: portal institucional e futura entrada web/PWA
+- `web/admin`: web admin tecnico-operacional, compliance e billing
 - `infra/`: Docker Compose, Nginx, systemd e scripts operacionais
-- `docs/`: arquitetura, setup da `vm2` e checklist da EC2
+- `docs/`: arquitetura, compliance, backlog, setup da `vm2` e checklist da EC2
 
 ## Comecando rapido
 
@@ -53,16 +53,24 @@ npm run start:local
 `-- scripts
 ```
 
+## Documentos canônicos de plataforma
+
+- Blueprint multiactor: [docs/platform-blueprint.md](/Volumes/SSDExterno/Desenvolvimento/Leggau/docs/platform-blueprint.md)
+- Matriz de atores: [docs/actor-matrix.md](/Volumes/SSDExterno/Desenvolvimento/Leggau/docs/actor-matrix.md)
+- Rulebook de compliance: [docs/compliance-rulebook.md](/Volumes/SSDExterno/Desenvolvimento/Leggau/docs/compliance-rulebook.md)
+- Backlog executável da plataforma: [docs/platform-backlog.md](/Volumes/SSDExterno/Desenvolvimento/Leggau/docs/platform-backlog.md)
+- Timeline de entrega: [docs/mvp-timeline.md](/Volumes/SSDExterno/Desenvolvimento/Leggau/docs/mvp-timeline.md)
+
 ## Observacoes
 
 - Arquivos grandes do projeto devem ficar no SSD externo em `/Volumes/SSDExterno/Desenvolvimento/Leggau`.
 - A stack Docker local foi configurada para usar bind mounts em `./.data/`, evitando deixar Postgres, Redis, uploads e backups no disco interno.
 - O gateway Nginx agora publica `portal`, `admin` e `api` a partir do mesmo stack local.
 - Builds mobile, cache local do Unity e artefatos 3D/Blender devem usar as raizes definidas em `.env`.
-- O mobile deve preferir a VM `10.211.55.22` como backend de desenvolvimento e usar localhost apenas como fallback.
+- O backend oficial de desenvolvimento continua em `vm2` em `http://10.211.55.22:8080/api`.
+- O mobile infantil/adolescente continua no Unity; superfícies adultas passam a ser `web responsiva/PWA`.
 - O portal e o admin devem usar aliases temporarios `trycloudflare.com` em dev na `vm2`, com dominio final em producao:
   - `www.leggau.com`
   - `admin.leggau.com`
   - `api.leggau.com`
-- O acesso SSH para `vm2` ainda precisa estar autorizado com a chave correta para executar o deploy remoto automatizado.
 - O alias `leggau` para a futura EC2 ainda nao esta configurado nesta maquina.

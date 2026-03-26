@@ -38,22 +38,16 @@
 
 ## Current Frontend Goal
 
-- Bootstrap app environment
-- Perform real auth bootstrap against backend
-- Register legal consents in development flow
-- Load family overview
-- Load activities
-- Load assets catalog
-- Load rewards and progress
-- Present dashboard flow that can evolve into actual game scenes
-- Place the Gau mascot in the first bootstrap scene
-- Keep the VM API as the only canonical backend target
+- keep Unity as the primary surface for `child` and `adolescent`
+- evolve the current bootstrap into actor-aware child/adolescent shells
+- preserve the VM API as the only canonical backend target
+- leave adult experiences to responsive web/PWA surfaces in the next platform wave
 
 ## Immediate Next UI Targets
 
-1. Stronger product styling for the onboarding cards and home
-2. Clearer consent review and acceptance affordances
-3. Richer child reuse/selection affordance
+1. Child shell and adolescent shell split
+2. Age-profile presentation system
+3. Policy-aware interaction gates
 4. More interactive first-home experience
 5. Check-in and reward refresh
 

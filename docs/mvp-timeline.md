@@ -37,99 +37,76 @@
 - Exit criteria:
   - satisfied
 
-### Phase 1 — Backend identity, legal and RBAC
-
-- Status: `started ahead of schedule`
-- Completed:
-  - app auth endpoints scaffolded
-  - admin auth scaffolded
-  - legal document and consent modules scaffolded
-  - billing provider/plan/transaction modules scaffolded
-- Remaining:
-  - harden persistence and behavior on Postgres in VM runtime
-  - extend reset-password flow from sandbox token to real email channel contract
-  - add stricter RBAC and audit trails
-
-### Phase 2 — Portal web multiuse
+### Phase A — Platform rulebook and executable compliance
 
 - Status: `started`
 - Completed:
-  - public pages scaffolded
-  - production domain targets documented
-  - dev alias runtime placeholders implemented
+  - platform replan frozen for multiactor beta
+  - blueprint created for Unity + web/PWA + admin
+  - actor matrix documented
+  - compliance/security rulebook documented
+  - executable backlog documented
 - Remaining:
-  - connect portal texts and download flows to final beta distribution paths
-  - validate portal behind VM gateway
+  - translate rulebook into backend work items and policy entities
+  - freeze feature flags and moderation boundaries
+  - convert actor matrix into API/module contracts
 
-### Phase 3 — Web admin operational
+### Phase B — Identity, links and security base
 
-- Status: `started`
+- Status: `planned`
+- Scope:
+  - auth, reset, sessions and devices
+  - guardian links and care-team memberships
+  - RBAC/ABAC
+  - audit, secret handling and secure logging
+
+### Phase C — Adult web/PWA surfaces
+
+- Status: `planned`
+- Scope:
+  - parent shell
+  - therapist shell
+  - responsive/PWA behavior
+  - supervision, reports and permissions
+
+### Phase D — Child and adolescent Unity app
+
+- Status: `partially advanced`
 - Completed:
-  - admin login
-  - overview/realtime/users/billing overview endpoints
-  - admin dashboard shell consuming the new endpoints
+  - Unity bootstrap and runtime validation
+  - first persistent onboarding/home flow
+  - VM-backed runtime validation at `state=ready`
 - Remaining:
-  - richer operations modules
-  - password reset management UI
-  - legal/admin workflows
-  - VM service introspection once remote access is available
+  - child/adolescent shell split
+  - age-profile presentation system
+  - policy-aware interaction model
 
-### Phase 4 — Billing sandbox
+### Phase E — Monitored interaction and moderation
 
-- Status: `started`
-- Completed:
-  - providers, plans, transactions and overview endpoints
-  - sandbox seed data
-- Remaining:
-  - webhook ingestion flow
-  - provider settings UI depth
-  - operational ledger refinements
+- Status: `planned`
+- Scope:
+  - rooms
+  - presence
+  - invites
+  - moderation pipeline
+  - parent and therapist controls
 
-### Phase 5 — Mobile MVP functional
+### Phase F — Billing, admin and beta readiness
 
-- Status: `interactive onboarding in progress`
-- Completed:
-  - Unity bootstrap, Gau catalog and art variants
-  - generated bootstrap scene
-  - batch-configured Unity project settings and validation report
-  - real auth + legal bootstrap foundation in the mobile app with dev fallback
-  - first-access child bootstrap path implemented through `POST /api/children`
-  - Unity Play Mode runtime reached `ready` through the bootstrap flow, with dashboard loaded and Gau session data present
-  - bootstrap HUD is now organized for in-editor iteration and supports runtime retry without restarting the scene
-  - onboarding/bootstrap progress is now visible as a live checklist inside the Unity HUD
-  - the same backend contract is now validated on `vm2`
-  - bootstrap UI now has a persistent onboarding panel and a first-home panel instead of only debug cards
-  - onboarding is now action-driven instead of silent on startup
-  - the bootstrap scene now exposes interactive inputs for responsible auth, consent confirmation and child naming
-  - the editor driver now supports an automated development pass for repeatable validation of the onboarding flow
-  - after the machine reboot and VM restart on `2026-03-26`, batch validation again reached `state=ready` against `vm2`
-  - onboarding and first-home state now persist locally between app launches
-  - reopening the app now resumes the pending onboarding step or refreshes the saved home directly from `vm2`
-  - the child step now makes reuse of an existing child profile explicit in the onboarding summary
-  - onboarding CTAs and child/home summaries now adapt to the current state of the journey
-  - the side panel now guides the next step of the experience instead of acting only as a technical catalog card
-  - the scene now exposes an explicit local reset action for the saved journey
-  - home summary cards are now more compact and less dependent on long text lists
-- Remaining:
-  - refine the onboarding layout from functional UI into stronger product UI
-  - add richer in-home interactions beyond the first persistent summary
-  - keep validating the same flow in the graphical editor after each major UI pass
-
-### Phase 6 and beyond
-
-- Status: `not started`
-- Depend on:
-  - Phase 5 runtime validation in Unity
+- Status: `planned`
+- Scope:
+  - admin expansion
+  - subscriptions and billing flows
+  - security testing
+  - compliance readiness
+  - closed beta launch gate
 
 ## Next Execution Step
 
-1. Add the next layer of interactive UI:
-   - stronger visual treatment for responsible/session entry
-   - clearer consent review and acceptance copy
-   - child selection/creation affordances
-2. Enrich the persistent home with more product-like actions and less text-heavy presentation.
-3. Keep `vm2` as the only development backend and continue feature work from the VM runtime.
-4. Prepare Android/iOS build validation on top of the now-complete Phase 0 toolchain.
+1. Execute Phase A by converting the new rulebook into implementation-ready backend, frontend and admin contracts.
+2. Keep `vm2` as the only development backend and treat the new docs as the canonical source for platform direction.
+3. Start backend multiactor scaffolding from the actor matrix and contract namespaces.
+4. Preserve the current Unity child flow as the seed of Phase D while adult surfaces move to web/PWA.
 
 ## Branch and Delivery Rule
 

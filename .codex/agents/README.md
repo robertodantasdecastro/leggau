@@ -6,6 +6,8 @@ This directory defines the local agent architecture for Leggau.
 
 - `mac-coordinator.md`: main orchestration agent on the MacBook
 - `frontend-mobile.md`: Unity/mobile implementation agent
+- `adult-web.md`: parent and therapist responsive web/PWA agent
+- `safety-compliance.md`: compliance, moderation and security rulebook agent
 - `blender-3d.md`: Gau modeling, rigging and pixel-style art agent
 - `android-ios.md`: platform compatibility and build-target agent
 - `api-integration.md`: frontend/backend contract and synchronization agent

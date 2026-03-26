@@ -31,9 +31,13 @@
 
 - Mac coordinator: `.codex/agents/mac-coordinator.md`
 - Frontend mobile specialist: `.codex/agents/frontend-mobile.md`
+- Adult web/PWA specialist: `.codex/agents/adult-web.md`
+- Safety and compliance specialist: `.codex/agents/safety-compliance.md`
 - Blender and 3D specialist: `.codex/agents/blender-3d.md`
 - Android and iOS platform specialist: `.codex/agents/android-ios.md`
 - API integration specialist: `.codex/agents/api-integration.md`
+- Web portal specialist: `.codex/agents/web-portal.md`
+- Web admin specialist: `.codex/agents/web-admin.md`
 - VM backend specialist: `.codex/agents/vm-backend.md`
 - Future production specialist: `.codex/agents/prod-ec2.md`
 
@@ -114,26 +118,55 @@ Use `.env.example` as the non-sensitive source of truth.
 
 ## Current Environment Status
 
-As of `2026-03-25`:
+As of `2026-03-26`:
 
 - Official dev backend target is `vm2` at `10.211.55.22`.
 - Backend infrastructure must run on `vm2` under `~/leggau`.
 - Local backend remains fallback-only at `http://localhost:8080/api` and should stay off on the Mac unless the VM path is blocked.
-- `vm2` resolves to `10.211.55.22`, but SSH authentication is currently blocked for all known local keys.
-- Latest SSH debug confirms the server offers `publickey,password` and rejects the current `id_ed25519` identity.
+- `vm2` SSH automation is working again and the active runtime root is `~/leggau`.
+- The full remote stack is validated on the VM:
+  - `leggau-api`
+  - `leggau-portal`
+  - `leggau-admin`
+  - `leggau-nginx`
+  - `leggau-postgres`
+  - `leggau-redis`
+- Gateway validation now passes on `10.211.55.22:8080` for:
+  - `/`
+  - `/admin`
+  - `/api/health`
+  - onboarding and content endpoints used by the Unity runtime
 - `leggau` production alias is still reserved as future target, not validated here.
+- The product is now being planned as a multiactor platform:
+  - Unity for `child` and `adolescent`
+  - responsive web/PWA for `parent_guardian` and `therapist`
+  - web admin for operations, compliance, moderation and billing
 - Mac toolchain status:
   - Docker: ready
   - Java 17: present
   - `adb`: present
   - Unity Hub: installed
   - Unity editor detected on SSD at `.data/tooling/unity/editors/6000.4.0f1/Unity.app`
+  - Unity mobile modules validated in `PlaybackEngines/AndroidPlayer` and `PlaybackEngines/iOSSupport`
   - Unity Hub templates are symlinked to `.data/tooling/unityhub/Templates`
   - Blender `4.5.1 LTS`: installed
-  - `xcodebuild`: command line tools only
+  - `Xcode.app`: installed and selected at `/Applications/Xcode.app`
+  - `xcodebuild -version`: `Xcode 26.4`
 - Gau asset pipeline is now versioned:
   - `mobile/Assets/Art/Characters/Gau/Source/Gau.blend`
   - `mobile/Assets/Art/Characters/Gau/Exports/Gau.fbx`
+- Latest validated Unity runtime probe against the VM reached:
+  - `state=ready`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
+- Platform replan artifacts are now canonical docs:
+  - `docs/platform-blueprint.md`
+  - `docs/actor-matrix.md`
+  - `docs/compliance-rulebook.md`
+  - `docs/platform-backlog.md`
 - Heavy project files must stay on the external SSD under `/Volumes/SSDExterno/Desenvolvimento/Leggau`.
 - Local Docker persistence must stay under `./.data/docker/`, not Docker named volumes on the internal disk.
 - Cleanup and sync routines are now repository-owned scripts so the Mac coordinator and remote agents can rerun them consistently.

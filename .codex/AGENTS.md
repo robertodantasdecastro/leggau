@@ -24,4 +24,9 @@ This directory is the canonical Codex memory for the Leggau repository.
 - `memory/project.md`: product and repository context
 - `memory/infra.md`: backend, Docker and remote environment context
 - `memory/mobile.md`: Unity/mobile context and next implementation targets
+- `memory/`: evolving project continuity for platform, infra and mobile
+- `../docs/platform-blueprint.md`: multiactor platform blueprint
+- `../docs/actor-matrix.md`: actor roles, permissions and supervision rules
+- `../docs/compliance-rulebook.md`: compliance, security and moderation baseline
+- `../docs/platform-backlog.md`: executable platform phases and work items
 - `docs/art-pipeline.md`: Gau Blender to Unity workflow

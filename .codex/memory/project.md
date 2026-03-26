@@ -38,6 +38,10 @@
 - Backend infrastructure and services must live on the VM, not on the MacBook
 - Unity mobile frontend is moving from code-first bootstrap to first imported scene and Gau asset delivery
 - Portal institucional and web admin now exist as repository surfaces and must be treated as first-class parts of the MVP
+- The product has now been reframed as a multiactor platform:
+  - `child` and `adolescent` in Unity
+  - `parent_guardian` and `therapist` in responsive web/PWA
+  - `admin` and `support_admin` in the admin surface
 - Billing enters in sandbox mode only during this phase
 - Portal and admin Next.js builds have already passed locally
 - Remote VM development is now operational through SSH on `vm2`
@@ -77,6 +81,11 @@
   - VM backend is running on `vm2`
   - canonical Unity editor has Android/iOS support
   - graphical bootstrap sign-off reached `state=ready` against the VM runtime
+- Phase A platform rulebook is now started through repo-backed docs:
+  - `docs/platform-blueprint.md`
+  - `docs/actor-matrix.md`
+  - `docs/compliance-rulebook.md`
+  - `docs/platform-backlog.md`
 - After the machine reboot later on `2026-03-26`, `vm2` had to be started again from `~/leggau`, and the refreshed batch validation still reached:
   - `state=ready`
   - `parentName=Responsavel Demo`
