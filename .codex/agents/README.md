@@ -34,5 +34,6 @@ This directory defines the local agent architecture for Leggau.
 - Phase C is now the active execution front:
   - `vm-backend.md` owns the canonical runtime and migration validation
   - `api-integration.md` owns compatibility between legacy Unity consumers and the new multiactor namespaces
-  - `adult-web.md` owns the next parent and therapist web/PWA shells on top of the Phase B contracts
-  - `web-admin.md` owns the admin surfaces for approvals, audit, moderation and policy operations exposed by the Phase B runtime
+  - `adult-web.md` owns the next parent and therapist web/PWA shells on top of the Phase B contracts and the now-live Google/Apple quick-auth foundation
+  - `web-admin.md` owns the admin surfaces for provider governance, approvals, audit, moderation and policy operations exposed by the runtime
+  - `safety-compliance.md` owns the legal gates, provider-secret handling expectations and OCR/biometric simulation rules that now back the auth and verification checkpoint

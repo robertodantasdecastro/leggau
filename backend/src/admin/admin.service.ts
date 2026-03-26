@@ -5,12 +5,18 @@ import { execFileSync } from 'child_process';
 import { cpus, freemem, totalmem, uptime } from 'os';
 import { join } from 'path';
 import { Repository } from 'typeorm';
+import { UpsertAuthProviderConfigDto } from '../identity-providers/dto/upsert-auth-provider-config.dto';
 import { AppUser } from '../common/entities/app-user.entity';
 import { AdminUser } from '../common/entities/admin-user.entity';
+import { AdolescentProfile } from '../common/entities/adolescent-profile.entity';
 import { ChildProfile } from '../common/entities/child-profile.entity';
+import { ExternalIdentity } from '../common/entities/external-identity.entity';
+import { TherapistProfile } from '../common/entities/therapist-profile.entity';
 import { ParentProfile } from '../common/entities/parent-profile.entity';
 import { SessionStoreService } from '../common/session-store.service';
 import { HealthService } from '../health/health.service';
+import { IdentityProvidersService } from '../identity-providers/identity-providers.service';
+import { MediaVerificationService } from '../media-verification/media-verification.service';
 
 @Injectable()
 export class AdminService {
@@ -18,6 +24,8 @@ export class AdminService {
     private readonly configService: ConfigService,
     private readonly healthService: HealthService,
     private readonly sessionStoreService: SessionStoreService,
+    private readonly identityProvidersService: IdentityProvidersService,
+    private readonly mediaVerificationService: MediaVerificationService,
     @InjectRepository(AppUser)
     private readonly appUserRepository: Repository<AppUser>,
     @InjectRepository(AdminUser)
@@ -26,6 +34,12 @@ export class AdminService {
     private readonly parentRepository: Repository<ParentProfile>,
     @InjectRepository(ChildProfile)
     private readonly childRepository: Repository<ChildProfile>,
+    @InjectRepository(AdolescentProfile)
+    private readonly adolescentRepository: Repository<AdolescentProfile>,
+    @InjectRepository(TherapistProfile)
+    private readonly therapistRepository: Repository<TherapistProfile>,
+    @InjectRepository(ExternalIdentity)
+    private readonly externalIdentityRepository: Repository<ExternalIdentity>,
   ) {}
 
   async getOverview() {
@@ -72,11 +86,15 @@ export class AdminService {
   }
 
   async getUsers() {
-    const [appUsers, parents, children, admins] = await Promise.all([
+    const [appUsers, parents, children, adolescents, therapists, admins, externalIdentities] =
+      await Promise.all([
       this.appUserRepository.find({ order: { createdAt: 'ASC' } }),
       this.parentRepository.find({ order: { name: 'ASC' } }),
       this.childRepository.find({ order: { name: 'ASC' } }),
+      this.adolescentRepository.find({ order: { name: 'ASC' } }),
+      this.therapistRepository.find({ order: { name: 'ASC' } }),
       this.adminUserRepository.find({ order: { createdAt: 'ASC' } }),
+      this.externalIdentityRepository.find({ order: { createdAt: 'ASC' } }),
     ]);
 
     return {
@@ -89,6 +107,17 @@ export class AdminService {
       })),
       parents,
       children,
+      adolescents,
+      therapists,
+      externalIdentities: externalIdentities.map((identity) => ({
+        id: identity.id,
+        appUserId: identity.appUserId,
+        provider: identity.provider,
+        providerSubject: identity.providerSubject,
+        email: identity.email,
+        emailVerifiedAt: identity.emailVerifiedAt,
+        lastLoginAt: identity.lastLoginAt,
+      })),
       admins: admins.map((admin) => ({
         id: admin.id,
         email: admin.email,
@@ -100,9 +129,11 @@ export class AdminService {
   }
 
   async getUserSegments() {
-    const [parents, children, admins, appUsers] = await Promise.all([
+    const [parents, children, adolescents, therapists, admins, appUsers] = await Promise.all([
       this.parentRepository.count(),
       this.childRepository.count(),
+      this.adolescentRepository.count(),
+      this.therapistRepository.count(),
       this.adminUserRepository.count(),
       this.appUserRepository.count(),
     ]);
@@ -110,11 +141,31 @@ export class AdminService {
     return {
       parents,
       children,
+      adolescents,
+      therapists,
       admins,
       supportAdmins: Math.max(admins - 1, 0),
-      healthProfessionals: Math.max(Math.floor(appUsers / 3), 1),
+      healthProfessionals: therapists,
       totalAppUsers: appUsers,
     };
+  }
+
+  async listAuthProviders() {
+    return this.identityProvidersService.listAdminConfigs();
+  }
+
+  async upsertAuthProvider(
+    dto: UpsertAuthProviderConfigDto,
+    actor: { subjectId: string; actorRole: string },
+  ) {
+    return this.identityProvidersService.upsertConfig(dto, {
+      actorRole: actor.actorRole,
+      actorUserId: actor.subjectId,
+    });
+  }
+
+  async listMediaVerificationJobs() {
+    return this.mediaVerificationService.listAll();
   }
 
   async resetUserPassword(id: string) {

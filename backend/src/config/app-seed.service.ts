@@ -8,6 +8,7 @@ import { AppUser } from '../common/entities/app-user.entity';
 import { BillingPlan } from '../common/entities/billing-plan.entity';
 import { BillingProvider } from '../common/entities/billing-provider.entity';
 import { BillingTransaction } from '../common/entities/billing-transaction.entity';
+import { AuthProviderConfig } from '../common/entities/auth-provider-config.entity';
 import { ChildProfile } from '../common/entities/child-profile.entity';
 import { GuardianLink } from '../common/entities/guardian-link.entity';
 import { InteractionPolicy } from '../common/entities/interaction-policy.entity';
@@ -34,6 +35,8 @@ export class AppSeedService implements OnModuleInit {
     private readonly childRepository: Repository<ChildProfile>,
     @InjectRepository(GuardianLink)
     private readonly guardianLinkRepository: Repository<GuardianLink>,
+    @InjectRepository(AuthProviderConfig)
+    private readonly authProviderConfigRepository: Repository<AuthProviderConfig>,
     @InjectRepository(InteractionPolicy)
     private readonly interactionPolicyRepository: Repository<InteractionPolicy>,
     @InjectRepository(Activity)
@@ -58,6 +61,7 @@ export class AppSeedService implements OnModuleInit {
     await this.seedActivities();
     await this.seedRewards();
     await this.seedLegalDocuments();
+    await this.seedAuthProviderConfigs();
     await this.seedBilling();
   }
 
@@ -360,6 +364,65 @@ export class AppSeedService implements OnModuleInit {
     }
 
     this.logger.log('Seeded billing sandbox data.');
+  }
+
+  private async seedAuthProviderConfigs() {
+    if ((await this.authProviderConfigRepository.count()) > 0) {
+      return;
+    }
+
+    await this.authProviderConfigRepository.save(
+      [
+        this.authProviderConfigRepository.create({
+          provider: 'google',
+          displayName: 'Google',
+          enabled: false,
+          verificationMode: 'mock',
+          clientId: 'google-client-id-placeholder',
+          issuer: 'https://accounts.google.com',
+          jwksUrl: 'https://www.googleapis.com/oauth2/v3/certs',
+          allowedAudiences: ['google-client-id-placeholder'],
+          scopes: ['openid', 'email', 'profile'],
+          metadata: {
+            mockProfiles: [
+              {
+                subject: 'google-parent-helena',
+                email: 'helena.parent@leggau.local',
+                emailVerified: true,
+                name: 'Helena Dantas',
+                avatarUrl: 'https://example.invalid/google-parent-helena.png',
+              },
+            ],
+          },
+        }),
+        this.authProviderConfigRepository.create({
+          provider: 'apple',
+          displayName: 'Apple',
+          enabled: false,
+          verificationMode: 'mock',
+          clientId: 'com.leggau.web',
+          issuer: 'https://appleid.apple.com',
+          jwksUrl: 'https://appleid.apple.com/auth/keys',
+          allowedAudiences: ['com.leggau.web'],
+          scopes: ['name', 'email'],
+          metadata: {
+            teamId: 'TEAMIDPLACEHOLDER',
+            keyId: 'KEYIDPLACEHOLDER',
+            mockProfiles: [
+              {
+                subject: 'apple-therapist-marina',
+                email: 'marina.terapeuta@leggau.local',
+                emailVerified: true,
+                name: 'Marina Silva',
+                avatarUrl: 'https://example.invalid/apple-therapist-marina.png',
+              },
+            ],
+          },
+        }),
+      ],
+    );
+
+    this.logger.log('Seeded social auth provider placeholders.');
   }
 
   private hashPassword(password: string) {

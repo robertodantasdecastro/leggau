@@ -5,6 +5,7 @@ import { AdminUser } from './common/entities/admin-user.entity';
 import { AdolescentProfile } from './common/entities/adolescent-profile.entity';
 import { AppUser } from './common/entities/app-user.entity';
 import { AuditEvent } from './common/entities/audit-event.entity';
+import { AuthProviderConfig } from './common/entities/auth-provider-config.entity';
 import { BillingPlan } from './common/entities/billing-plan.entity';
 import { BillingProvider } from './common/entities/billing-provider.entity';
 import { BillingTransaction } from './common/entities/billing-transaction.entity';
@@ -12,12 +13,14 @@ import { CareTeamMembership } from './common/entities/care-team-membership.entit
 import { ChildProfile } from './common/entities/child-profile.entity';
 import { ConsentRecord } from './common/entities/consent-record.entity';
 import { DeviceSession } from './common/entities/device-session.entity';
+import { ExternalIdentity } from './common/entities/external-identity.entity';
 import { GuardianLink } from './common/entities/guardian-link.entity';
 import { Incident } from './common/entities/incident.entity';
 import { InteractionPolicy } from './common/entities/interaction-policy.entity';
 import { Invite } from './common/entities/invite.entity';
 import { LegalDocument } from './common/entities/legal-document.entity';
 import { ModerationCase } from './common/entities/moderation-case.entity';
+import { MediaVerificationJob } from './common/entities/media-verification-job.entity';
 import { ParentApproval } from './common/entities/parent-approval.entity';
 import { ParentProfile } from './common/entities/parent-profile.entity';
 import { PasswordResetToken } from './common/entities/password-reset-token.entity';
@@ -40,6 +43,7 @@ export default new DataSource({
     AdolescentProfile,
     AppUser,
     AuditEvent,
+    AuthProviderConfig,
     BillingPlan,
     BillingProvider,
     BillingTransaction,
@@ -47,12 +51,14 @@ export default new DataSource({
     ChildProfile,
     ConsentRecord,
     DeviceSession,
+    ExternalIdentity,
     GuardianLink,
     Incident,
     InteractionPolicy,
     Invite,
     LegalDocument,
     ModerationCase,
+    MediaVerificationJob,
     ParentApproval,
     ParentProfile,
     PasswordResetToken,
@@ -63,4 +69,3 @@ export default new DataSource({
   ],
   migrations: DATABASE_MIGRATIONS,
 });
-

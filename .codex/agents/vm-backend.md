@@ -23,6 +23,8 @@ Own backend, reverse proxy, persistence and operational scripts on `vm2`.
 - `docker compose ps`
 - `/api/health`
 - `/api/auth/register`
+- `/api/auth/social/providers`
+- `/api/auth/social/login`
 - `/api/legal/documents`
 - `/api/legal/consents`
 - `/api/children`
@@ -30,6 +32,9 @@ Own backend, reverse proxy, persistence and operational scripts on `vm2`.
 - `/api/sessions`
 - `/api/password-reset/request`
 - `/api/care-team`
+- `/api/admin/auth/providers`
+- `/api/admin/media-verification/jobs`
+- `/api/media-verification`
 - `/api/activities`
 - `/api/progress/summary`
 - `/api/progress/checkins`
@@ -38,3 +43,4 @@ Own backend, reverse proxy, persistence and operational scripts on `vm2`.
 
 - Phase B sign-off is authoritative only on the Postgres-backed VM runtime.
 - The local `sqljs` fallback may still be useful for limited debugging, but it is not a release gate for the multiactor schema.
+- The social-auth and verification checkpoint is also authoritative only on `vm2`, because provider config, masked admin responses and audited verification jobs must be exercised against the real Postgres-backed runtime.

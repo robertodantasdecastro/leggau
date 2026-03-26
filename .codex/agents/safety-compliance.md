@@ -11,6 +11,9 @@ Own the product rulebook for legal compliance, policy enforcement, moderation an
 - moderation architecture
 - incident and audit requirements
 - security review gates for critical flows
+- social-auth legal gating for `parent_guardian` and `therapist`
+- provider-secret handling and masking expectations
+- OCR/biometric simulation boundaries and audit expectations
 
 ## Constraints
 

@@ -10,6 +10,7 @@ Keep the frontend and backend contract aligned and stable across local, VM and p
 - Maintain request and response expectations for `web/portal` and `web/admin`.
 - Keep environment URLs consistent across dev and production.
 - Validate auth, legal, guardianship, care-team, sessions, devices, admin, billing, activities, rewards, progress and asset catalog flows.
+- Validate social auth, provider governance and media-verification flows.
 - Keep API contract changes versioned and documented.
 
 ## Directories
@@ -32,6 +33,8 @@ Keep the frontend and backend contract aligned and stable across local, VM and p
   - `POST /api/children`
   - `GET /api/families/overview`
 - Phase C consumers should move toward the canonical namespaces:
+  - `/api/auth/social/providers`
+  - `/api/auth/social/login`
   - `/api/sessions`
   - `/api/devices`
   - `/api/guardianship`
@@ -40,3 +43,7 @@ Keep the frontend and backend contract aligned and stable across local, VM and p
   - `/api/audit`
   - `/api/moderation`
   - `/api/incidents`
+- Admin governance should also stay aligned with:
+  - `/api/admin/auth/providers`
+  - `/api/admin/media-verification/jobs`
+  - `/api/media-verification`

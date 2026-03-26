@@ -88,6 +88,7 @@
 - The bootstrap now loads the local Gau variants catalog through `GauVariantsCatalogLoader`
 - The bootstrap now tries `auth/register`, falls back to `auth/login` for existing accounts, records legal consents, and only then falls back to `auth/dev-login` when configured
 - The bootstrap now auto-creates the first child profile through `POST /api/children` when a newly authenticated family still has no child
+- The backend now enforces the responsible actor's published legal consent before allowing child or adolescent provisioning, so mobile test flows must keep legal acceptance explicit
 - The real-auth bootstrap path is now validated against `vm2` for first access: parent register -> consent -> child create -> family overview
 - Unity Play Mode runtime now persists status snapshots through `BootstrapRuntimeProbe` at `.data/runtime/unity/bootstrap-playmode-status.json`
 - The latest validated probe reached `ready` with:
@@ -171,6 +172,7 @@
   - legal documents projected from `policy_versions`
   - persistent opaque sessions compatible with resume/retry behavior
   - adolescent provisioning returned through the legacy-compatible `children` projection
+- Adult-oriented quick auth is now available in the backend through Google and Apple/iCloud plus admin-managed provider configuration, but the Unity app should remain focused on the child/adolescent surface while Phase C advances in `web/portal`
 - The Unity workspace had to be reopened on `2026-03-26` through the canonical `-projectPath` flow after a temporary nested project folder appeared under `mobile/`; that stray folder was removed
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination

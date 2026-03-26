@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -10,21 +11,28 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AppUser } from '../common/entities/app-user.entity';
 import { AuditEvent } from '../common/entities/audit-event.entity';
+import { CareTeamMembership } from '../common/entities/care-team-membership.entity';
+import { ConsentRecord } from '../common/entities/consent-record.entity';
+import { GuardianLink } from '../common/entities/guardian-link.entity';
 import { ParentProfile } from '../common/entities/parent-profile.entity';
+import { PolicyVersion } from '../common/entities/policy-version.entity';
 import { TherapistProfile } from '../common/entities/therapist-profile.entity';
 import { SessionStoreService } from '../common/session-store.service';
+import { IdentityProvidersService } from '../identity-providers/identity-providers.service';
 import { DevLoginDto } from './dto/dev-login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
+import { SocialLoginDto } from './dto/social-login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly sessionStoreService: SessionStoreService,
+    private readonly identityProvidersService: IdentityProvidersService,
     @InjectRepository(AppUser)
     private readonly appUserRepository: Repository<AppUser>,
     @InjectRepository(ParentProfile)
@@ -33,6 +41,14 @@ export class AuthService {
     private readonly therapistRepository: Repository<TherapistProfile>,
     @InjectRepository(AuditEvent)
     private readonly auditEventRepository: Repository<AuditEvent>,
+    @InjectRepository(PolicyVersion)
+    private readonly policyVersionRepository: Repository<PolicyVersion>,
+    @InjectRepository(ConsentRecord)
+    private readonly consentRecordRepository: Repository<ConsentRecord>,
+    @InjectRepository(GuardianLink)
+    private readonly guardianLinkRepository: Repository<GuardianLink>,
+    @InjectRepository(CareTeamMembership)
+    private readonly careTeamRepository: Repository<CareTeamMembership>,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -106,6 +122,111 @@ export class AuthService {
 
     return {
       ...session,
+      user: this.serializeUser(user),
+      parent: profilePayload.parent,
+      profile: profilePayload.profile,
+      actorRole: user.role,
+    };
+  }
+
+  async listSocialProviders() {
+    return this.identityProvidersService.listPublicProviders();
+  }
+
+  async socialLogin(dto: SocialLoginDto) {
+    const requestedRole = dto.role ?? 'parent_guardian';
+    if (!['parent_guardian', 'therapist'].includes(requestedRole)) {
+      throw new BadRequestException('Unsupported social login role');
+    }
+
+    const assertion = await this.identityProvidersService.verifyAssertion({
+      provider: dto.provider,
+      idToken: dto.idToken,
+      mockSubject: dto.mockSubject,
+      displayName: dto.displayName ?? this.resolveDraftName(dto.profileDraft) ?? undefined,
+    });
+
+    if (!assertion.emailVerified) {
+      throw new ForbiddenException('Verified email is required for social login');
+    }
+
+    if (!assertion.email) {
+      throw new BadRequestException('Provider did not return a usable email');
+    }
+
+    let externalIdentity = await this.identityProvidersService.findExternalIdentity(
+      assertion.provider,
+      assertion.providerSubject,
+    );
+
+    let user =
+      externalIdentity &&
+      (await this.appUserRepository.findOne({
+        where: { id: externalIdentity.appUserId },
+      }));
+
+    if (!user) {
+      user = await this.appUserRepository.findOne({
+        where: { email: assertion.email },
+      });
+    }
+
+    const isNewUser = !user;
+    if (!user) {
+      user = await this.createUserFromSocialProfile(assertion.email, requestedRole, {
+        displayName:
+          assertion.displayName ??
+          this.resolveDraftName(dto.profileDraft) ??
+          assertion.email.split('@')[0],
+      });
+    } else if (user.role !== requestedRole) {
+      throw new ConflictException(
+        `Existing account role mismatch: expected ${user.role}, received ${requestedRole}`,
+      );
+    }
+
+    externalIdentity = await this.identityProvidersService.upsertExternalIdentity({
+      appUserId: user.id,
+      provider: assertion.provider,
+      providerSubject: assertion.providerSubject,
+      providerConfigId: assertion.providerConfigId,
+      email: assertion.email,
+      emailVerified: assertion.emailVerified,
+      displayName: assertion.displayName ?? null,
+      avatarUrl: assertion.avatarUrl ?? null,
+      rawClaims: assertion.rawClaims,
+    });
+
+    const profilePayload = await this.resolveProfilesForUser(user);
+    const session = await this.sessionStoreService.createSession(
+      'app',
+      user.id,
+      user.email,
+      user.role,
+    );
+    const requirements = await this.buildActorRequirements(user);
+    await this.recordAudit(
+      isNewUser ? 'auth.social_register' : 'auth.social_login',
+      user.role,
+      user.id,
+      'external_identity',
+      externalIdentity.id,
+      {
+        provider: assertion.provider,
+        emailVerified: assertion.emailVerified,
+      },
+    );
+
+    return {
+      ...session,
+      authMethod: 'social',
+      identityProvider: assertion.provider,
+      identity: {
+        id: externalIdentity.id,
+        provider: externalIdentity.provider,
+        providerSubject: externalIdentity.providerSubject,
+      },
+      requirements,
       user: this.serializeUser(user),
       parent: profilePayload.parent,
       profile: profilePayload.profile,
@@ -298,6 +419,26 @@ export class AuthService {
     };
   }
 
+  private async createUserFromSocialProfile(
+    email: string,
+    role: string,
+    options: { displayName: string },
+  ) {
+    const { passwordHash, passwordSalt } = this.hashPassword(
+      `social-login-${role}-${email}-${Date.now()}`,
+    );
+
+    return this.appUserRepository.save(
+      this.appUserRepository.create({
+        email,
+        displayName: options.displayName,
+        passwordHash,
+        passwordSalt,
+        role,
+      }),
+    );
+  }
+
   private verifyPassword(password: string, salt: string, hash: string) {
     const derived = scryptSync(password, salt, 64);
     const existing = Buffer.from(hash, 'hex');
@@ -346,6 +487,77 @@ export class AuthService {
     return {
       parent: null,
       profile: null,
+    };
+  }
+
+  private async buildActorRequirements(user: AppUser) {
+    const audiences =
+      user.role === 'parent_guardian'
+        ? ['parent_guardian', 'parent', 'all']
+        : [user.role, 'all'];
+    const requiredPolicies = await this.policyVersionRepository.find({
+      where: audiences.map((audience) => ({
+        status: 'published',
+        audience,
+      })),
+      order: { publishedAt: 'DESC', createdAt: 'DESC' },
+    });
+
+    const acceptedPolicyIds = new Set(
+      (
+        await this.consentRecordRepository.find({
+          where: {
+            appUserId: user.id,
+            status: 'accepted',
+          },
+          order: { acceptedAt: 'DESC' },
+        })
+      )
+        .map((record) => record.policyVersionId)
+        .filter((value): value is string => Boolean(value)),
+    );
+
+    const missingPolicies = requiredPolicies.filter(
+      (policy) => !acceptedPolicyIds.has(policy.id),
+    );
+
+    const [activeGuardianLinks, activeCareTeamMemberships, therapistProfile] =
+      await Promise.all([
+        user.role === 'parent_guardian'
+          ? this.guardianLinkRepository.count({
+              where: {
+                parentUserId: user.id,
+                status: 'active',
+              },
+            })
+          : Promise.resolve(0),
+        user.role === 'therapist'
+          ? this.careTeamRepository.count({
+              where: {
+                therapistUserId: user.id,
+                status: 'active',
+              },
+            })
+          : Promise.resolve(0),
+        user.role === 'therapist'
+          ? this.therapistRepository.findOne({ where: { appUserId: user.id } })
+          : Promise.resolve(null),
+      ]);
+
+    return {
+      legalConsentRequired: missingPolicies.length > 0,
+      missingPolicies: missingPolicies.map((policy) => ({
+        id: policy.id,
+        key: policy.policyKey,
+        version: policy.version,
+        title: policy.title,
+      })),
+      actorDependencies: {
+        activeGuardianLinks,
+        activeCareTeamMemberships,
+        therapistAdminApproved:
+          therapistProfile?.adminApprovalStatus === 'approved',
+      },
     };
   }
 

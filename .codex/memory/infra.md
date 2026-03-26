@@ -34,7 +34,12 @@
 - `GET /api/assets-catalog`
 - `GET /api/legal/documents`
 - `POST /api/auth/register`
+- `GET /api/auth/social/providers`
+- `POST /api/auth/social/login`
 - `POST /api/admin/auth/login`
+- `GET /api/admin/auth/providers`
+- `PATCH /api/admin/auth/providers/:provider`
+- `GET /api/admin/media-verification/jobs`
 - `GET /api/admin/overview`
 - `GET /api/admin/billing/overview`
 - `POST /api/admin/dev/cloudflare-alias/sync`
@@ -48,6 +53,7 @@
 - `POST /api/care-team`
 - `PATCH /api/care-team/:id`
 - `PATCH /api/care-team/:id/admin`
+- `POST /api/media-verification`
 
 ## Persistence
 
@@ -63,6 +69,7 @@
 - Unity Hub templates are symlinked to `./.data/tooling/unityhub/Templates`
 - Unity Hub downloads are mirrored under `./.data/tooling/unityhub/downloads`
 - Xcode downloads should target `./.data/tooling/xcode/downloads`
+- `AUTH_PROVIDER_SECRET_KEY` must be supplied outside the repository for encrypted provider-secret storage at rest
 - Current validated Unity runtime binary is:
   - `./.data/tooling/unity/editors/6000.4.0f1/Unity.app`
 - Current validated Unity project-open path is:
@@ -142,6 +149,13 @@
   - guardian-link-backed family overview
   - adolescent creation via `children`
   - pending `care-team` request plus admin-gated activation
+- Adult-auth governance runtime is now validated on the VM for:
+  - Google and Apple/iCloud provider discovery
+  - social login for `parent_guardian` and `therapist`
+  - provider disablement and secret masking
+  - admin provider configuration updates
+  - OCR and biometric simulation jobs via `media-verification`
+  - end-to-end coverage through `scripts/test-social-auth-security.mjs`
 - Postgres on the VM now contains and validates the new core tables:
   - `guardian_links`
   - `care_team_memberships`
@@ -150,9 +164,14 @@
   - `audit_events`
   - `moderation_cases`
   - `incidents`
+- Dependency audits are now clean for production dependencies in:
+  - `backend`
+  - `web/admin`
+  - `web/portal`
 - The next backend expansion wave is now Phase C consumer work on top of this runtime:
   - parent and therapist web/PWA shells
   - admin exposure of policy/audit/incident/care-team operations
+  - user-facing consumption of provider-governed Google/Apple auth
 - VM memory and docs sync should continue through `./scripts/sync-codex-to-vm.sh`
 - Full Phase 0 promotion should use:
   - `./scripts/promote-stack-to-vm.sh`

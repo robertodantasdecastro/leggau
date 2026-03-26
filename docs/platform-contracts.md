@@ -160,6 +160,36 @@ Congelar os contratos canônicos da plataforma Leggau para implementação a par
   - `lastSeenAt`
   - `revokedAt`
 
+### `AuthProviderConfig`
+
+- objetivo: armazenar configuracao, chaves e politica operacional de Google/Apple
+- campos mínimos:
+  - `id`
+  - `provider`
+  - `enabled`
+  - `verificationMode`
+  - `clientId`
+  - `encryptedClientSecret`
+  - `encryptedPrivateKey`
+  - `issuer`
+  - `jwksUri`
+  - `audiences`
+  - `scopes`
+  - `metadata`
+
+### `ExternalIdentity`
+
+- objetivo: vincular um sujeito externo do provedor a um `app_user`
+- campos mínimos:
+  - `id`
+  - `provider`
+  - `providerUserId`
+  - `email`
+  - `emailVerified`
+  - `appUserId`
+  - `linkedAt`
+  - `lastLoginAt`
+
 ### `MediaVerificationJob`
 
 - objetivo: OCR/captura documental e validação com processamento local-first
@@ -189,16 +219,35 @@ Congelar os contratos canônicos da plataforma Leggau para implementação a par
 - operações:
   - `POST /api/auth/register`
   - `POST /api/auth/login`
+  - `GET /api/auth/social/providers`
+  - `POST /api/auth/social/login`
   - `POST /api/auth/refresh`
   - `POST /api/auth/logout`
 - objetos mínimos:
   - request: `email`, `password`, `role`, `profileDraft`
-  - response: `accessToken`, `refreshToken`, `actorRole`, `session`
+  - request social: `provider`, `idToken`, `role`
+  - response: `accessToken`, `refreshToken`, `actorRole`, `session`, `identityProvider`, `requirements`
 - auditoria:
   - `auth.registered`
   - `auth.logged_in`
+  - `auth.social_register`
+  - `auth.social_login`
   - `auth.refresh_issued`
   - `auth.logged_out`
+
+### `identity-providers`
+
+- atores: `admin`, `support_admin`, com leitura publica controlada para o catalogo habilitado
+- operações:
+  - `GET /api/admin/auth/providers`
+  - `POST /api/admin/auth/providers`
+  - `PATCH /api/admin/auth/providers/:provider`
+- objetos mínimos:
+  - request: `provider`, `enabled`, `verificationMode`, `clientId`, `clientSecret`, `privateKey`, `issuer`, `jwksUri`, `audiences`, `scopes`, `metadata`
+  - response: `providerConfig`, `secretSummary`, `publicProviderProjection`
+- auditoria:
+  - `auth_provider.updated`
+  - `auth_provider.viewed`
 
 ### `password-reset`
 
@@ -457,6 +506,7 @@ Congelar os contratos canônicos da plataforma Leggau para implementação a par
 - operações:
   - `POST /api/media-verification`
   - `GET /api/media-verification/:id`
+  - `GET /api/admin/media-verification/jobs`
 - objetos mínimos:
   - request: `jobType`, `deviceProcessingMode`, `evidenceReference`
   - response: `MediaVerificationJob`

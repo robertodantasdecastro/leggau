@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <rect width="1200" height="760" rx="28" fill="#fbf8f5"/>
+  <rect x="40" y="40" width="1120" height="680" rx="24" fill="#fffdfb" stroke="#8f5f3f" stroke-width="8"/>
+  <text x="84" y="130" font-family="Avenir Next, Arial" font-size="56" fill="#8f5f3f" font-weight="700">Documento Fictício - Verso</text>
+  <text x="84" y="250" font-family="Avenir Next, Arial" font-size="42" fill="#4f3422">CPF: 12345678901</text>
+  <text x="84" y="330" font-family="Avenir Next, Arial" font-size="38" fill="#4f3422">Mãe: Rita Dantas</text>
+  <text x="84" y="410" font-family="Avenir Next, Arial" font-size="38" fill="#4f3422">Pai: Marcos Dantas</text>
+  <rect x="84" y="500" width="420" height="120" rx="20" fill="#f2e1ce"/>
+  <text x="116" y="570" font-family="Avenir Next, Arial" font-size="30" fill="#4f3422">Assinatura fictícia</text>
+  <text x="84" y="680" font-family="Avenir Next, Arial" font-size="28" fill="#8b6b52">Fixture OCR • uso interno de simulação</text>
+</svg>

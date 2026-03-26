@@ -57,6 +57,16 @@ body {
   gap: 16px;
 }
 
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.spread {
+  justify-content: space-between;
+}
+
 .card {
   border: 1px solid var(--line);
   border-radius: 20px;
@@ -86,6 +96,20 @@ input {
   font: inherit;
 }
 
+select,
+textarea {
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  padding: 12px 14px;
+  font: inherit;
+  width: 100%;
+  background: white;
+}
+
+textarea {
+  resize: vertical;
+}
+
 button {
   border: none;
   border-radius: 999px;
@@ -95,6 +119,30 @@ button {
   font-weight: 700;
   padding: 12px 18px;
   cursor: pointer;
+}
+
+.provider-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.provider-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(17, 103, 177, 0.1);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.error {
+  color: #a43c2f;
+  margin: 0;
 }
 
 table {
@@ -112,5 +160,14 @@ td {
 @media (max-width: 960px) {
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .provider-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .row {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

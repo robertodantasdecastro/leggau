@@ -8,6 +8,7 @@ Own the parent and therapist responsive web/PWA experience.
 
 - parent shell
 - therapist shell
+- Google/Apple quick-auth onboarding for adults
 - responsive/PWA behavior
 - onboarding, consent and supervision UX
 - reports, permissions and care-team flows
@@ -19,3 +20,4 @@ Own the parent and therapist responsive web/PWA experience.
 - must not duplicate the operational/admin console
 - mobile support for adults is web/PWA-first in this phase
 - should consume Phase B namespaces for auth, sessions, guardianship, care-team, legal policies and approvals rather than inventing parallel flows
+- should consume the live provider catalog from `/api/auth/social/providers` instead of hardcoding provider assumptions

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" viewBox="0 0 720 720">
+  <rect width="720" height="720" rx="36" fill="#eef7ff"/>
+  <circle cx="360" cy="300" r="180" fill="#ffc99c"/>
+  <ellipse cx="295" cy="280" rx="24" ry="28" fill="#23395d"/>
+  <ellipse cx="425" cy="280" rx="24" ry="28" fill="#23395d"/>
+  <path d="M280 390 Q360 450 440 390" stroke="#b45a3c" stroke-width="18" fill="none" stroke-linecap="round"/>
+  <path d="M240 180 Q360 90 480 180" stroke="#2c3550" stroke-width="42" fill="none" stroke-linecap="round"/>
+  <text x="52" y="660" font-family="Avenir Next, Arial" font-size="30" fill="#56708f">Fixture biométrico positivo • selfie fictícia</text>
+</svg>

@@ -5,10 +5,12 @@ import {
   Param,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { BillingService } from '../billing/billing.service';
 import { FamiliesService } from '../families/families.service';
+import { UpsertAuthProviderConfigDto } from '../identity-providers/dto/upsert-auth-provider-config.dto';
 import { LegalService } from '../legal/legal.service';
 import { AdminService } from './admin.service';
 import { AdminTokenGuard } from './admin-token.guard';
@@ -36,6 +38,36 @@ export class AdminController {
   @Get('users')
   users() {
     return this.adminService.getUsers();
+  }
+
+  @Get('auth/providers')
+  authProviders() {
+    return this.adminService.listAuthProviders();
+  }
+
+  @Post('auth/providers')
+  createAuthProvider(
+    @Body() body: UpsertAuthProviderConfigDto,
+    @Req() request: { adminSession: { subjectId: string; actorRole: string } },
+  ) {
+    return this.adminService.upsertAuthProvider(body, request.adminSession);
+  }
+
+  @Patch('auth/providers/:provider')
+  updateAuthProvider(
+    @Param('provider') provider: string,
+    @Body() body: Partial<UpsertAuthProviderConfigDto>,
+    @Req() request: { adminSession: { subjectId: string; actorRole: string } },
+  ) {
+    return this.adminService.upsertAuthProvider({
+      ...body,
+      provider,
+    }, request.adminSession);
+  }
+
+  @Get('media-verification/jobs')
+  mediaVerificationJobs() {
+    return this.adminService.listMediaVerificationJobs();
   }
 
   @Get('users/segments')

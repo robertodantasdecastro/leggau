@@ -16,7 +16,8 @@ Definir quem pode ler, criar, aprovar, revogar e operar cada namespace da plataf
 
 | Namespace | Atores autorizados | Escopo permitido | Evento auditável obrigatório |
 | --- | --- | --- | --- |
-| `auth` | todos os autenticáveis | criar sessão, renovar, encerrar | `auth.logged_in` |
+| `auth` | todos os autenticáveis | criar sessão, renovar, encerrar e autenticar via provedor social permitido | `auth.logged_in` |
+| `identity-providers` | `admin`, `support_admin`; leitura pública controlada para catálogo habilitado | configurar Google/Apple, publicar catálogo público e mascarar segredos | `auth_provider.updated` |
 | `password-reset` | `parent_guardian`, `therapist`, `admin`, `support_admin` | solicitar e confirmar reset | `auth.password_reset_completed` |
 | `sessions` | todos os autenticáveis | listar e revogar próprias sessões; admins podem investigar | `session.revoked` |
 | `devices` | todos os autenticáveis | registrar e atualizar dispositivo próprio | `device.registered` |
@@ -36,7 +37,7 @@ Definir quem pode ler, criar, aprovar, revogar e operar cada namespace da plataf
 | `rooms` | atores com política ativa e permissão válida | entrar, sair e visualizar salas estruturadas | `room.join_attempted` |
 | `presence` | atores com `RoomPermission` ativa | presença e heartbeat em sala | `presence.updated` |
 | `interaction-policies` | `parent_guardian`, `admin`, `support_admin` | ver e alterar política efetiva de interação | `interaction_policy.updated` |
-| `media-verification` | `parent_guardian`, `therapist`, `admin`, `support_admin` | iniciar e acompanhar validação documental | `media_verification.created` |
+| `media-verification` | `parent_guardian`, `therapist`, `admin`, `support_admin` | iniciar e acompanhar validação OCR/biométrica e observar jobs auditáveis | `media_verification.created` |
 | `billing` | `admin`, `support_admin` | visão financeira e operacional | `billing.viewed` |
 | `plans` | `admin`, `support_admin` | criar, editar e publicar planos | `plan.created` |
 | `subscriptions` | `admin`, `support_admin` | acompanhar e ajustar assinaturas | `subscription.updated` |

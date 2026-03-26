@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <rect width="1200" height="760" rx="28" fill="#f7fafc"/>
+  <rect x="40" y="40" width="1120" height="680" rx="24" fill="#ffffff" stroke="#1f3c88" stroke-width="8"/>
+  <rect x="72" y="88" width="180" height="220" rx="20" fill="#d8e7ff"/>
+  <circle cx="162" cy="170" r="54" fill="#8cb6ff"/>
+  <rect x="122" y="236" width="80" height="42" rx="20" fill="#8cb6ff"/>
+  <text x="300" y="150" font-family="Avenir Next, Arial" font-size="56" fill="#1f3c88" font-weight="700">Documento Fictício - Frente</text>
+  <text x="300" y="250" font-family="Avenir Next, Arial" font-size="42" fill="#23395d">Nome: Helena Dantas</text>
+  <text x="300" y="320" font-family="Avenir Next, Arial" font-size="38" fill="#23395d">RG: 1234567890</text>
+  <text x="300" y="390" font-family="Avenir Next, Arial" font-size="38" fill="#23395d">Nascimento: 14/07/1988</text>
+  <text x="300" y="460" font-family="Avenir Next, Arial" font-size="38" fill="#23395d">Órgão emissor: SSP-PB</text>
+  <text x="72" y="650" font-family="Avenir Next, Arial" font-size="28" fill="#56708f">Fixture OCR • uso interno de simulação</text>
+</svg>

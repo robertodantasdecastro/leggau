@@ -15,11 +15,15 @@ Own the technical and commercial admin surface of Leggau, including operations, 
   - VM resources
   - billing sandbox overview
 - Own admin approvals and governance surfaces for:
+  - Google and Apple/iCloud provider configuration
   - `care-team` activation
   - `policy-versions`
   - `audit`
   - `moderation`
   - `incidents`
+- Own admin monitoring surfaces for:
+  - `media-verification` jobs
+  - provider masking and configuration health
 - Keep the admin compatible with the backend namespace under `/api/admin/*`.
 - Preserve the future production target `https://admin.leggau.com`.
 
@@ -34,4 +38,6 @@ Own the technical and commercial admin surface of Leggau, including operations, 
 - Admin builds locally.
 - Admin can authenticate against the backend.
 - Admin reflects operational and billing sandbox status from the API without hardcoded-only mocks.
-- Admin is ready to consume the Phase B governance endpoints as the next execution wave starts.
+- Admin can manage Google/Apple provider configs without exposing raw secrets back to the browser.
+- Admin can inspect verification-job activity for OCR and biometric simulations.
+- Admin is ready to consume the broader Phase C/F governance endpoints as the next execution wave starts.

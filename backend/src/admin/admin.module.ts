@@ -3,11 +3,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BillingModule } from '../billing/billing.module';
 import { AppUser } from '../common/entities/app-user.entity';
 import { AdminUser } from '../common/entities/admin-user.entity';
+import { AdolescentProfile } from '../common/entities/adolescent-profile.entity';
 import { ChildProfile } from '../common/entities/child-profile.entity';
+import { ExternalIdentity } from '../common/entities/external-identity.entity';
 import { ParentProfile } from '../common/entities/parent-profile.entity';
+import { TherapistProfile } from '../common/entities/therapist-profile.entity';
 import { FamiliesModule } from '../families/families.module';
 import { HealthModule } from '../health/health.module';
+import { IdentityProvidersModule } from '../identity-providers/identity-providers.module';
 import { LegalModule } from '../legal/legal.module';
+import { MediaVerificationModule } from '../media-verification/media-verification.module';
 import { AuthModule } from '../auth/auth.module';
 import { AdminAuthController } from './admin-auth.controller';
 import { AdminAuthService } from './admin-auth.service';
@@ -21,8 +26,18 @@ import { AdminTokenGuard } from './admin-token.guard';
     BillingModule,
     FamiliesModule,
     HealthModule,
+    IdentityProvidersModule,
     LegalModule,
-    TypeOrmModule.forFeature([AppUser, AdminUser, ParentProfile, ChildProfile]),
+    MediaVerificationModule,
+    TypeOrmModule.forFeature([
+      AppUser,
+      AdminUser,
+      ParentProfile,
+      ChildProfile,
+      AdolescentProfile,
+      TherapistProfile,
+      ExternalIdentity,
+    ]),
   ],
   controllers: [AdminAuthController, AdminController],
   providers: [AdminAuthService, AdminService, AdminTokenGuard],

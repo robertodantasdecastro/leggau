@@ -1,13 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AdolescentProfile } from '../common/entities/adolescent-profile.entity';
 import { AppUser } from '../common/entities/app-user.entity';
 import { AuditEvent } from '../common/entities/audit-event.entity';
 import { ChildProfile } from '../common/entities/child-profile.entity';
+import { ConsentRecord } from '../common/entities/consent-record.entity';
 import { GuardianLink } from '../common/entities/guardian-link.entity';
 import { InteractionPolicy } from '../common/entities/interaction-policy.entity';
 import { ParentProfile } from '../common/entities/parent-profile.entity';
+import { PolicyVersion } from '../common/entities/policy-version.entity';
 import { resolveAgeBand } from '../common/platform.constants';
 import { CreateChildDto } from './dto/create-child.dto';
 
@@ -28,6 +30,10 @@ export class ChildrenService {
     private readonly interactionPolicyRepository: Repository<InteractionPolicy>,
     @InjectRepository(AuditEvent)
     private readonly auditEventRepository: Repository<AuditEvent>,
+    @InjectRepository(PolicyVersion)
+    private readonly policyVersionRepository: Repository<PolicyVersion>,
+    @InjectRepository(ConsentRecord)
+    private readonly consentRecordRepository: Repository<ConsentRecord>,
   ) {}
 
   async create(dto: CreateChildDto) {
@@ -50,6 +56,36 @@ export class ChildrenService {
 
     if (!appUser) {
       throw new NotFoundException('Parent app user not found');
+    }
+
+    const publishedPolicies = await this.policyVersionRepository.find({
+      where: [
+        { status: 'published', audience: 'parent_guardian' },
+        { status: 'published', audience: 'parent' },
+        { status: 'published', audience: 'all' },
+      ],
+      order: { publishedAt: 'DESC', createdAt: 'DESC' },
+    });
+    const acceptedPolicyIds = new Set(
+      (
+        await this.consentRecordRepository.find({
+          where: {
+            appUserId: appUser.id,
+            status: 'accepted',
+          },
+        })
+      )
+        .map((record) => record.policyVersionId)
+        .filter((value): value is string => Boolean(value)),
+    );
+    const missingPolicy = publishedPolicies.find(
+      (policy) => !acceptedPolicyIds.has(policy.id),
+    );
+
+    if (missingPolicy) {
+      throw new ForbiddenException(
+        'Guardian consent requirements must be completed before creating a child profile',
+      );
     }
 
     const age = Math.max(1, dto.age ?? 6);

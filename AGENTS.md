@@ -80,6 +80,7 @@ Use `.env.example` as the non-sensitive source of truth.
 - `PROD_API_BASE_URL=https://api.leggau.com`
 - `PROD_PORTAL_URL=https://www.leggau.com`
 - `PROD_ADMIN_URL=https://admin.leggau.com`
+- `AUTH_PROVIDER_SECRET_KEY=<do not persist real secret here>`
 - `DEFAULT_PARENT_EMAIL=parent@leggau.local`
 - `DEFAULT_PARENT_NAME=Responsavel Demo`
 - `DEFAULT_ADMIN_EMAIL=admin@leggau.local`
@@ -116,6 +117,8 @@ Use `.env.example` as the non-sensitive source of truth.
 - `parent-approvals`
 - `policy-versions`
 - `interaction-policies`
+- `identity-providers`
+- `media-verification`
 - `audit`
 - `moderation`
 - `incidents`
@@ -160,6 +163,14 @@ As of `2026-03-26`:
   - `CareTeamMembership` with parent and admin approval gates
   - `policy_versions` projecting published legal policies and consent versions
   - `audit_events` and base moderation/incident tables for security tracing
+  - provider-governed Google and Apple/iCloud sign-in for `parent_guardian` and `therapist`
+  - `external_identities` linking provider subjects to app actors
+  - audited OCR and biometric simulation jobs for verification readiness
+- The current adult-auth checkpoint is now also live on the VM:
+  - `web/admin` exposes provider configuration for Google and Apple/iCloud
+  - provider secrets are masked in responses and encrypted at rest behind `AUTH_PROVIDER_SECRET_KEY`
+  - `scripts/test-social-auth-security.mjs` validates social auth, legal gates, actor links, OCR and biometrics against `vm2`
+  - `npm audit --omit=dev` is clean for `backend`, `web/admin` and `web/portal`
 - Mac toolchain status:
   - Docker: ready
   - Java 17: present

@@ -67,13 +67,20 @@
   - `audit_events`, `moderation_cases` and `incidents` foundations are in runtime
   - `families/overview` and `children` now serve the Unity flow from the new source of truth
   - the VM runtime validates register, consent, child/adolescent provisioning, sessions, care-team and password reset flows
+  - Google and Apple sign-in now exists for `parent_guardian` and `therapist`
+  - `auth_provider_configs` and `external_identities` now govern provider-backed access
+  - simulated `media_verification_jobs` now cover OCR and biometric validation flows with audit trail
 - Exit criteria:
   - satisfied
 
 ### Phase C — Adult web/PWA surfaces
 
-- Status: `next`
-- Scope:
+- Status: `started`
+- Completed:
+  - provider-backed quick-auth foundation is live for `parent_guardian` and `therapist`
+  - web admin already exposes provider configuration for Google and Apple/iCloud
+  - legal and actor-dependency gates are now validated for adult identity flows
+- Remaining:
   - parent shell
   - therapist shell
   - responsive/PWA behavior
@@ -103,19 +110,22 @@
 
 ### Phase F — Billing, admin and beta readiness
 
-- Status: `planned`
-- Scope:
-  - admin expansion
+- Status: `partially advanced`
+- Completed:
+  - admin provider configuration surface for Google and Apple/iCloud
+  - admin monitoring surface for OCR and biometric verification jobs
+  - dependency audits and end-to-end social-auth security validation script
+- Remaining:
+  - broader admin expansion
   - subscriptions and billing flows
-  - security testing
-  - compliance readiness
+  - deeper security and compliance readiness
   - closed beta launch gate
 
 ## Next Execution Step
 
-1. Execute Phase C on top of the completed Phase B backend core.
-2. Build the `parent_guardian` and `therapist` responsive shells in `web/portal` with the new multiactor endpoints.
-3. Expand web/admin to expose the new operational surfaces for policy versions, audit, incidents and care-team approvals.
+1. Continue Phase C on top of the completed Phase B backend core and the new social-auth checkpoint.
+2. Build the `parent_guardian` and `therapist` responsive shells in `web/portal` with `/api/auth/social/providers`, `/api/auth/social/login`, `sessions`, `care-team`, legal and family flows.
+3. Expand web/admin from provider governance into approvals, audit, incidents, moderation and care-team review.
 4. Preserve the current Unity child flow as a compatibility client while the adult surfaces catch up to the backend runtime now live on `vm2`.
 
 ## Branch and Delivery Rule

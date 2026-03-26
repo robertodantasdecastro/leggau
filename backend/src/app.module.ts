@@ -13,6 +13,7 @@ import { AdminUser } from './common/entities/admin-user.entity';
 import { AdolescentProfile } from './common/entities/adolescent-profile.entity';
 import { AppUser } from './common/entities/app-user.entity';
 import { AuditEvent } from './common/entities/audit-event.entity';
+import { AuthProviderConfig } from './common/entities/auth-provider-config.entity';
 import { ChildProfile } from './common/entities/child-profile.entity';
 import { BillingPlan } from './common/entities/billing-plan.entity';
 import { BillingProvider } from './common/entities/billing-provider.entity';
@@ -20,12 +21,14 @@ import { BillingTransaction } from './common/entities/billing-transaction.entity
 import { CareTeamMembership } from './common/entities/care-team-membership.entity';
 import { ConsentRecord } from './common/entities/consent-record.entity';
 import { DeviceSession } from './common/entities/device-session.entity';
+import { ExternalIdentity } from './common/entities/external-identity.entity';
 import { GuardianLink } from './common/entities/guardian-link.entity';
 import { Incident } from './common/entities/incident.entity';
 import { InteractionPolicy } from './common/entities/interaction-policy.entity';
 import { Invite } from './common/entities/invite.entity';
 import { LegalDocument } from './common/entities/legal-document.entity';
 import { ModerationCase } from './common/entities/moderation-case.entity';
+import { MediaVerificationJob } from './common/entities/media-verification-job.entity';
 import { ParentApproval } from './common/entities/parent-approval.entity';
 import { ParentProfile } from './common/entities/parent-profile.entity';
 import { PasswordResetToken } from './common/entities/password-reset-token.entity';
@@ -42,10 +45,12 @@ import { DevicesModule } from './devices/devices.module';
 import { FamiliesModule } from './families/families.module';
 import { GuardianshipModule } from './guardianship/guardianship.module';
 import { HealthModule } from './health/health.module';
+import { IdentityProvidersModule } from './identity-providers/identity-providers.module';
 import { IncidentsModule } from './incidents/incidents.module';
 import { InteractionPoliciesModule } from './interaction-policies/interaction-policies.module';
 import { InvitesModule } from './invites/invites.module';
 import { LegalModule } from './legal/legal.module';
+import { MediaVerificationModule } from './media-verification/media-verification.module';
 import { ParentApprovalsModule } from './parent-approvals/parent-approvals.module';
 import { PasswordResetModule } from './password-reset/password-reset.module';
 import { PolicyVersionsModule } from './policy-versions/policy-versions.module';
@@ -103,15 +108,18 @@ import { ModerationModule } from './moderation/moderation.module';
       AdminUser,
       LegalDocument,
       ConsentRecord,
+      AuthProviderConfig,
       GuardianLink,
       CareTeamMembership,
       DeviceSession,
+      ExternalIdentity,
       PasswordResetToken,
       AuditEvent,
       InteractionPolicy,
       PolicyVersion,
       ModerationCase,
       Incident,
+      MediaVerificationJob,
       Invite,
       ParentApproval,
       TherapistProfile,
@@ -135,6 +143,7 @@ import { ModerationModule } from './moderation/moderation.module';
     AssetsCatalogModule,
     SessionsModule,
     DevicesModule,
+    IdentityProvidersModule,
     PasswordResetModule,
     GuardianshipModule,
     CareTeamModule,
@@ -144,6 +153,7 @@ import { ModerationModule } from './moderation/moderation.module';
     InteractionPoliciesModule,
     ModerationModule,
     IncidentsModule,
+    MediaVerificationModule,
   ],
   controllers: [AppController],
   providers: [AppService, AppSeedService],

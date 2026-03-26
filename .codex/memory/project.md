@@ -81,7 +81,6 @@
   - VM backend is running on `vm2`
   - canonical Unity editor has Android/iOS support
   - graphical bootstrap sign-off reached `state=ready` against the VM runtime
-- Phase A platform rulebook is now started through repo-backed docs:
 - Phase A platform rulebook is now completed through repo-backed docs:
   - `docs/platform-blueprint.md`
   - `docs/actor-matrix.md`
@@ -100,11 +99,18 @@
   - `policy_versions` backing legal projection and versioned consent writes
   - `audit_events`, `moderation_cases` and `incidents` scaffolding in the live API
   - compatibility preserved for the current Unity `children` and `families/overview` flow
-- The next execution phase is now Phase C:
+- The social-auth and verification governance checkpoint is now also live on `vm2`:
+  - Google and Apple/iCloud quick auth for `parent_guardian` and `therapist`
+  - admin-managed provider configuration with masked responses and encrypted-at-rest secrets
+  - `external_identities` binding provider subjects to app actors
+  - versioned legal gate enforcement before child/adolescent provisioning
+  - simulated OCR and biometric verification jobs plus fixture assets and security script coverage
+- The next execution phase remains Phase C:
   - parent_guardian web/PWA shell
   - therapist web/PWA shell
   - responsive supervision/reporting flows
-  - admin exposure of the new multiactor operational surfaces
+  - user-facing consumption of the now-live social auth/provider catalog
+  - broader admin exposure of audit, moderation and approval operations
 - After the machine reboot later on `2026-03-26`, `vm2` had to be started again from `~/leggau`, and the refreshed batch validation still reached:
   - `state=ready`
   - `parentName=Responsavel Demo`

@@ -21,6 +21,7 @@
 
 ## Fase C — Web/PWA adulta
 
+- login rapido Google/Apple consumindo `/api/auth/social/providers` e `/api/auth/social/login`
 - `parent shell`
 - `therapist shell`
 - onboarding e consentimentos
@@ -45,6 +46,8 @@
 
 ## Fase F — Admin, billing e readiness
 
+- governança de provedores de identidade no admin
+- monitoramento de jobs de OCR/biometria e fixtures de validação
 - ampliar admin operacional
 - subscriptions e webhooks
 - dashboards clínicos e financeiros

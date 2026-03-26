@@ -36,6 +36,13 @@ Date checked: `2026-03-26`
   - `moderation_cases`
   - `incidents`
   - compatibility responses for the current Unity runtime
+- Backend now also includes the adult-auth governance and verification checkpoint for:
+  - `auth_provider_configs` with encrypted-at-rest provider secrets
+  - `external_identities` for Google and Apple/iCloud login bindings
+  - `media_verification_jobs` for OCR and biometric simulation coverage
+  - public provider discovery through `/api/auth/social/providers`
+  - social login through `/api/auth/social/login`
+  - admin provider governance through `/api/admin/auth/providers`
 - The local `start:local` fallback is no longer the phase-signoff path:
   - `sqljs` is not a reliable runtime for the timestamp-heavy schema now used by the multiactor backend
   - the canonical backend validation path is Postgres on `vm2`
@@ -87,6 +94,14 @@ Date checked: `2026-03-26`
   - `POST /api/care-team`
   - `PATCH /api/care-team/:id`
   - `PATCH /api/care-team/:id/admin`
+- Social auth and verification validation now also passes against the VM:
+  - `GET /api/auth/social/providers`
+  - `POST /api/auth/social/login`
+  - `GET /api/admin/auth/providers`
+  - `POST /api/admin/auth/providers`
+  - `PATCH /api/admin/auth/providers/:provider`
+  - `POST /api/media-verification`
+  - `GET /api/admin/media-verification/jobs`
 - Phase B runtime checks now confirm:
   - `guardian_links` is the live source of truth for minor access
   - adolescent provisioning uses `adolescent_profiles` with `AgeBand=13-17`
@@ -95,12 +110,24 @@ Date checked: `2026-03-26`
   - session revocation survives API container restart
   - parent-side `care-team` updates can no longer self-approve `adminApprovalStatus`
   - activation of `care-team` remains blocked until an admin route approves the admin side
+- The VM runtime now also confirms:
+  - Google and Apple/iCloud login is available for `parent_guardian` and `therapist`
+  - child/adolescent provisioning is blocked until the responsible actor accepts the published parent policies
+  - provider disablement immediately blocks new social logins
+  - provider secrets stay masked in admin responses
+  - OCR and biometric verification simulations generate auditable jobs
 - During the first VM deploy on `2026-03-26`, the API initially failed behind Nginx because TypeORM used `datetime` columns incompatible with Postgres; this was corrected to `timestamp` in the shared entities and the API now boots cleanly
 - During the first Phase B deploy on `2026-03-26`, the API also failed once because the migration class name did not yet use a valid JavaScript-style timestamp suffix; this was corrected and the VM now applies the migration set cleanly
 - Phase 0 promotion helper is now validated end-to-end:
   - `scripts/promote-stack-to-vm.sh`
 - The VM preflight helper remains available for spot checks:
   - `scripts/check-vm2-access.sh`
+- The current end-to-end validation driver for this checkpoint is:
+  - `scripts/test-social-auth-security.mjs`
+- Dependency audit checks now also pass with zero production vulnerabilities in:
+  - `backend`
+  - `web/admin`
+  - `web/portal`
 
 ## Platform Replan Status
 
@@ -127,11 +154,18 @@ Date checked: `2026-03-26`
   - `PolicyVersion`-backed legal projection
   - `AuditEvent` coverage across auth, legal, sessions and links
   - compatibility-preserving `families/overview` and `children` responses for the Unity app
-- The next execution step is now Phase C:
-  - parent web/PWA shell
-  - therapist web/PWA shell
-  - responsive supervision flows
-  - reporting, permissions and care-team operations on top of the new backend core
+- Phase C is now started through adult-auth groundwork:
+  - Google and Apple/iCloud quick auth is live for `parent_guardian` and `therapist`
+  - the admin already exposes provider configuration and verification-job monitoring
+  - actor dependency rules are now explicit in auth responses and runtime gates
+- Phase F also has first operational groundwork in place:
+  - provider secret masking in the admin surface
+  - simulated OCR and biometric verification jobs
+  - scripted security validation for auth, legal, links and verification flows
+- The next execution step remains Phase C:
+  - build the actual `parent_guardian` and `therapist` shells in `web/portal`
+  - consume the live social-provider catalog and quick-auth endpoints
+  - expose supervision, reporting and care-team operations on top of the now-governed auth base
 
 ## Mobile Mac Status
 

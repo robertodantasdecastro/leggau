@@ -35,7 +35,8 @@ export class LegalService {
         key: policy.policyKey,
         version: policy.version,
         title: policy.title,
-        audience: policy.audience,
+        audience:
+          policy.audience === 'parent' ? 'parent_guardian' : policy.audience,
         contentMarkdown: policy.contentMarkdown,
         isActive: policy.status === 'published',
         effectiveAt: policy.publishedAt ?? policy.createdAt,

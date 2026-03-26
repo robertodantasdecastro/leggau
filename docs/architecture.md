@@ -10,6 +10,7 @@
 - autorizacao: `docs/authorization-matrix.md`
 - flags do beta: `docs/beta-feature-flags.md`
 - mapa da fase B: `docs/phase-b-module-map.md`
+- operacao de social auth e verificacao: `docs/social-auth-operations.md`
 
 ## Camadas
 
@@ -30,12 +31,12 @@
 
 ## Fluxo principal revisado
 
-1. O responsável cria conta, aceita consentimentos e cria/vincula perfis infantis.
-2. O terapeuta entra por fluxo próprio e só acessa dados após vínculo aprovado.
+1. O responsável cria conta com senha ou login rápido Google/Apple, aceita consentimentos publicados e só então cria/vincula perfis infantis.
+2. O terapeuta entra por fluxo próprio com senha ou login rápido Google/Apple e só acessa dados após vínculo aprovado pelo responsável e pelo admin.
 3. A criança/adolescente entra no app Unity apenas com vínculo e política válidos.
 4. O app carrega perfil, faixa etária, atividades, progresso, recompensas e Gau.
 5. Interações, salas e comunicação dependem de `InteractionPolicy`.
-6. Admin opera usuários, vínculos, billing, moderação, auditoria e incidentes.
+6. Admin opera usuários, provedores de identidade, vínculos, billing, moderação, auditoria, incidentes e jobs de verificação.
 
 ## Dados persistidos
 
@@ -43,6 +44,8 @@
 - `therapist_profiles`
 - `app_users`
 - `admin_users`
+- `auth_provider_configs`
+- `external_identities`
 - `child_profiles`
 - `adolescent_profiles`
 - `guardian_links`
@@ -86,4 +89,8 @@
 - `GuardianLink` e a fonte de verdade para responsavel-menor.
 - `device_sessions` sustenta sessoes opacas persistidas por dispositivo.
 - `policy_versions` projeta as policies legais publicadas para os clientes atuais.
+- `auth_provider_configs` governa Google e Apple/iCloud com segredos cifrados em repouso via `AUTH_PROVIDER_SECRET_KEY`.
+- `external_identities` conecta sujeitos externos do Google/Apple aos atores `parent_guardian` e `therapist`.
+- `media_verification_jobs` sustenta simulacoes auditaveis de OCR e biometria para validacao e readiness.
+- `web/admin` agora expoe configuracao de provedores e observacao dos jobs de verificacao.
 - A compatibilidade com o Unity atual permanece via `auth`, `legal`, `children` e `families/overview`, enquanto as superficies adultas avancam para os namespaces canônicos na Fase C.
