@@ -207,6 +207,13 @@ Date checked: `2026-03-26`
   - activities
   - rewards
   - progress
+- On `2026-03-26`, the bootstrap presentation moved from a debug-only HUD into a first persistent product UI:
+  - dedicated onboarding panel for auth, consent, child setup and home entry
+  - separate first-home panel for responsible, child, Gau, progress, activities and rewards
+  - mascot/actions side panel preserved for variant switching and dev check-in iteration
+- The bootstrap scene was regenerated after that UI change and the batch validation against `vm2` again reached:
+  - `state=ready`
+  - `status=Dashboard carregado.`
 - On `2026-03-26`, the Unity workspace was reopened from the correct `-projectPath` after a temporary accidental nested project under `mobile/Leggau`; that stray project directory was removed
 - Local catalog validation is now reproducible through:
   - `scripts/check-gau-runtime-catalog.sh`

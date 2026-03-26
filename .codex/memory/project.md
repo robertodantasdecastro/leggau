@@ -52,6 +52,7 @@
 - The latest validated bootstrap runtime reached `ready` against the VM-backed API with dashboard data loaded
 - The bootstrap scene now includes an in-editor retry path and a more structured HUD for faster Play Mode iteration after interruptions or environment restarts
 - The bootstrap HUD now tracks the onboarding pipeline step-by-step so auth/legal/family progress is visible during Play Mode
+- The bootstrap presentation now also includes a persistent onboarding panel and a first-home panel, so the MVP no longer depends on a purely technical HUD for the main mobile flow
 - As of `2026-03-26`, mobile development should no longer depend on a local backend fallback; VM remains the only canonical backend target
 - Unity mobile build modules are still not present in the validated editor install
 - A second SSD-backed shell for `6000.0.71f1` exists, but it currently fails signature validation and should not be used until it is reinstalled cleanly

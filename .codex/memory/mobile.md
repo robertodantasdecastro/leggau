@@ -105,6 +105,11 @@
 - The bootstrap now exposes `RetryBootstrap` so the full auth/legal/family bootstrap can be rerun during Play Mode without reopening the scene
 - The generated HUD now uses card-style sections and a dedicated mascot/actions panel to make Unity iteration easier after editor or SSD interruptions
 - The HUD now also shows a live bootstrap checklist for `Auth`, `Legal`, `Familia`, `Crianca`, `Atividades`, `Recompensas` and `Progresso`
+- The bootstrap presentation now splits into:
+  - an onboarding panel for auth, legal, child setup and home entry
+  - a first-home panel for responsible, child, points, progress, activities and rewards
+  - a side panel for Gau preview, variant switching, retry and dev check-in
+- The regenerated bootstrap scene still validates in batch against `vm2`, and the latest probe on `2026-03-26` again reached `state=ready`
 - The Unity workspace had to be reopened on `2026-03-26` through the canonical `-projectPath` flow after a temporary nested project folder appeared under `mobile/`; that stray folder was removed
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination

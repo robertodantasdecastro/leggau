@@ -99,9 +99,10 @@
   - bootstrap HUD is now organized for in-editor iteration and supports runtime retry without restarting the scene
   - onboarding/bootstrap progress is now visible as a live checklist inside the Unity HUD
   - the same backend contract is now validated on `vm2`
+  - bootstrap UI now has a persistent onboarding panel and a first-home panel instead of only debug cards
 - Remaining:
-  - replace the current runtime probe-based validation with direct visual confirmation of the same flow in editor Play Mode
-  - evolve the bootstrap HUD into persistent auth, consent and child-onboarding UI
+  - replace the current dev-automation-led onboarding with player-facing interactive inputs where needed
+  - visually confirm the same flow in the graphical editor after each major UI pass
 
 ### Phase 6 and beyond
 
@@ -112,8 +113,11 @@
 
 ## Next Execution Step
 
-1. Reopen the Unity project in the graphical editor and visually confirm the bootstrap flow against `http://10.211.55.22:8080/api`.
-2. Replace the current bootstrap cards with persistent onboarding UI for auth, consents and child setup.
+1. Reopen the Unity project in the graphical editor and visually review the new onboarding/home composition against `http://10.211.55.22:8080/api`.
+2. Add the next layer of interactive UI:
+   - explicit responsible/session entry
+   - consent confirmation actions
+   - child naming/selection controls
 3. Finish the Apple/mobile toolchain:
    - install full Xcode
    - validate Android/iOS Unity support modules in the canonical editor
