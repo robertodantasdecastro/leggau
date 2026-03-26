@@ -185,6 +185,12 @@
   - incident creation and triage through `/api/incidents`
   - moderation-case creation and triage through `/api/moderation/cases`
   - PWA shell publication through `/manifest.webmanifest` and `/sw.js`
+- The Unity Phase D runtime is now also validated on the VM for:
+  - responsible-session activation plus linked-minor selection
+  - `interaction-policies/:minorProfileId` reads with real app auth
+  - child shell readiness with `minorRole=child`, `ageBand=6-9` and `activeShell=child`
+  - adolescent shell readiness with `minorRole=adolescent`, `ageBand=13-17` and `activeShell=adolescent`
+  - continued compatibility of `activities`, `rewards`, `progress/summary` and `progress/checkins` across both shells
 - Postgres on the VM now contains and validates the new core tables:
   - `guardian_links`
   - `care_team_memberships`
@@ -197,10 +203,10 @@
   - `backend`
   - `web/admin`
   - `web/portal`
-- The next backend expansion wave is now Phase C consumer work on top of this runtime:
-  - parent and therapist web/PWA shells
-  - admin exposure of policy/audit/incident/care-team operations
-  - user-facing consumption of provider-governed Google/Apple auth
+- The next backend/platform expansion wave is now Phase E consumer work on top of this runtime:
+  - monitored interaction surfaces for Unity
+  - policy-governed presence and room affordances
+  - continued admin/compliance/billing hardening on the live governance stack
 - VM memory and docs sync should continue through `./scripts/sync-codex-to-vm.sh`
 - Full Phase 0 promotion should use:
   - `./scripts/promote-stack-to-vm.sh`

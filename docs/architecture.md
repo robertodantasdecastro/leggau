@@ -99,4 +99,7 @@
 - `parent_approvals` agora funcionam como ledger auditavel do lado do responsavel para OCR, presenca estruturada e vinculacao clinica.
 - `progress_entries` foi desacoplado do FK legado de `child_profiles`, permitindo continuidade do modelo multiactor tambem para `adolescent`.
 - `web/portal` agora tambem publica `manifest.webmanifest` e `sw.js`, fechando o shell adulto online-first em formato PWA instalavel.
-- A compatibilidade com o Unity atual permanece via `auth`, `legal`, `children` e `families/overview`, enquanto as superficies adultas avancam para os namespaces canônicos na Fase C.
+- O runtime Unity agora entra por sessao do responsavel, leitura de `families/overview`, selecao do menor vinculado e consumo de `interaction-policies/:minorProfileId`.
+- O Unity agora resolve e persiste `SelectedMinor`, `ResolvedAgeBand` e `ActiveShell`, mantendo `ActiveChild` apenas como projecao de compatibilidade.
+- A apresentacao do Unity agora diferencia `6-9`, `10-12` e `13-17`, separando shells explicitos de `child` e `adolescent` dentro da mesma `Bootstrap.unity`.
+- `InteractionPolicy` agora governa visibilidade e bloqueio de salas, presenca, mensageria e participacao clinica diretamente no shell do menor.

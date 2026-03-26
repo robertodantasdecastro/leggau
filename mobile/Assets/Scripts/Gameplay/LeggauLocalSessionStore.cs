@@ -11,6 +11,11 @@ namespace Leggau.Gameplay
         public string refreshToken;
         public AppUserProfile user;
         public ParentProfile parent;
+        public MinorProfileRecord[] linkedMinors;
+        public MinorProfileRecord selectedMinor;
+        public InteractionPolicyRecord selectedMinorPolicy;
+        public string resolvedAgeBand;
+        public string activeShell;
         public ChildProfile activeChild;
         public DailyMission[] activities;
         public RewardItem[] rewards;
@@ -29,6 +34,7 @@ namespace Leggau.Gameplay
         public string draftPassword;
         public string draftChildName;
         public bool draftConsentsAccepted;
+        public bool draftCreateAdolescent;
         public bool homeReady;
     }
 

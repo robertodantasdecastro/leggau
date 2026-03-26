@@ -4,12 +4,18 @@ namespace Leggau.Gameplay
 {
     public class LeggauSessionState
     {
-        private string preferredGauVariantId = "gau-rounded-pixel";
+        private const string DefaultGauVariantId = "gau-rounded-pixel";
+        private string preferredGauVariantId = DefaultGauVariantId;
 
         public string AccessToken { get; private set; }
         public string RefreshToken { get; private set; }
         public AppUserProfile User { get; private set; }
         public ParentProfile Parent { get; private set; }
+        public MinorProfileRecord[] LinkedMinors { get; private set; }
+        public MinorProfileRecord SelectedMinor { get; private set; }
+        public InteractionPolicyRecord SelectedMinorPolicy { get; private set; }
+        public string ResolvedAgeBand { get; private set; }
+        public string ActiveShell { get; private set; }
         public ChildProfile ActiveChild { get; private set; }
         public DailyMission[] Activities { get; private set; }
         public RewardItem[] Rewards { get; private set; }
@@ -28,14 +34,21 @@ namespace Leggau.Gameplay
         public string DraftPassword { get; private set; }
         public string DraftChildName { get; private set; }
         public bool DraftConsentsAccepted { get; private set; }
+        public bool DraftCreateAdolescent { get; private set; }
         public bool HomeReady { get; private set; }
         public bool IsAuthenticated => !string.IsNullOrWhiteSpace(AccessToken);
+        public bool HasLinkedMinors => LinkedMinors != null && LinkedMinors.Length > 0;
+        public bool HasMultipleLinkedMinors => LinkedMinors != null && LinkedMinors.Length > 1;
         public bool HasPersistableState =>
             IsAuthenticated ||
             HomeReady ||
+            SelectedMinor != null ||
+            HasLinkedMinors ||
             !string.IsNullOrWhiteSpace(DraftParentEmail) ||
             !string.IsNullOrWhiteSpace(DraftChildName);
         public string PreferredGauVariantId => preferredGauVariantId;
+        public string CurrentUserEmail => Parent?.email ?? User?.email;
+        public string SelectedMinorRole => ResolveMinorRole(SelectedMinor ?? ConvertToMinor(ActiveChild));
 
         public GauVariantDescriptor ActiveGauVariant
         {
@@ -55,10 +68,13 @@ namespace Leggau.Gameplay
             }
         }
 
-        public string CurrentUserEmail => Parent?.email ?? User?.email;
-
         public void SetDevLogin(DevLoginResponse response)
         {
+            if (response == null)
+            {
+                return;
+            }
+
             AccessToken = response.accessToken;
             RefreshToken = null;
             Parent = response.parent;
@@ -83,22 +99,127 @@ namespace Leggau.Gameplay
             }
         }
 
+        public void InvalidateAuthentication()
+        {
+            AccessToken = null;
+            RefreshToken = null;
+            User = null;
+            Parent = null;
+            LinkedMinors = null;
+            SelectedMinor = null;
+            SelectedMinorPolicy = null;
+            ActiveChild = null;
+            Activities = null;
+            Rewards = null;
+            AvailablePoints = 0;
+            TotalPoints = 0;
+            CompletedActivities = 0;
+            LatestEntries = null;
+            AssetsCatalog = null;
+            LegalDocuments = null;
+            UsedDevLoginFallback = false;
+            ConsentsRecorded = false;
+            HomeReady = false;
+            ResolvedAgeBand = string.Empty;
+            ActiveShell = string.Empty;
+        }
+
         public void SetFamily(FamilyOverviewResponse response)
         {
             if (response?.parent != null)
             {
                 Parent = response.parent;
             }
-
-            if (response.children != null && response.children.Length > 0)
+            else if (response?.guardian != null)
             {
-                ActiveChild = response.children[0];
+                Parent = response.guardian;
             }
+
+            SetLinkedMinors(ResolveMinorProfiles(response), true);
+        }
+
+        public void SetLinkedMinors(MinorProfileRecord[] items, bool preserveSelection)
+        {
+            LinkedMinors = NormalizeMinorList(items);
+
+            if (LinkedMinors.Length == 0)
+            {
+                SelectMinor(null);
+                return;
+            }
+
+            if (preserveSelection && !string.IsNullOrWhiteSpace(SelectedMinor?.id))
+            {
+                for (var index = 0; index < LinkedMinors.Length; index += 1)
+                {
+                    if (LinkedMinors[index]?.id == SelectedMinor.id)
+                    {
+                        SelectMinor(LinkedMinors[index], true);
+                        return;
+                    }
+                }
+            }
+
+            if (LinkedMinors.Length == 1)
+            {
+                SelectMinor(LinkedMinors[0]);
+                return;
+            }
+
+            SelectMinor(LinkedMinors[0]);
+        }
+
+        public void SelectMinorById(string minorId)
+        {
+            if (LinkedMinors == null || LinkedMinors.Length == 0)
+            {
+                SelectMinor(null);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(minorId))
+            {
+                SelectMinor(LinkedMinors[0]);
+                return;
+            }
+
+            for (var index = 0; index < LinkedMinors.Length; index += 1)
+            {
+                if (LinkedMinors[index]?.id == minorId)
+                {
+                    SelectMinor(LinkedMinors[index]);
+                    return;
+                }
+            }
+
+            SelectMinor(LinkedMinors[0]);
+        }
+
+        public void SelectNextMinor()
+        {
+            CycleMinor(1);
+        }
+
+        public void SelectPreviousMinor()
+        {
+            CycleMinor(-1);
+        }
+
+        public void SetSelectedMinorPolicy(InteractionPolicyRecord policy)
+        {
+            SelectedMinorPolicy = policy;
+            RefreshShellMetadata();
         }
 
         public void SetActiveChild(ChildProfile child)
         {
             ActiveChild = child;
+            if (SelectedMinor == null || child == null || SelectedMinor.id == child.id)
+            {
+                SelectedMinor = ConvertToMinor(child);
+            }
+
+            RefreshShellMetadata();
         }
 
         public void SetActivities(DailyMission[] items)
@@ -119,6 +240,11 @@ namespace Leggau.Gameplay
                 return;
             }
 
+            if (response.child != null)
+            {
+                SetActiveChild(response.child);
+            }
+
             TotalPoints = response.totalPoints;
             CompletedActivities = response.completedActivities;
             LatestEntries = response.latestEntries;
@@ -129,6 +255,11 @@ namespace Leggau.Gameplay
             if (response == null)
             {
                 return;
+            }
+
+            if (response.child != null)
+            {
+                SetActiveChild(response.child);
             }
 
             TotalPoints = response.totalPoints;
@@ -185,6 +316,11 @@ namespace Leggau.Gameplay
             RefreshToken = null;
             User = null;
             Parent = null;
+            LinkedMinors = null;
+            SelectedMinor = null;
+            SelectedMinorPolicy = null;
+            ResolvedAgeBand = string.Empty;
+            ActiveShell = string.Empty;
             ActiveChild = null;
             Activities = null;
             Rewards = null;
@@ -196,9 +332,14 @@ namespace Leggau.Gameplay
             LegalDocuments = null;
             UsedDevLoginFallback = false;
             ConsentsRecorded = false;
+            DraftParentEmail = string.Empty;
+            DraftParentName = string.Empty;
+            DraftPassword = string.Empty;
+            DraftChildName = string.Empty;
             DraftConsentsAccepted = false;
+            DraftCreateAdolescent = false;
             HomeReady = false;
-            preferredGauVariantId = "gau-rounded-pixel";
+            preferredGauVariantId = DefaultGauVariantId;
         }
 
         public void SetDraftResponsible(string email, string name, string password)
@@ -216,6 +357,11 @@ namespace Leggau.Gameplay
         public void SetDraftConsentsAccepted(bool accepted)
         {
             DraftConsentsAccepted = accepted;
+        }
+
+        public void SetDraftCreateAdolescent(bool enabled)
+        {
+            DraftCreateAdolescent = enabled;
         }
 
         public void SetHomeReady(bool ready)
@@ -261,7 +407,12 @@ namespace Leggau.Gameplay
             RefreshToken = snapshot.refreshToken;
             User = snapshot.user;
             Parent = snapshot.parent;
-            ActiveChild = snapshot.activeChild;
+            LinkedMinors = NormalizeMinorList(snapshot.linkedMinors);
+            SelectedMinor = NormalizeMinor(snapshot.selectedMinor) ?? ConvertToMinor(snapshot.activeChild);
+            SelectedMinorPolicy = NormalizePolicy(snapshot.selectedMinorPolicy);
+            ResolvedAgeBand = snapshot.resolvedAgeBand ?? string.Empty;
+            ActiveShell = snapshot.activeShell ?? string.Empty;
+            ActiveChild = snapshot.activeChild ?? ConvertToChild(SelectedMinor, Parent?.id);
             Activities = snapshot.activities;
             Rewards = snapshot.rewards;
             AvailablePoints = snapshot.availablePoints;
@@ -278,11 +429,19 @@ namespace Leggau.Gameplay
             DraftPassword = snapshot.draftPassword ?? string.Empty;
             DraftChildName = snapshot.draftChildName ?? string.Empty;
             DraftConsentsAccepted = snapshot.draftConsentsAccepted;
+            DraftCreateAdolescent = snapshot.draftCreateAdolescent;
             HomeReady = snapshot.homeReady;
             preferredGauVariantId = string.IsNullOrWhiteSpace(snapshot.preferredGauVariantId)
-                ? "gau-rounded-pixel"
+                ? DefaultGauVariantId
                 : snapshot.preferredGauVariantId;
+
+            if ((LinkedMinors == null || LinkedMinors.Length == 0) && SelectedMinor != null)
+            {
+                LinkedMinors = new[] { SelectedMinor };
+            }
+
             ActiveGauVariantIndex = ResolvePreferredVariantIndex(GauVariantsCatalog, preferredGauVariantId);
+            RefreshShellMetadata();
         }
 
         public LeggauLocalSessionSnapshot ToSnapshot()
@@ -293,6 +452,11 @@ namespace Leggau.Gameplay
                 refreshToken = RefreshToken,
                 user = User,
                 parent = Parent,
+                linkedMinors = LinkedMinors,
+                selectedMinor = SelectedMinor,
+                selectedMinorPolicy = SelectedMinorPolicy,
+                resolvedAgeBand = ResolvedAgeBand,
+                activeShell = ActiveShell,
                 activeChild = ActiveChild,
                 activities = Activities,
                 rewards = Rewards,
@@ -311,6 +475,7 @@ namespace Leggau.Gameplay
                 draftPassword = DraftPassword,
                 draftChildName = DraftChildName,
                 draftConsentsAccepted = DraftConsentsAccepted,
+                draftCreateAdolescent = DraftCreateAdolescent,
                 homeReady = HomeReady,
             };
         }
@@ -327,17 +492,302 @@ namespace Leggau.Gameplay
                 return "Auth";
             }
 
-            if (LegalDocuments != null && LegalDocuments.Length > 0 && !ConsentsRecorded)
+            if (LinkedMinors == null)
             {
-                return "Legal";
+                return "Familia";
             }
 
-            if (ActiveChild == null)
+            if (SelectedMinor == null)
             {
-                return "Crianca";
+                return "Menor";
+            }
+
+            if (SelectedMinorPolicy == null)
+            {
+                return "Politica";
             }
 
             return "Entrada";
+        }
+
+        private void CycleMinor(int direction)
+        {
+            if (LinkedMinors == null || LinkedMinors.Length <= 1)
+            {
+                return;
+            }
+
+            var currentIndex = 0;
+            for (var index = 0; index < LinkedMinors.Length; index += 1)
+            {
+                if (LinkedMinors[index]?.id == SelectedMinor?.id)
+                {
+                    currentIndex = index;
+                    break;
+                }
+            }
+
+            currentIndex += direction;
+            if (currentIndex < 0)
+            {
+                currentIndex = LinkedMinors.Length - 1;
+            }
+            else if (currentIndex >= LinkedMinors.Length)
+            {
+                currentIndex = 0;
+            }
+
+            SelectMinor(LinkedMinors[currentIndex]);
+        }
+
+        private void SelectMinor(MinorProfileRecord minor, bool preservePolicyIfSame = false)
+        {
+            var selectionChanged = SelectedMinor?.id != minor?.id;
+            SelectedMinor = minor;
+            ActiveChild = ConvertToChild(minor, Parent?.id);
+
+            if (selectionChanged || !preservePolicyIfSame)
+            {
+                SelectedMinorPolicy = null;
+                HomeReady = false;
+                Activities = null;
+                Rewards = null;
+                AvailablePoints = 0;
+                TotalPoints = 0;
+                CompletedActivities = 0;
+                LatestEntries = null;
+            }
+
+            RefreshShellMetadata();
+        }
+
+        private void RefreshShellMetadata()
+        {
+            var policyAgeBand = SelectedMinorPolicy?.guardianOverride != null &&
+                                !string.IsNullOrWhiteSpace(SelectedMinorPolicy.guardianOverride.preferredAgeBand)
+                ? SelectedMinorPolicy.guardianOverride.preferredAgeBand
+                : SelectedMinorPolicy?.ageBand;
+            var selectedMinorAgeBand = !string.IsNullOrWhiteSpace(SelectedMinor?.ageBand)
+                ? SelectedMinor.ageBand
+                : ResolveAgeBand(SelectedMinor?.age ?? ActiveChild?.age ?? 6);
+
+            ResolvedAgeBand = !string.IsNullOrWhiteSpace(policyAgeBand) ? policyAgeBand : selectedMinorAgeBand;
+            ActiveShell = ResolveMinorRole(SelectedMinor ?? ConvertToMinor(ActiveChild)) == "adolescent"
+                ? "adolescent"
+                : "child";
+        }
+
+        private static MinorProfileRecord[] ResolveMinorProfiles(FamilyOverviewResponse response)
+        {
+            var canonicalProfiles = NormalizeMinorList(response?.minorProfiles);
+            if (canonicalProfiles.Length > 0)
+            {
+                return canonicalProfiles;
+            }
+
+            if (response?.children == null || response.children.Length == 0)
+            {
+                return new MinorProfileRecord[0];
+            }
+
+            var items = new MinorProfileRecord[response.children.Length];
+            for (var index = 0; index < response.children.Length; index += 1)
+            {
+                var child = response.children[index];
+                var minor = ConvertToMinor(child);
+                minor.guardianLink = FindGuardianLink(response.guardianLinks, child?.id, minor?.role);
+                items[index] = NormalizeMinor(minor);
+            }
+
+            return NormalizeMinorList(items);
+        }
+
+        private static ChildProfile ConvertToChild(MinorProfileRecord minor, string parentId)
+        {
+            if (minor == null)
+            {
+                return null;
+            }
+
+            return new ChildProfile
+            {
+                id = minor.id,
+                parentId = parentId,
+                name = minor.name,
+                age = minor.age,
+                ageBand = minor.ageBand,
+                avatar = minor.avatar,
+                role = minor.role,
+            };
+        }
+
+        private static MinorProfileRecord ConvertToMinor(ChildProfile child)
+        {
+            if (child == null)
+            {
+                return null;
+            }
+
+            return new MinorProfileRecord
+            {
+                id = child.id,
+                name = child.name,
+                age = child.age,
+                ageBand = string.IsNullOrWhiteSpace(child.ageBand) ? ResolveAgeBand(child.age) : child.ageBand,
+                avatar = child.avatar,
+                role = ResolveMinorRole(child),
+            };
+        }
+
+        private static MinorProfileRecord[] NormalizeMinorList(MinorProfileRecord[] items)
+        {
+            if (items == null || items.Length == 0)
+            {
+                return new MinorProfileRecord[0];
+            }
+
+            var normalized = new MinorProfileRecord[items.Length];
+            var count = 0;
+            for (var index = 0; index < items.Length; index += 1)
+            {
+                var item = NormalizeMinor(items[index]);
+                if (item == null)
+                {
+                    continue;
+                }
+
+                normalized[count] = item;
+                count += 1;
+            }
+
+            if (count == normalized.Length)
+            {
+                return normalized;
+            }
+
+            var trimmed = new MinorProfileRecord[count];
+            for (var index = 0; index < count; index += 1)
+            {
+                trimmed[index] = normalized[index];
+            }
+
+            return trimmed;
+        }
+
+        private static MinorProfileRecord NormalizeMinor(MinorProfileRecord minor)
+        {
+            if (minor == null || string.IsNullOrWhiteSpace(minor.id))
+            {
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(minor.ageBand))
+            {
+                minor.ageBand = ResolveAgeBand(minor.age);
+            }
+
+            if (string.IsNullOrWhiteSpace(minor.role))
+            {
+                minor.role = minor.age >= 13 ? "adolescent" : "child";
+            }
+
+            minor.guardianLink = NormalizeGuardianLink(minor.guardianLink);
+            return minor;
+        }
+
+        private static GuardianLinkRecord NormalizeGuardianLink(GuardianLinkRecord link)
+        {
+            if (link == null || string.IsNullOrWhiteSpace(link.minorProfileId))
+            {
+                return null;
+            }
+
+            return link;
+        }
+
+        private static GuardianLinkRecord FindGuardianLink(GuardianLinkRecord[] items, string minorProfileId, string minorRole)
+        {
+            if (items == null || items.Length == 0 || string.IsNullOrWhiteSpace(minorProfileId))
+            {
+                return null;
+            }
+
+            for (var index = 0; index < items.Length; index += 1)
+            {
+                var link = NormalizeGuardianLink(items[index]);
+                if (link == null)
+                {
+                    continue;
+                }
+
+                if (link.minorProfileId == minorProfileId &&
+                    (string.IsNullOrWhiteSpace(minorRole) || string.IsNullOrWhiteSpace(link.minorRole) || link.minorRole == minorRole))
+                {
+                    return link;
+                }
+            }
+
+            return null;
+        }
+
+        private static InteractionPolicyRecord NormalizePolicy(InteractionPolicyRecord policy)
+        {
+            if (policy == null)
+            {
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(policy.id) && string.IsNullOrWhiteSpace(policy.minorProfileId))
+            {
+                return null;
+            }
+
+            return policy;
+        }
+
+        private static string ResolveMinorRole(ChildProfile child)
+        {
+            if (child == null)
+            {
+                return "child";
+            }
+
+            if (!string.IsNullOrWhiteSpace(child.role))
+            {
+                return child.role;
+            }
+
+            return child.age >= 13 ? "adolescent" : "child";
+        }
+
+        private static string ResolveMinorRole(MinorProfileRecord minor)
+        {
+            if (minor == null)
+            {
+                return "child";
+            }
+
+            if (!string.IsNullOrWhiteSpace(minor.role))
+            {
+                return minor.role;
+            }
+
+            return minor.age >= 13 ? "adolescent" : "child";
+        }
+
+        private static string ResolveAgeBand(int age)
+        {
+            if (age >= 13)
+            {
+                return "13-17";
+            }
+
+            if (age >= 10)
+            {
+                return "10-12";
+            }
+
+            return "6-9";
         }
 
         private static int ResolvePreferredVariantIndex(GauVariantsCatalog response, string preferredId)
@@ -357,7 +807,7 @@ namespace Leggau.Gameplay
 
             for (var index = 0; index < response.variants.Length; index += 1)
             {
-                if (response.variants[index].id == "gau-rounded-pixel")
+                if (response.variants[index].id == DefaultGauVariantId)
                 {
                     return index;
                 }

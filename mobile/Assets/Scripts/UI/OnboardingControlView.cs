@@ -1,3 +1,4 @@
+using System.Text;
 using Leggau.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,14 +10,17 @@ namespace Leggau.UI
         [SerializeField] private InputField parentEmailInput;
         [SerializeField] private InputField parentNameInput;
         [SerializeField] private InputField passwordInput;
-        [SerializeField] private InputField childNameInput;
-        [SerializeField] private Toggle consentToggle;
-        [SerializeField] private TextValueView consentDocumentsLabel;
-        [SerializeField] private TextValueView childSummaryLabel;
+        [SerializeField] private InputField developmentMinorNameInput;
+        [SerializeField] private Toggle developmentAdolescentToggle;
+        [SerializeField] private TextValueView familySummaryLabel;
+        [SerializeField] private TextValueView minorSummaryLabel;
+        [SerializeField] private TextValueView policySummaryLabel;
         [SerializeField] private TextValueView entrySummaryLabel;
         [SerializeField] private Button authButton;
-        [SerializeField] private Button legalButton;
-        [SerializeField] private Button childButton;
+        [SerializeField] private Button familyButton;
+        [SerializeField] private Button previousMinorButton;
+        [SerializeField] private Button nextMinorButton;
+        [SerializeField] private Button minorButton;
         [SerializeField] private Button homeButton;
         [SerializeField] private Button devButton;
 
@@ -24,28 +28,34 @@ namespace Leggau.UI
             InputField responsibleEmail,
             InputField responsibleName,
             InputField responsiblePassword,
-            InputField childName,
-            Toggle legalConsent,
-            TextValueView legalDocuments,
-            TextValueView childSummary,
+            InputField devMinorName,
+            Toggle devAdolescent,
+            TextValueView familySummary,
+            TextValueView minorSummary,
+            TextValueView policySummary,
             TextValueView entrySummary,
             Button authAction,
-            Button legalAction,
-            Button childAction,
+            Button familyAction,
+            Button previousMinorAction,
+            Button nextMinorAction,
+            Button minorAction,
             Button homeAction,
             Button developmentAction)
         {
             parentEmailInput = responsibleEmail;
             parentNameInput = responsibleName;
             passwordInput = responsiblePassword;
-            childNameInput = childName;
-            consentToggle = legalConsent;
-            consentDocumentsLabel = legalDocuments;
-            childSummaryLabel = childSummary;
+            developmentMinorNameInput = devMinorName;
+            developmentAdolescentToggle = devAdolescent;
+            familySummaryLabel = familySummary;
+            minorSummaryLabel = minorSummary;
+            policySummaryLabel = policySummary;
             entrySummaryLabel = entrySummary;
             authButton = authAction;
-            legalButton = legalAction;
-            childButton = childAction;
+            familyButton = familyAction;
+            previousMinorButton = previousMinorAction;
+            nextMinorButton = nextMinorAction;
+            minorButton = minorAction;
             homeButton = homeAction;
             devButton = developmentAction;
         }
@@ -60,15 +70,16 @@ namespace Leggau.UI
             SetInput(parentEmailInput, session.DraftParentEmail);
             SetInput(parentNameInput, session.DraftParentName);
             SetInput(passwordInput, session.DraftPassword);
-            SetInput(childNameInput, session.DraftChildName);
+            SetInput(developmentMinorNameInput, session.DraftChildName);
 
-            if (consentToggle != null)
+            if (developmentAdolescentToggle != null)
             {
-                consentToggle.isOn = session.DraftConsentsAccepted;
+                developmentAdolescentToggle.isOn = session.DraftCreateAdolescent;
             }
 
-            consentDocumentsLabel?.SetText(BuildConsentSummary(session));
-            childSummaryLabel?.SetText(BuildChildSummary(session));
+            familySummaryLabel?.SetText(BuildFamilySummary(session));
+            minorSummaryLabel?.SetText(BuildMinorSummary(session));
+            policySummaryLabel?.SetText(BuildPolicySummary(session));
             entrySummaryLabel?.SetText(BuildEntrySummary(session));
         }
 
@@ -83,63 +94,45 @@ namespace Leggau.UI
                 parentEmailInput != null ? parentEmailInput.text : session.DraftParentEmail,
                 parentNameInput != null ? parentNameInput.text : session.DraftParentName,
                 passwordInput != null ? passwordInput.text : session.DraftPassword);
-            session.SetDraftChildName(childNameInput != null ? childNameInput.text : session.DraftChildName);
-            session.SetDraftConsentsAccepted(consentToggle != null && consentToggle.isOn);
-        }
-
-        public void SetConsentAccepted(bool accepted)
-        {
-            if (consentToggle != null)
-            {
-                consentToggle.isOn = accepted;
-            }
+            session.SetDraftChildName(
+                developmentMinorNameInput != null ? developmentMinorNameInput.text : session.DraftChildName);
+            session.SetDraftCreateAdolescent(developmentAdolescentToggle != null && developmentAdolescentToggle.isOn);
         }
 
         public void ApplyState(LeggauSessionState session, bool busy)
         {
-            var canEditResponsible = !busy && !session.IsAuthenticated;
-            var legalReady = session.IsAuthenticated && !session.ConsentsRecorded;
-            var childReady = session.IsAuthenticated && (session.ConsentsRecorded || !HasLegalDocuments(session)) && !session.HomeReady;
-            var homeReady = session.ActiveChild != null && !session.HomeReady;
+            var hasSession = session != null && session.IsAuthenticated;
+            var hasMinor = session != null && session.SelectedMinor != null;
+            var hasPolicy = session != null && session.SelectedMinorPolicy != null;
+            var noLinkedMinors = session == null || !session.HasLinkedMinors;
+            var multipleMinors = session != null && session.HasMultipleLinkedMinors;
 
-            SetInteractable(parentEmailInput, canEditResponsible);
-            SetInteractable(parentNameInput, canEditResponsible);
-            SetInteractable(passwordInput, canEditResponsible);
-            SetInteractable(childNameInput, !busy && session.ActiveChild == null && childReady);
+            SetInteractable(parentEmailInput, !busy && !hasSession);
+            SetInteractable(parentNameInput, !busy && !hasSession);
+            SetInteractable(passwordInput, !busy && !hasSession);
+            SetInteractable(developmentMinorNameInput, !busy && hasSession && noLinkedMinors);
 
-            if (consentToggle != null)
+            if (developmentAdolescentToggle != null)
             {
-                consentToggle.interactable = !busy && legalReady;
+                developmentAdolescentToggle.interactable = !busy && hasSession && noLinkedMinors;
             }
 
-            if (authButton != null)
-            {
-                authButton.interactable = canEditResponsible;
-                SetButtonText(authButton, canEditResponsible ? "Continuar" : "Conta pronta");
-            }
+            SetInteractable(authButton, !busy && !hasSession);
+            SetButtonText(authButton, hasSession ? "Responsavel ativo" : "Ativar responsavel");
 
-            if (legalButton != null)
-            {
-                legalButton.interactable = !busy && legalReady;
-                SetButtonText(legalButton, legalReady ? "Aceitar e continuar" : "Consentimentos prontos");
-            }
+            SetInteractable(familyButton, !busy && hasSession);
+            SetButtonText(familyButton, hasSession ? "Atualizar perfis" : "Aguardando sessao");
 
-            if (childButton != null)
-            {
-                childButton.interactable = !busy && childReady;
-                SetButtonText(childButton, BuildChildButtonText(session, busy));
-            }
+            SetInteractable(previousMinorButton, !busy && multipleMinors);
+            SetInteractable(nextMinorButton, !busy && multipleMinors);
+            SetInteractable(minorButton, !busy && hasSession && hasMinor);
+            SetButtonText(minorButton, BuildMinorButtonText(session, busy));
 
-            if (homeButton != null)
-            {
-                homeButton.interactable = !busy && homeReady;
-                SetButtonText(homeButton, homeReady ? "Abrir minha home" : "Aguardando etapa anterior");
-            }
+            SetInteractable(homeButton, !busy && hasMinor && hasPolicy && !session.HomeReady);
+            SetButtonText(homeButton, BuildHomeButtonText(session, busy));
 
-            if (devButton != null)
-            {
-                devButton.interactable = !busy;
-            }
+            SetInteractable(devButton, !busy && hasSession);
+            SetButtonText(devButton, BuildDevelopmentButtonText(session, busy));
         }
 
         private static void SetInput(InputField input, string value)
@@ -174,81 +167,208 @@ namespace Leggau.UI
             }
         }
 
-        private static bool HasLegalDocuments(LeggauSessionState session)
+        private static string BuildFamilySummary(LeggauSessionState session)
         {
-            return session?.LegalDocuments != null && session.LegalDocuments.Length > 0;
+            var builder = new StringBuilder();
+            builder.AppendLine("Sessao e vinculos");
+
+            if (!session.IsAuthenticated)
+            {
+                builder.AppendLine("Ative a sessao do responsavel para carregar os menores vinculados.");
+                return builder.ToString();
+            }
+
+            builder.AppendLine($"Responsavel: {session.Parent?.name ?? session.User?.displayName ?? "Conta ativa"}");
+
+            if (!session.HasLinkedMinors)
+            {
+                builder.AppendLine("Nenhum menor vinculado nesta conta.");
+                builder.AppendLine("Use /pais para provisionar ou o atalho dev abaixo para validar o editor.");
+                return builder.ToString();
+            }
+
+            builder.AppendLine($"Perfis vinculados: {session.LinkedMinors.Length}");
+            builder.AppendLine(session.HasMultipleLinkedMinors
+                ? "Escolha qual menor deve abrir a experiencia do app."
+                : "Um perfil ativo foi encontrado para esta conta.");
+            return builder.ToString();
         }
 
-        private static string BuildConsentSummary(LeggauSessionState session)
+        private static string BuildMinorSummary(LeggauSessionState session)
         {
-            if (!HasLegalDocuments(session))
+            var builder = new StringBuilder();
+            builder.AppendLine("Perfil selecionado");
+
+            if (session.SelectedMinor == null)
             {
-                return "Consentimentos\nNenhum documento extra exigido nesta etapa.";
+                builder.AppendLine("Nenhum menor selecionado ainda.");
+                return builder.ToString();
             }
 
-            var lines = "Consentimentos";
-            foreach (var document in session.LegalDocuments)
-            {
-                if (document == null)
-                {
-                    continue;
-                }
+            builder.AppendLine(session.SelectedMinor.name);
+            builder.AppendLine($"{ResolveRoleLabel(session.SelectedMinor.role)} · {session.SelectedMinor.age} anos · {session.SelectedMinor.ageBand}");
 
-                var status = session.ConsentsRecorded ? "aceito" : "pendente";
-                lines += $"\n• {document.title} · {status}";
+            if (session.LinkedMinors != null && session.LinkedMinors.Length > 1)
+            {
+                builder.AppendLine($"Selecao {ResolveMinorPosition(session) + 1}/{session.LinkedMinors.Length}");
             }
 
-            return lines;
+            builder.AppendLine($"Avatar: {session.SelectedMinor.avatar}");
+            return builder.ToString();
         }
 
-        private static string BuildChildSummary(LeggauSessionState session)
+        private static string BuildPolicySummary(LeggauSessionState session)
         {
-            if (session?.ActiveChild != null)
+            var builder = new StringBuilder();
+            builder.AppendLine("Policy ativa");
+
+            if (session.SelectedMinor == null)
             {
-                return $"Perfil infantil\nEncontramos {session.ActiveChild.name} para continuar a jornada.";
+                builder.AppendLine("Escolha um menor para carregar a policy de interacao.");
+                return builder.ToString();
             }
 
-            if (!string.IsNullOrWhiteSpace(session?.DraftChildName))
+            if (session.SelectedMinorPolicy == null)
             {
-                return $"Perfil infantil\n{session.DraftChildName} sera usado como primeira crianca do app.";
+                builder.AppendLine("Aguardando carregamento da policy desse menor.");
+                return builder.ToString();
             }
 
-            return "Perfil infantil\nDigite o nome da crianca para criar o primeiro perfil.";
+            builder.AppendLine($"Shell: {ResolveShellLabel(session.ActiveShell)} · Faixa {session.ResolvedAgeBand}");
+            builder.AppendLine(session.SelectedMinorPolicy.roomsEnabled ? "Salas estruturadas liberadas" : "Salas estruturadas bloqueadas");
+            builder.AppendLine(session.SelectedMinorPolicy.presenceEnabled ? "Presenca monitorada liberada" : "Presenca monitorada bloqueada");
+            builder.AppendLine(session.SelectedMinorPolicy.messagingMode == "none"
+                ? "Mensageria livre indisponivel"
+                : $"Mensageria: {session.SelectedMinorPolicy.messagingMode}");
+            builder.AppendLine(session.SelectedMinorPolicy.therapistParticipationAllowed
+                ? "Participacao clinica permitida pela policy"
+                : "Acoes clinicas interativas ocultas nesta fase");
+            return builder.ToString();
         }
 
         private static string BuildEntrySummary(LeggauSessionState session)
         {
-            if (session == null)
+            if (!session.IsAuthenticated)
             {
-                return "Entrada na home\nAguardando informacoes do onboarding.";
+                return "Entrada no shell\nAguardando a ativacao da sessao do responsavel.";
             }
 
             if (session.HomeReady)
             {
-                return $"Entrada na home\nHome salva para {session.ActiveChild?.name ?? "a crianca"} e pronta para continuar.";
+                return $"Entrada no shell\n{ResolveShellLabel(session.ActiveShell)} pronta para {session.SelectedMinor?.name ?? "o menor"} continuar.";
             }
 
-            if (session.ActiveChild != null)
+            if (session.SelectedMinorPolicy != null)
             {
-                return $"Entrada na home\nTudo pronto para abrir a home de {session.ActiveChild.name}.";
+                return $"Entrada no shell\nTudo pronto para abrir a experiencia {ResolveShellLabel(session.ActiveShell)}.";
             }
 
-            return "Entrada na home\nConclua as etapas anteriores para abrir a experiencia principal.";
+            if (session.SelectedMinor != null)
+            {
+                return $"Entrada no shell\nConfirme a policy de {session.SelectedMinor.name} antes de seguir.";
+            }
+
+            if (session.HasLinkedMinors)
+            {
+                return "Entrada no shell\nEscolha qual menor deve seguir para a home.";
+            }
+
+            return "Entrada no shell\nSem menor vinculado ainda. O fluxo web em /pais continua sendo o caminho canonico.";
         }
 
-        private static string BuildChildButtonText(LeggauSessionState session, bool busy)
+        private static string BuildMinorButtonText(LeggauSessionState session, bool busy)
         {
             if (busy)
             {
                 return "Processando...";
             }
 
-            if (session?.ActiveChild != null)
+            if (session?.SelectedMinor == null)
             {
-                return $"Usar {session.ActiveChild.name}";
+                return "Escolher perfil";
             }
 
-            return "Confirmar crianca";
+            return $"Usar {session.SelectedMinor.name}";
+        }
+
+        private static string BuildHomeButtonText(LeggauSessionState session, bool busy)
+        {
+            if (busy)
+            {
+                return "Entrando...";
+            }
+
+            if (session == null)
+            {
+                return "Aguardando sessao";
+            }
+
+            if (session.HomeReady)
+            {
+                return "Shell pronta";
+            }
+
+            if (session.SelectedMinorPolicy == null)
+            {
+                return "Aguardando policy";
+            }
+
+            return "Abrir experiencia";
+        }
+
+        private static string BuildDevelopmentButtonText(LeggauSessionState session, bool busy)
+        {
+            if (busy)
+            {
+                return "Modo dev em andamento";
+            }
+
+            if (session == null || !session.IsAuthenticated)
+            {
+                return "Modo dev rapido";
+            }
+
+            if (!session.HasLinkedMinors)
+            {
+                return session.DraftCreateAdolescent
+                    ? "Criar adolescente demo"
+                    : "Criar crianca demo";
+            }
+
+            if (!session.HomeReady)
+            {
+                return "Completar fluxo demo";
+            }
+
+            return "Atualizar shell demo";
+        }
+
+        private static int ResolveMinorPosition(LeggauSessionState session)
+        {
+            if (session?.LinkedMinors == null || session.SelectedMinor == null)
+            {
+                return 0;
+            }
+
+            for (var index = 0; index < session.LinkedMinors.Length; index += 1)
+            {
+                if (session.LinkedMinors[index]?.id == session.SelectedMinor.id)
+                {
+                    return index;
+                }
+            }
+
+            return 0;
+        }
+
+        private static string ResolveRoleLabel(string role)
+        {
+            return role == "adolescent" ? "Adolescente" : "Crianca";
+        }
+
+        private static string ResolveShellLabel(string shell)
+        {
+            return shell == "adolescent" ? "shell adolescente" : "shell infantil";
         }
     }
 }

@@ -38,6 +38,10 @@ This directory defines the local agent architecture for Leggau.
   - `web-portal.md` owns the hosted experience for `/pais`, `/profissionais`, the public narrative routes and the installable shell
   - `web-admin.md` owns the live governance console for provider config, care-team review, audit, incidents, moderation and verification jobs
   - `safety-compliance.md` owns the legal gates, provider-secret handling expectations and OCR/biometric simulation rules that now back both auth and the live adult shells
-- The next critical-path baton now shifts back to Phase D:
-  - `frontend-mobile.md` leads the split between `child` and `adolescent` Unity shells
-  - `adult-web.md` and `web-admin.md` continue as maintenance and product-polish companions while Unity becomes the main delivery track again
+- Phase D is now completed:
+  - `frontend-mobile.md` delivered the responsible-activation flow, linked-minor selector and explicit `child`/`adolescent` shells with age-profile presentation
+  - `adult-web.md` and `web-admin.md` remain the maintenance and product-polish companions around the now-completed adult layer
+- The next critical-path baton now shifts to Phase E:
+  - `frontend-mobile.md` leads the monitored interaction and policy-aware room/presence affordances on Unity
+  - `api-integration.md` keeps ownership of the policy/runtime compatibility required by those Unity affordances
+  - `adult-web.md` and `web-admin.md` continue as companion tracks for governance and caregiver/professional workflows

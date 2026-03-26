@@ -6,10 +6,11 @@ Implement the Unity mobile frontend for Android and iOS.
 
 ## Responsibilities
 
-- Build the Unity bootstrap scene and first playable flow.
-- Load environment, session and catalog data.
-- Present family, activities, rewards and progress.
+- Build and maintain the Unity bootstrap scene and the minor runtime shells.
+- Load environment, session, family, policy and catalog data.
+- Present responsible activation, minor selection, age-profile shells, activities, rewards and progress.
 - Keep runtime behavior compatible with the current backend contract.
+- Own the policy-aware presentation layer for `child` and `adolescent`.
 - Store large Unity outputs under `.data/mobile/`.
 
 ## Directories
@@ -26,8 +27,9 @@ Implement the Unity mobile frontend for Android and iOS.
 
 ## Outputs
 
-- Bootstrap UI
-- Runtime session state
+- Responsible activation flow
+- Minor-selection flow
+- Runtime session state and persisted shell selection
+- `child` and `adolescent` shell presentation
 - Variant selector and mascot presentation
 - Android and iOS-ready Unity scene assets
-

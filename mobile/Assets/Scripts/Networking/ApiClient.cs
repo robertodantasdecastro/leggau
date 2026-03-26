@@ -10,6 +10,7 @@ namespace Leggau.Networking
         [SerializeField] private string apiBaseUrl = "http://localhost:8080/api";
         [SerializeField] private string fallbackApiBaseUrl = "";
         [SerializeField] private int requestTimeoutSeconds = 5;
+        [SerializeField] private string bearerToken = "";
 
         public string ActiveBaseUrl => apiBaseUrl;
 
@@ -22,6 +23,16 @@ namespace Leggau.Networking
         {
             apiBaseUrl = Sanitize(primaryBaseUrl);
             fallbackApiBaseUrl = Sanitize(secondaryBaseUrl);
+        }
+
+        public void SetAccessToken(string token)
+        {
+            bearerToken = token?.Trim() ?? string.Empty;
+        }
+
+        public void ClearAccessToken()
+        {
+            bearerToken = string.Empty;
         }
 
         public IEnumerator GetJson(string path, System.Action<string> onSuccess, System.Action<string> onError)
@@ -88,6 +99,7 @@ namespace Leggau.Networking
             {
                 var getRequest = UnityWebRequest.Get($"{baseUrl}/{path.TrimStart('/')}");
                 getRequest.timeout = requestTimeoutSeconds;
+                ApplyHeaders(getRequest);
                 return getRequest;
             }
 
@@ -99,6 +111,7 @@ namespace Leggau.Networking
             var payloadBytes = System.Text.Encoding.UTF8.GetBytes(jsonPayload ?? "{}");
             request.uploadHandler = new UploadHandlerRaw(payloadBytes);
             request.SetRequestHeader("Content-Type", "application/json");
+            ApplyHeaders(request);
             return request;
         }
 
@@ -118,6 +131,16 @@ namespace Leggau.Networking
         private static string Sanitize(string baseUrl)
         {
             return string.IsNullOrWhiteSpace(baseUrl) ? string.Empty : baseUrl.TrimEnd('/');
+        }
+
+        private void ApplyHeaders(UnityWebRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(bearerToken))
+            {
+                return;
+            }
+
+            request.SetRequestHeader("Authorization", $"Bearer {bearerToken}");
         }
     }
 }

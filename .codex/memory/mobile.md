@@ -184,11 +184,35 @@
   - installable PWA metadata and service worker shell caching
   - admin governance for care-team review, audit, incidents and moderation in `web/admin`
 - Backend progress now supports adolescent summary and check-in on the canonical runtime, which keeps the cross-surface child/adolescent model coherent while Unity remains the primary experience for minors
-- With Phase C completed, the next critical path for mobile is now Phase D:
+- Phase D is now completed in the Unity runtime:
   - explicit `child` shell
   - explicit `adolescent` shell
   - age-profile presentation system on top of the already-compatible Phase B backend
+  - policy-aware shell gating driven by `interaction-policies`
+  - persisted minor selection and shell restoration
+- The next critical path for mobile is now Phase E:
+  - monitored interaction surfaces
+  - policy-governed presence and room affordances
+  - continued compatibility with the adult web/admin governance layer
 - The Unity workspace had to be reopened on `2026-03-26` through the canonical `-projectPath` flow after a temporary nested project folder appeared under `mobile/`; that stray folder was removed
+- The Phase D runtime now:
+  - restores the responsible session first
+  - loads linked minors from `families/overview`
+  - selects a single linked minor automatically or shows a selector when multiple minors are active
+  - blocks the home when no linked minor exists and redirects provisioning responsibility to `/pais`
+  - consumes `interaction-policies/:minorProfileId` before opening the shell
+  - keeps `ActiveChild` only as a compatibility projection for progress, rewards, check-in and probe reporting
+- Canonical Unity validation on `2026-03-26` now covers both:
+  - child shell:
+    - `state=ready`
+    - `minorRole=child`
+    - `ageBand=6-9`
+    - `activeShell=child`
+  - adolescent shell:
+    - `state=ready`
+    - `minorRole=adolescent`
+    - `ageBand=13-17`
+    - `activeShell=adolescent`
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination
 - `~/Library/Application Support/UnityHub/secondaryInstallPath.json` now points to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors`

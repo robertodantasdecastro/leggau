@@ -16,6 +16,10 @@ namespace Leggau.App
             public string error;
             public string parentName;
             public string childName;
+            public string selectedMinorId;
+            public string minorRole;
+            public string ageBand;
+            public string activeShell;
             public string activeGauVariant;
             public int availablePoints;
             public int totalPoints;
@@ -67,6 +71,10 @@ namespace Leggau.App
             snapshot.state = "ready";
             snapshot.parentName = session.Parent?.name ?? string.Empty;
             snapshot.childName = session.ActiveChild?.name ?? string.Empty;
+            snapshot.selectedMinorId = session.SelectedMinor?.id ?? string.Empty;
+            snapshot.minorRole = session.SelectedMinorRole ?? string.Empty;
+            snapshot.ageBand = session.ResolvedAgeBand ?? string.Empty;
+            snapshot.activeShell = session.ActiveShell ?? string.Empty;
             snapshot.activeGauVariant = session.ActiveGauVariant?.id ?? string.Empty;
             snapshot.availablePoints = session.AvailablePoints;
             snapshot.totalPoints = session.TotalPoints;

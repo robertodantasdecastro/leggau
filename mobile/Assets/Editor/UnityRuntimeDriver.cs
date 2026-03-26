@@ -13,6 +13,8 @@ namespace Leggau.Editor
         private const string PendingPlayModeKey = "leggau.editor.pendingPlayMode";
         private const string PendingValidationKey = "leggau.editor.pendingValidation";
         private const string ValidationStartedAtKey = "leggau.editor.validationStartedAtUtc";
+        private const string PendingExitAfterPlayModeKey = "leggau.editor.pendingExitAfterPlayMode";
+        private const string PendingExitCodeKey = "leggau.editor.pendingExitCode";
 
         static UnityRuntimeDriver()
         {
@@ -36,7 +38,21 @@ namespace Leggau.Editor
         [MenuItem("Leggau/Run Bootstrap Development Flow")]
         public static void RunBootstrapDevelopmentFlow()
         {
-            Leggau.App.LeggauAppBootstrap.RequestAutomatedDevelopmentRun();
+            Leggau.App.LeggauAppBootstrap.RequestAutomatedDevelopmentRun("child");
+            RunBootstrapPlayMode();
+        }
+
+        [MenuItem("Leggau/Run Child Shell Development Flow")]
+        public static void RunChildShellDevelopmentFlow()
+        {
+            Leggau.App.LeggauAppBootstrap.RequestAutomatedDevelopmentRun("child");
+            RunBootstrapPlayMode();
+        }
+
+        [MenuItem("Leggau/Run Adolescent Shell Development Flow")]
+        public static void RunAdolescentShellDevelopmentFlow()
+        {
+            Leggau.App.LeggauAppBootstrap.RequestAutomatedDevelopmentRun("adolescent");
             RunBootstrapPlayMode();
         }
 
@@ -59,14 +75,34 @@ namespace Leggau.Editor
                 File.Delete(validationProbePath);
             }
 
-            Leggau.App.LeggauAppBootstrap.RequestAutomatedDevelopmentRun();
+            Leggau.App.LeggauAppBootstrap.RequestAutomatedDevelopmentRun("child");
+            SessionState.SetString("leggau.editor.expectedShell", "child");
             SessionState.SetString(ValidationStartedAtKey, DateTime.UtcNow.ToString("O"));
             SessionState.SetBool(PendingValidationKey, true);
             RunBootstrapPlayMode();
         }
 
+        public static void RunChildShellValidationAndQuit()
+        {
+            PrepareShellValidation("child");
+        }
+
+        public static void RunAdolescentShellValidationAndQuit()
+        {
+            PrepareShellValidation("adolescent");
+        }
+
         private static void DrivePendingState()
         {
+            if (SessionState.GetBool(PendingExitAfterPlayModeKey, false) && !EditorApplication.isPlaying)
+            {
+                var exitCode = SessionState.GetInt(PendingExitCodeKey, 0);
+                SessionState.SetBool(PendingExitAfterPlayModeKey, false);
+                SessionState.EraseInt(PendingExitCodeKey);
+                EditorApplication.Exit(exitCode);
+                return;
+            }
+
             if (SessionState.GetBool(PendingPlayModeKey, false))
             {
                 if (!EditorApplication.isCompiling && !EditorApplication.isUpdating && !EditorApplication.isPlaying)
@@ -96,10 +132,20 @@ namespace Leggau.Editor
             }
 
             var json = File.ReadAllText(validationProbePath);
-            if (json.Contains("\"state\": \"ready\""))
+            var expectedShell = SessionState.GetString("leggau.editor.expectedShell", string.Empty);
+            var shellMatches = string.IsNullOrWhiteSpace(expectedShell) || json.Contains($"\"activeShell\": \"{expectedShell}\"");
+
+            if (json.Contains("\"state\": \"ready\"") && shellMatches)
             {
                 Debug.Log("Leggau bootstrap validation finished successfully.");
                 FinishValidation(0);
+                return;
+            }
+
+            if (json.Contains("\"state\": \"ready\"") && !shellMatches)
+            {
+                Debug.LogError($"Leggau bootstrap validation reached ready with the wrong shell: {json}");
+                FinishValidation(1);
                 return;
             }
 
@@ -115,10 +161,14 @@ namespace Leggau.Editor
             SessionState.SetBool(PendingValidationKey, false);
             SessionState.SetBool(PendingPlayModeKey, false);
             SessionState.EraseString(ValidationStartedAtKey);
+            SessionState.EraseString("leggau.editor.expectedShell");
 
             if (EditorApplication.isPlaying)
             {
+                SessionState.SetBool(PendingExitAfterPlayModeKey, true);
+                SessionState.SetInt(PendingExitCodeKey, exitCode);
                 EditorApplication.isPlaying = false;
+                return;
             }
 
             EditorApplication.Exit(exitCode);
@@ -145,6 +195,21 @@ namespace Leggau.Editor
             }
 
             return Path.Combine(repoRoot, ".data", "runtime", "unity", "bootstrap-playmode-status.json");
+        }
+
+        private static void PrepareShellValidation(string shell)
+        {
+            var validationProbePath = ResolveProbePath();
+            if (!string.IsNullOrWhiteSpace(validationProbePath) && File.Exists(validationProbePath))
+            {
+                File.Delete(validationProbePath);
+            }
+
+            Leggau.App.LeggauAppBootstrap.RequestAutomatedDevelopmentRun(shell);
+            SessionState.SetString("leggau.editor.expectedShell", shell);
+            SessionState.SetString(ValidationStartedAtKey, DateTime.UtcNow.ToString("O"));
+            SessionState.SetBool(PendingValidationKey, true);
+            RunBootstrapPlayMode();
         }
     }
 }

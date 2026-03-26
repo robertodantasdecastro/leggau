@@ -175,13 +175,19 @@ As of `2026-03-26`:
   - provider secrets are masked in responses and encrypted at rest behind `AUTH_PROVIDER_SECRET_KEY`
   - `scripts/test-social-auth-security.mjs` validates social auth, legal gates, actor links, OCR and biometrics against `vm2`
   - `npm audit --omit=dev` is clean for `backend`, `web/admin` and `web/portal`
-- Phase C is now partially advanced in `web/portal`:
+- Phase C is now completed in `web/portal` and `web/admin`:
   - `/pais` is a live parent shell for auth, consent, family overview, minor provisioning, parent-side care-team approvals, reports, invites and permission ledger
   - `/profissionais` is a live therapist shell for auth, family lookup, invite acceptance, care-team requests and clinical-context timeline
   - `web/admin` is now the live governance console for care-team review, audit, incidents, moderation, provider config and verification jobs
   - `web/portal` now ships `manifest.webmanifest` and `sw.js` for the adult PWA shell
   - the automated security script restores the Google/Apple catalog after negative-path checks so the adult shells stay operational
-- Phase C is now effectively closed; the next critical path returns to Phase D on Unity while adult web/admin move into maintenance and continued polish.
+- Phase D is now completed on Unity:
+  - the runtime enters through responsible activation, family load, minor selection and policy load
+  - explicit `child` and `adolescent` shells now exist in the same `Bootstrap.unity`
+  - the age-profile presentation system now differentiates `6-9`, `10-12` and `13-17`
+  - the runtime now persists `SelectedMinor`, `ResolvedAgeBand`, `ActiveShell` and the resolved policy snapshot
+  - the VM-backed probe now validates both `child` and `adolescent` shells at `state=ready`
+- The next critical path now shifts to Phase E while adult web/admin stay in maintenance and continued polish.
 - Mac toolchain status:
   - Docker: ready
   - Java 17: present
@@ -197,12 +203,18 @@ As of `2026-03-26`:
   - `mobile/Assets/Art/Characters/Gau/Source/Gau.blend`
   - `mobile/Assets/Art/Characters/Gau/Exports/Gau.fbx`
 - Latest validated Unity runtime probe against the VM reached:
-  - `state=ready`
-  - `parentName=Responsavel Demo`
-  - `childName=Gau`
-  - `activeGauVariant=gau-rounded-pixel`
-  - `activityCount=3`
-  - `rewardCount=2`
+  - child shell:
+    - `state=ready`
+    - `childName=Gau`
+    - `minorRole=child`
+    - `ageBand=6-9`
+    - `activeShell=child`
+  - adolescent shell:
+    - `state=ready`
+    - `childName=Gau Teen`
+    - `minorRole=adolescent`
+    - `ageBand=13-17`
+    - `activeShell=adolescent`
 - Platform replan artifacts are now canonical docs:
   - `docs/platform-blueprint.md`
   - `docs/actor-matrix.md`

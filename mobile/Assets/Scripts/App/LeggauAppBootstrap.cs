@@ -11,7 +11,11 @@ namespace Leggau.App
     public class LeggauAppBootstrap : MonoBehaviour
     {
         private const string AutomatedDevelopmentRunKey = "leggau.bootstrap.automatedDevRun";
+        private const string AutomatedDevelopmentModeKey = "leggau.bootstrap.automatedDevRunMode";
+        private const string ChildShellMode = "child";
+        private const string AdolescentShellMode = "adolescent";
         private static bool automatedDevelopmentRunRequested;
+        private static string automatedDevelopmentMode = ChildShellMode;
 
         [SerializeField] private TextAsset environmentAsset;
         [SerializeField] private string environmentRelativePath = "config/dev-api.json";
@@ -24,10 +28,12 @@ namespace Leggau.App
         private bool isBusy;
         private bool environmentReady;
 
-        public static void RequestAutomatedDevelopmentRun()
+        public static void RequestAutomatedDevelopmentRun(string mode = ChildShellMode)
         {
             automatedDevelopmentRunRequested = true;
+            automatedDevelopmentMode = mode == AdolescentShellMode ? AdolescentShellMode : ChildShellMode;
             PlayerPrefs.SetInt(AutomatedDevelopmentRunKey, 1);
+            PlayerPrefs.SetString(AutomatedDevelopmentModeKey, automatedDevelopmentMode);
             PlayerPrefs.Save();
         }
 
@@ -62,7 +68,31 @@ namespace Leggau.App
                 return;
             }
 
-            StartCoroutine(SubmitConsentStepRoutine());
+            StartCoroutine(RefreshFamilySelectionRoutine(false));
+        }
+
+        public void SelectPreviousMinor()
+        {
+            if (isBusy || !environmentReady || !sessionState.HasMultipleLinkedMinors)
+            {
+                return;
+            }
+
+            sessionState.SelectPreviousMinor();
+            PersistLocalSession();
+            RenderSelectionState("Perfil anterior selecionado. Confirme para carregar a policy.");
+        }
+
+        public void SelectNextMinor()
+        {
+            if (isBusy || !environmentReady || !sessionState.HasMultipleLinkedMinors)
+            {
+                return;
+            }
+
+            sessionState.SelectNextMinor();
+            PersistLocalSession();
+            RenderSelectionState("Proximo perfil selecionado. Confirme para carregar a policy.");
         }
 
         public void SubmitChildStep()
@@ -72,7 +102,7 @@ namespace Leggau.App
                 return;
             }
 
-            StartCoroutine(SubmitChildStepRoutine());
+            StartCoroutine(SubmitMinorStepRoutine());
         }
 
         public void CompleteHomeStep()
@@ -92,7 +122,8 @@ namespace Leggau.App
                 return;
             }
 
-            StartCoroutine(RunDevelopmentOnboardingRoutine());
+            StartCoroutine(RunDevelopmentOnboardingRoutine(
+                sessionState.DraftCreateAdolescent ? AdolescentShellMode : ChildShellMode));
         }
 
         public void RetryBootstrap()
@@ -113,8 +144,9 @@ namespace Leggau.App
             }
 
             LeggauLocalSessionStore.Clear();
+            apiClient?.ClearAccessToken();
             sessionState.ResetForBootstrap();
-            dashboardPresenter?.SetStatus("Jornada local limpa. Reiniciando onboarding...");
+            dashboardPresenter?.SetStatus("Jornada local limpa. Reiniciando a ativacao do shell...");
             StartCoroutine(PrepareBootstrap());
         }
 
@@ -138,7 +170,7 @@ namespace Leggau.App
             }
             else
             {
-                dashboardPresenter?.RenderLoadingState(sessionState, "Mascote atualizado para o onboarding.");
+                dashboardPresenter?.RenderLoadingState(sessionState, "Mascote atualizado para a proxima abertura do shell.");
             }
 
             dashboardPresenter?.SyncOnboardingControls(sessionState, isBusy);
@@ -156,7 +188,7 @@ namespace Leggau.App
             }
             else
             {
-                dashboardPresenter?.RenderLoadingState(sessionState, "Mascote atualizado para o onboarding.");
+                dashboardPresenter?.RenderLoadingState(sessionState, "Mascote atualizado para a proxima abertura do shell.");
             }
 
             dashboardPresenter?.SyncOnboardingControls(sessionState, isBusy);
@@ -173,9 +205,10 @@ namespace Leggau.App
 
             isBusy = true;
             environmentReady = false;
+            apiClient?.ClearAccessToken();
             sessionState.ResetForBootstrap();
             dashboardPresenter?.ResetFlow();
-            dashboardPresenter?.SetHero("Bem-vindo ao Leggau", "Preparando a experiencia do responsavel e o mascote Gau.");
+            dashboardPresenter?.SetHero("Ativando a experiencia do menor", "O shell do menor abre por sessao do responsavel, escolha do perfil e leitura da policy.");
             dashboardPresenter?.RenderLoadingState(sessionState, "Carregando ambiente...");
 
             currentEnvironment = environmentAsset != null
@@ -184,23 +217,42 @@ namespace Leggau.App
 
             apiClient.SetBaseUrls(currentEnvironment.apiBaseUrl, currentEnvironment.fallbackApiBaseUrl);
             TryLoadLocalGauCatalog();
-            var restoredSession = TryRestoreLocalSession();
-            if (!restoredSession)
+
+            var automatedMode = ConsumeAutomatedDevelopmentRunMode();
+            var restoredSession = false;
+
+            if (!string.IsNullOrWhiteSpace(automatedMode))
             {
-                ApplyDevelopmentDefaults(currentEnvironment);
+                LeggauLocalSessionStore.Clear();
+                sessionState.ResetForBootstrap();
+                apiClient?.ClearAccessToken();
+                ApplyDevelopmentDefaults(currentEnvironment, automatedMode);
+            }
+            else
+            {
+                restoredSession = TryRestoreLocalSession();
+                if (!restoredSession)
+                {
+                    ApplyDevelopmentDefaults(currentEnvironment, ChildShellMode);
+                }
+            }
+
+            if (sessionState.IsAuthenticated)
+            {
+                apiClient.SetAccessToken(sessionState.AccessToken);
             }
 
             SyncFlowFromSession();
 
             if (restoredSession)
             {
-                dashboardPresenter?.SetHero("Bem-vindo de volta", "Sua jornada foi retomada do ultimo ponto salvo com o Gau.");
+                dashboardPresenter?.SetHero("Bem-vindo de volta", "Retomando a sessao do responsavel, o menor salvo e o shell mais adequado.");
                 dashboardPresenter?.RenderLoadingState(sessionState, BuildResumeStatus());
             }
             else
             {
-                dashboardPresenter?.SetHero("Onboarding pronto para comecar", "Preencha os dados do responsavel, confirme consentimentos e prepare a crianca.");
-                dashboardPresenter?.RenderLoadingState(sessionState, $"Conectado a {apiClient.ActiveBaseUrl}. Aguardando seu primeiro passo.");
+                dashboardPresenter?.SetHero("Ative o responsavel", "Entre com a conta adulta, carregue os perfis vinculados e so entao abra o shell infantil ou adolescente.");
+                dashboardPresenter?.RenderLoadingState(sessionState, $"Conectado a {apiClient.ActiveBaseUrl}. Aguardando a ativacao do responsavel.");
             }
 
             environmentReady = true;
@@ -210,7 +262,7 @@ namespace Leggau.App
 
             if (restoredSession)
             {
-                if (sessionState.HomeReady && sessionState.ActiveChild != null)
+                if (sessionState.HomeReady && sessionState.SelectedMinor != null)
                 {
                     StartCoroutine(ResumePersistedHomeRoutine());
                     yield break;
@@ -223,9 +275,9 @@ namespace Leggau.App
                 }
             }
 
-            if (ConsumeAutomatedDevelopmentRunFlag())
+            if (!string.IsNullOrWhiteSpace(automatedMode))
             {
-                StartCoroutine(RunDevelopmentOnboardingRoutine());
+                StartCoroutine(RunDevelopmentOnboardingRoutine(automatedMode));
             }
         }
 
@@ -246,12 +298,22 @@ namespace Leggau.App
             PersistLocalSession();
         }
 
-        private static bool ConsumeAutomatedDevelopmentRunFlag()
+        private static string ConsumeAutomatedDevelopmentRunMode()
         {
             var shouldRun = automatedDevelopmentRunRequested || PlayerPrefs.GetInt(AutomatedDevelopmentRunKey, 0) == 1;
+            if (!shouldRun)
+            {
+                return string.Empty;
+            }
+
+            var mode = automatedDevelopmentMode;
+            var storedMode = PlayerPrefs.GetString(AutomatedDevelopmentModeKey, mode);
             automatedDevelopmentRunRequested = false;
+            automatedDevelopmentMode = ChildShellMode;
             PlayerPrefs.DeleteKey(AutomatedDevelopmentRunKey);
-            return shouldRun;
+            PlayerPrefs.DeleteKey(AutomatedDevelopmentModeKey);
+            PlayerPrefs.Save();
+            return storedMode == AdolescentShellMode ? AdolescentShellMode : ChildShellMode;
         }
 
         private IEnumerator SubmitResponsibleStepRoutine(bool allowDevFallback)
@@ -270,7 +332,7 @@ namespace Leggau.App
 
             isBusy = true;
             dashboardPresenter?.SyncOnboardingControls(sessionState, true);
-            dashboardPresenter?.SetHero("Identificando o responsavel", "Tentando cadastro ou login da conta principal.");
+            dashboardPresenter?.SetHero("Ativando o responsavel", "Tentando registro ou login para carregar os menores vinculados.");
             dashboardPresenter?.MarkFlowLoading("Auth", "registro/login");
             dashboardPresenter?.RenderLoadingState(sessionState, "Autenticando responsavel...");
 
@@ -284,104 +346,23 @@ namespace Leggau.App
                 yield break;
             }
 
-            dashboardPresenter?.MarkFlowDone("Auth", sessionState.UsedDevLoginFallback ? "login dev" : "autenticado");
-            dashboardPresenter?.MarkFlowLoading("Legal", "carregando documentos");
-            PersistLocalSession();
-            yield return LoadLegalDocumentsOnly(value => requestFailed = value);
-
-            if (requestFailed)
-            {
-                isBusy = false;
-                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
-                yield break;
-            }
-
-            if (sessionState.LegalDocuments == null || sessionState.LegalDocuments.Length == 0)
-            {
-                dashboardPresenter?.MarkFlowDone("Legal", "sem documentos");
-            }
-
-            dashboardPresenter?.SetHero("Consentimentos prontos", "Revise os documentos e confirme os aceites para continuar.");
-            dashboardPresenter?.RenderLoadingState(sessionState, "Responsavel autenticado. Aguarde a confirmacao dos consentimentos.");
-            isBusy = false;
-            dashboardPresenter?.SyncOnboardingControls(sessionState, false);
-            PersistLocalSession();
+            apiClient.SetAccessToken(sessionState.AccessToken);
+            dashboardPresenter?.MarkFlowDone("Auth", sessionState.UsedDevLoginFallback ? "login dev" : "sessao ativa");
+            yield return RefreshFamilySelectionRoutine(true);
         }
 
-        private IEnumerator SubmitConsentStepRoutine()
+        private IEnumerator RefreshFamilySelectionRoutine(bool triggeredByAuth)
         {
-            dashboardPresenter?.ReadOnboardingDrafts(sessionState);
-            PersistLocalSession();
-
             if (!sessionState.IsAuthenticated)
             {
-                dashboardPresenter?.SetError("Autentique o responsavel antes de confirmar os consentimentos.");
+                dashboardPresenter?.SetError("Ative o responsavel antes de carregar os perfis vinculados.");
                 dashboardPresenter?.SyncOnboardingControls(sessionState, false);
                 yield break;
             }
 
             isBusy = true;
             dashboardPresenter?.SyncOnboardingControls(sessionState, true);
-            dashboardPresenter?.SetHero("Registrando consentimentos", "Gravando os aceites legais da jornada infantil.");
-            dashboardPresenter?.MarkFlowLoading("Legal", "aceites");
-
-            if (sessionState.LegalDocuments == null || sessionState.LegalDocuments.Length == 0)
-            {
-                dashboardPresenter?.MarkFlowDone("Legal", "sem documentos");
-                isBusy = false;
-                dashboardPresenter?.RenderLoadingState(sessionState, "Nenhum consentimento extra exigido. Prossiga para a crianca.");
-                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
-                yield break;
-            }
-
-            if (!sessionState.DraftConsentsAccepted)
-            {
-                dashboardPresenter?.SetError("Confirme explicitamente os consentimentos para continuar.");
-                isBusy = false;
-                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
-                yield break;
-            }
-
-            var requestFailed = false;
-            yield return RecordLegalConsents(value => requestFailed = value);
-
-            if (requestFailed)
-            {
-                isBusy = false;
-                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
-                yield break;
-            }
-
-            dashboardPresenter?.MarkFlowDone("Legal", "aceites gravados");
-            dashboardPresenter?.SetHero("Crianca pronta para entrar", "Agora vamos reutilizar ou criar o primeiro perfil infantil.");
-            dashboardPresenter?.RenderLoadingState(sessionState, "Consentimentos salvos. Prepare a crianca.");
-            isBusy = false;
-            dashboardPresenter?.SyncOnboardingControls(sessionState, false);
-            PersistLocalSession();
-        }
-
-        private IEnumerator SubmitChildStepRoutine()
-        {
-            dashboardPresenter?.ReadOnboardingDrafts(sessionState);
-            PersistLocalSession();
-
-            if (!sessionState.IsAuthenticated)
-            {
-                dashboardPresenter?.SetError("Autentique o responsavel antes de preparar a crianca.");
-                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
-                yield break;
-            }
-
-            if (sessionState.LegalDocuments != null && sessionState.LegalDocuments.Length > 0 && !sessionState.ConsentsRecorded)
-            {
-                dashboardPresenter?.SetError("Confirme os consentimentos legais antes de criar ou selecionar a crianca.");
-                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
-                yield break;
-            }
-
-            isBusy = true;
-            dashboardPresenter?.SyncOnboardingControls(sessionState, true);
-            dashboardPresenter?.SetHero("Preparando a crianca", "Buscando a familia e criando o primeiro perfil infantil quando necessario.");
+            dashboardPresenter?.SetHero("Carregando os menores vinculados", "A familia vem da vm2 e passa a governar a entrada no shell.");
             dashboardPresenter?.MarkFlowLoading("Familia", "overview");
             dashboardPresenter?.RenderLoadingState(sessionState, $"Carregando familia via {apiClient.ActiveBaseUrl}...");
 
@@ -395,38 +376,90 @@ namespace Leggau.App
                 yield break;
             }
 
-            dashboardPresenter?.MarkFlowDone("Familia", "familia carregada");
-
-            if (sessionState.ActiveChild == null)
+            if (sessionState.HasLinkedMinors)
             {
-                if (string.IsNullOrWhiteSpace(sessionState.DraftChildName))
+                dashboardPresenter?.MarkFlowDone("Familia", $"{sessionState.LinkedMinors.Length} perfil(is)");
+            }
+            else
+            {
+                dashboardPresenter?.MarkFlowDone("Familia", "sem menores");
+            }
+
+            if (!sessionState.HasLinkedMinors)
+            {
+                dashboardPresenter?.SetHero("Nenhum menor vinculado", "A superficie /pais continua sendo o caminho canonico para provisionar perfis. No editor, o atalho dev pode criar um perfil de teste.");
+                dashboardPresenter?.RenderLoadingState(sessionState, "Sem menores ativos. Use /pais ou o atalho dev para criar um perfil demo.");
+                isBusy = false;
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+                PersistLocalSession();
+                yield break;
+            }
+
+            dashboardPresenter?.MarkFlowDone("Menor", sessionState.SelectedMinor != null
+                ? $"{sessionState.SelectedMinor.name} em foco"
+                : "escolha pendente");
+
+            if (sessionState.LinkedMinors.Length == 1 || sessionState.SelectedMinorPolicy != null)
+            {
+                yield return EnsureSelectedMinorPolicyLoaded(value => requestFailed = value);
+                if (requestFailed)
                 {
-                    dashboardPresenter?.SetError("Informe o nome da crianca para criar o primeiro perfil.");
                     isBusy = false;
                     dashboardPresenter?.SyncOnboardingControls(sessionState, false);
                     yield break;
                 }
-
-                dashboardPresenter?.MarkFlowLoading("Crianca", "criacao inicial");
-                yield return EnsureFirstChildProfile(value => requestFailed = value);
-            }
-            else
-            {
-                dashboardPresenter?.MarkFlowDone("Crianca", "perfil existente");
             }
 
-            if (requestFailed || sessionState.ActiveChild == null)
+            dashboardPresenter?.SetHero(
+                sessionState.SelectedMinorPolicy != null
+                    ? $"Shell pronta para {sessionState.SelectedMinor.name}"
+                    : "Escolha o menor certo",
+                sessionState.SelectedMinorPolicy != null
+                    ? $"A policy de {sessionState.SelectedMinor.name} ja foi carregada. Falta entrar na home."
+                    : "Selecione o menor vinculado e confirme o perfil que deve abrir o app.");
+            dashboardPresenter?.RenderLoadingState(sessionState, BuildSelectionStatus(triggeredByAuth));
+            isBusy = false;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+            PersistLocalSession();
+        }
+
+        private IEnumerator SubmitMinorStepRoutine()
+        {
+            if (!sessionState.IsAuthenticated)
             {
-                dashboardPresenter?.MarkFlowFailed("Crianca", "nao disponivel");
-                dashboardPresenter?.SetError("Nao foi possivel preparar o perfil infantil.");
+                dashboardPresenter?.SetError("Ative a conta do responsavel antes de escolher o menor.");
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+                yield break;
+            }
+
+            if (sessionState.SelectedMinor == null)
+            {
+                dashboardPresenter?.SetError("Nenhum menor foi selecionado para continuar.");
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+                yield break;
+            }
+
+            isBusy = true;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, true);
+            dashboardPresenter?.SetHero("Carregando a policy do menor", "A policy da vm2 define o shell, a faixa etaria efetiva e o que deve permanecer escondido.");
+            dashboardPresenter?.MarkFlowLoading("Menor", sessionState.SelectedMinor.name);
+            dashboardPresenter?.MarkFlowLoading("Politica", "carregando policy");
+            dashboardPresenter?.RenderLoadingState(sessionState, $"Lendo policy para {sessionState.SelectedMinor.name}...");
+
+            var requestFailed = false;
+            yield return EnsureSelectedMinorPolicyLoaded(value => requestFailed = value);
+
+            if (requestFailed)
+            {
                 isBusy = false;
                 dashboardPresenter?.SyncOnboardingControls(sessionState, false);
                 yield break;
             }
 
-            dashboardPresenter?.MarkFlowDone("Crianca", "perfil ativo");
-            dashboardPresenter?.SetHero("Tudo pronto para entrar", "Com responsavel, consentimentos e crianca definidos, a home pode ser carregada.");
-            dashboardPresenter?.RenderLoadingState(sessionState, "Crianca preparada. Entre na home para concluir o onboarding.");
+            dashboardPresenter?.SetHero(
+                sessionState.ActiveShell == AdolescentShellMode ? "Shell adolescente pronta" : "Shell infantil pronta",
+                $"Policy confirmada para {sessionState.SelectedMinor.name} em {sessionState.ResolvedAgeBand}. Agora a home pode ser carregada.");
+            dashboardPresenter?.RenderLoadingState(sessionState, $"{sessionState.SelectedMinor.name} pronta(o) em {sessionState.ResolvedAgeBand}. Abra a experiencia.");
             isBusy = false;
             dashboardPresenter?.SyncOnboardingControls(sessionState, false);
             PersistLocalSession();
@@ -434,17 +467,26 @@ namespace Leggau.App
 
         private IEnumerator CompleteHomeStepRoutine()
         {
-            if (sessionState.ActiveChild == null)
+            if (sessionState.SelectedMinor == null)
             {
-                dashboardPresenter?.SetError("Prepare a crianca antes de entrar na home.");
+                dashboardPresenter?.SetError("Escolha o menor antes de entrar na home.");
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+                yield break;
+            }
+
+            if (sessionState.SelectedMinorPolicy == null)
+            {
+                dashboardPresenter?.SetError("Carregue a policy do menor antes de abrir o shell.");
                 dashboardPresenter?.SyncOnboardingControls(sessionState, false);
                 yield break;
             }
 
             isBusy = true;
             dashboardPresenter?.SyncOnboardingControls(sessionState, true);
-            dashboardPresenter?.SetHero("Montando a primeira home", "Carregando atividades, catalogo, recompensas e progresso.");
-            dashboardPresenter?.MarkFlowLoading("Atividades", "catalogo diario");
+            dashboardPresenter?.SetHero(
+                sessionState.ActiveShell == AdolescentShellMode ? "Abrindo shell adolescente" : "Abrindo shell infantil",
+                BuildShellOpeningCopy());
+            dashboardPresenter?.MarkFlowLoading("Atividades", "catalogo do dia");
             dashboardPresenter?.RenderLoadingState(sessionState, "Carregando atividades...");
 
             var requestFailed = false;
@@ -496,7 +538,7 @@ namespace Leggau.App
             dashboardPresenter?.RenderLoadingState(sessionState, "Carregando recompensas...");
 
             yield return apiClient.GetJson(
-                $"rewards?childId={sessionState.ActiveChild.id}",
+                $"rewards?childId={sessionState.SelectedMinor.id}",
                 response =>
                 {
                     var rewards = JsonUtility.FromJson<RewardsResponse>(response);
@@ -517,7 +559,7 @@ namespace Leggau.App
             }
 
             dashboardPresenter?.MarkFlowDone("Recompensas", "saldo pronto");
-            dashboardPresenter?.MarkFlowLoading("Progresso", "resumo diario");
+            dashboardPresenter?.MarkFlowLoading("Progresso", "resumo do menor");
             yield return LoadProgressSummary();
 
             if (!isBusy)
@@ -527,8 +569,10 @@ namespace Leggau.App
             }
 
             sessionState.SetHomeReady(true);
-            dashboardPresenter?.MarkFlowDone("Progresso", "painel pronto");
-            dashboardPresenter?.SetHero("Tudo pronto", "Responsavel, crianca, Gau e home do MVP carregados.");
+            dashboardPresenter?.MarkFlowDone("Progresso", "shell pronta");
+            dashboardPresenter?.SetHero(
+                sessionState.ActiveShell == AdolescentShellMode ? "Shell adolescente carregada" : "Shell infantil carregada",
+                "Atividades, recompensas, progresso e Gau foram atualizados na vm2 para este menor.");
             dashboardPresenter?.Render(sessionState);
             dashboardPresenter?.SyncOnboardingControls(sessionState, false);
             gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
@@ -536,8 +580,11 @@ namespace Leggau.App
             PersistLocalSession();
         }
 
-        private IEnumerator RunDevelopmentOnboardingRoutine()
+        private IEnumerator RunDevelopmentOnboardingRoutine(string targetShell)
         {
+            var normalizedShell = targetShell == AdolescentShellMode ? AdolescentShellMode : ChildShellMode;
+            EnsureDevelopmentDrafts(normalizedShell);
+
             if (!sessionState.IsAuthenticated)
             {
                 yield return SubmitResponsibleStepRoutine(currentEnvironment != null && currentEnvironment.allowDevLoginFallback);
@@ -547,26 +594,30 @@ namespace Leggau.App
                 }
             }
 
-            if (sessionState.LegalDocuments != null && sessionState.LegalDocuments.Length > 0 && !sessionState.ConsentsRecorded)
+            if (!sessionState.HasLinkedMinors || FindMinorByRole(normalizedShell) == null)
             {
-                sessionState.SetDraftConsentsAccepted(true);
-                dashboardPresenter?.SetConsentAccepted(true);
-                yield return SubmitConsentStepRoutine();
-                if (sessionState.LegalDocuments.Length > 0 && !sessionState.ConsentsRecorded)
+                var requestFailed = false;
+                yield return EnsureProvisioningRequirementsForDevelopment(value => requestFailed = value);
+                if (requestFailed)
+                {
+                    yield break;
+                }
+
+                yield return CreateDevelopmentMinorRoutine(normalizedShell, value => requestFailed = value);
+                if (requestFailed)
                 {
                     yield break;
                 }
             }
 
-            if (sessionState.ActiveChild == null)
-            {
-                if (string.IsNullOrWhiteSpace(sessionState.DraftChildName))
-                {
-                    sessionState.SetDraftChildName("Gau");
-                }
+            var targetMinor = FindMinorByRole(normalizedShell) ?? sessionState.SelectedMinor;
+            sessionState.SelectMinorById(targetMinor?.id);
+            PersistLocalSession();
 
-                yield return SubmitChildStepRoutine();
-                if (sessionState.ActiveChild == null)
+            if (sessionState.SelectedMinorPolicy == null || sessionState.SelectedMinor?.id != targetMinor?.id)
+            {
+                yield return SubmitMinorStepRoutine();
+                if (sessionState.SelectedMinorPolicy == null)
                 {
                     yield break;
                 }
@@ -629,6 +680,7 @@ namespace Leggau.App
 
             if (registerSucceeded)
             {
+                apiClient.SetAccessToken(sessionState.AccessToken);
                 PersistLocalSession();
                 setFailed?.Invoke(false);
                 yield break;
@@ -636,7 +688,7 @@ namespace Leggau.App
 
             if (allowDevFallback && currentEnvironment != null && currentEnvironment.allowDevLoginFallback)
             {
-                dashboardPresenter?.SetStatus("Auth real indisponivel, usando o login dev para acelerar o onboarding.");
+                dashboardPresenter?.SetStatus("Auth real indisponivel, usando login dev para continuar a validacao do shell.");
                 dashboardPresenter?.MarkFlowLoading("Auth", "fallback dev");
                 yield return AuthenticateWithDevLogin(setFailed);
                 yield break;
@@ -663,6 +715,7 @@ namespace Leggau.App
                 {
                     var login = JsonUtility.FromJson<DevLoginResponse>(response);
                     sessionState.SetDevLogin(login);
+                    apiClient.SetAccessToken(sessionState.AccessToken);
                 },
                 error =>
                 {
@@ -694,23 +747,15 @@ namespace Leggau.App
                     var documents = JsonUtility.FromJson<LegalDocumentsEnvelope>(wrapped);
                     sessionState.SetLegalDocuments(documents?.items);
                     sessionState.SetDraftConsentsAccepted(false);
-                    dashboardPresenter?.SetConsentAccepted(false);
                     PersistLocalSession();
                 },
                 error =>
                 {
                     requestFailed = true;
-                    dashboardPresenter?.MarkFlowFailed("Legal", "erro");
                     dashboardPresenter?.SetError($"Falha ao carregar documentos legais: {error}");
                 });
 
-            if (requestFailed)
-            {
-                setFailed?.Invoke(true);
-                yield break;
-            }
-
-            setFailed?.Invoke(false);
+            setFailed?.Invoke(requestFailed);
         }
 
         private IEnumerator RecordLegalConsents(System.Action<bool> setFailed)
@@ -720,8 +765,7 @@ namespace Leggau.App
             if (string.IsNullOrWhiteSpace(currentUserEmail))
             {
                 setFailed?.Invoke(true);
-                dashboardPresenter?.MarkFlowFailed("Legal", "sem email");
-                dashboardPresenter?.SetError("Nao foi possivel registrar consentimentos sem email do usuario.");
+                dashboardPresenter?.SetError("Nao foi possivel registrar consentimentos sem email do responsavel.");
                 yield break;
             }
 
@@ -745,7 +789,6 @@ namespace Leggau.App
                     error =>
                     {
                         requestFailed = true;
-                        dashboardPresenter?.MarkFlowFailed("Legal", "erro");
                         dashboardPresenter?.SetError($"Falha ao registrar consentimento: {error}");
                     });
 
@@ -781,23 +824,76 @@ namespace Leggau.App
             setFailed?.Invoke(requestFailed);
         }
 
-        private IEnumerator EnsureFirstChildProfile(System.Action<bool> setFailed)
+        private IEnumerator EnsureSelectedMinorPolicyLoaded(System.Action<bool> setFailed)
+        {
+            if (sessionState.SelectedMinor == null)
+            {
+                setFailed?.Invoke(true);
+                dashboardPresenter?.MarkFlowFailed("Menor", "sem perfil");
+                dashboardPresenter?.SetError("Nenhum menor foi selecionado para carregar a policy.");
+                yield break;
+            }
+
+            if (sessionState.SelectedMinorPolicy != null)
+            {
+                dashboardPresenter?.MarkFlowDone("Menor", sessionState.SelectedMinor.name);
+                dashboardPresenter?.MarkFlowDone("Politica", $"{sessionState.ResolvedAgeBand} · {sessionState.ActiveShell}");
+                setFailed?.Invoke(false);
+                yield break;
+            }
+
+            var requestFailed = false;
+
+            yield return apiClient.GetJson(
+                $"interaction-policies/{sessionState.SelectedMinor.id}",
+                response =>
+                {
+                    var policy = JsonUtility.FromJson<InteractionPolicyRecord>(response);
+                    sessionState.SetSelectedMinorPolicy(policy);
+                    ApplyRecognizedGuardianOverride(policy);
+                    dashboardPresenter?.MarkFlowDone("Menor", sessionState.SelectedMinor.name);
+                    dashboardPresenter?.MarkFlowDone("Politica", $"{sessionState.ResolvedAgeBand} · {sessionState.ActiveShell}");
+                    PersistLocalSession();
+                },
+                error =>
+                {
+                    requestFailed = true;
+                    dashboardPresenter?.MarkFlowFailed("Politica", "erro");
+                    if (IsSessionError(error))
+                    {
+                        HandleExpiredSession("Sua sessao expirou antes de carregar a policy do menor.");
+                    }
+                    else
+                    {
+                        dashboardPresenter?.SetError($"Falha ao carregar a policy do menor: {error}");
+                    }
+                });
+
+            setFailed?.Invoke(requestFailed);
+        }
+
+        private IEnumerator CreateDevelopmentMinorRoutine(string targetShell, System.Action<bool> setFailed)
         {
             var parentEmail = sessionState.CurrentUserEmail;
             if (string.IsNullOrWhiteSpace(parentEmail))
             {
                 setFailed?.Invoke(true);
-                dashboardPresenter?.MarkFlowFailed("Crianca", "sem responsavel");
-                dashboardPresenter?.SetError("Nao foi possivel criar a crianca sem email do responsavel.");
+                dashboardPresenter?.SetError("Nao foi possivel criar o perfil demo sem o email do responsavel.");
                 yield break;
             }
 
+            dashboardPresenter?.SetHero("Criando perfil demo", "Somente para desenvolvimento: criando um menor novo quando a conta ainda nao tem o perfil desejado.");
+            dashboardPresenter?.RenderLoadingState(sessionState, "Criando perfil demo...");
+
             var requestFailed = false;
+            var createAdolescent = targetShell == AdolescentShellMode;
             var request = new CreateChildRequest
             {
                 parentEmail = parentEmail,
-                name = sessionState.DraftChildName,
-                age = 6,
+                name = string.IsNullOrWhiteSpace(sessionState.DraftChildName)
+                    ? (createAdolescent ? "Gau Teen" : "Gau")
+                    : sessionState.DraftChildName,
+                age = createAdolescent ? 13 : 6,
                 avatar = sessionState.ActiveGauVariant?.id ?? "gau-rounded-pixel",
             };
 
@@ -806,23 +902,38 @@ namespace Leggau.App
                 JsonUtility.ToJson(request),
                 response =>
                 {
-                    var child = JsonUtility.FromJson<ChildProfile>(response);
-                    sessionState.SetActiveChild(child);
+                    var minor = JsonUtility.FromJson<ChildProfile>(response);
+                    sessionState.SetActiveChild(minor);
                     PersistLocalSession();
                 },
                 error =>
                 {
                     requestFailed = true;
-                    dashboardPresenter?.MarkFlowFailed("Crianca", "erro");
-                    dashboardPresenter?.SetError($"Falha ao criar perfil infantil: {error}");
+                    dashboardPresenter?.SetError($"Falha ao criar perfil demo: {error}");
                 });
 
-            setFailed?.Invoke(requestFailed);
+            if (requestFailed)
+            {
+                setFailed?.Invoke(true);
+                yield break;
+            }
+
+            yield return LoadFamilyOverview(value => requestFailed = value);
+            if (requestFailed)
+            {
+                setFailed?.Invoke(true);
+                yield break;
+            }
+
+            var createdMinor = FindMinorByRole(targetShell) ?? sessionState.SelectedMinor;
+            sessionState.SelectMinorById(createdMinor?.id);
+            PersistLocalSession();
+            setFailed?.Invoke(false);
         }
 
         private IEnumerator DevCheckinFirstActivityRoutine()
         {
-            if (sessionState.ActiveChild == null || sessionState.Activities == null || sessionState.Activities.Length == 0)
+            if (sessionState.SelectedMinor == null || sessionState.Activities == null || sessionState.Activities.Length == 0)
             {
                 dashboardPresenter?.SetError("Nenhuma atividade pronta para check-in.");
                 yield break;
@@ -834,9 +945,9 @@ namespace Leggau.App
 
             var request = new CreateCheckinRequest
             {
-                childId = sessionState.ActiveChild.id,
+                childId = sessionState.SelectedMinor.id,
                 activityId = sessionState.Activities[0].id,
-                notes = "Check-in automatico do dashboard bootstrap",
+                notes = "Check-in automatico do shell bootstrap",
             };
 
             var requestFailed = false;
@@ -864,7 +975,7 @@ namespace Leggau.App
             }
 
             yield return apiClient.GetJson(
-                $"rewards?childId={sessionState.ActiveChild.id}",
+                $"rewards?childId={sessionState.SelectedMinor.id}",
                 response =>
                 {
                     var rewards = JsonUtility.FromJson<RewardsResponse>(response);
@@ -895,10 +1006,10 @@ namespace Leggau.App
         private IEnumerator LoadProgressSummary()
         {
             var requestFailed = false;
-            dashboardPresenter?.SetStatus("Carregando progresso diario...");
+            dashboardPresenter?.SetStatus("Carregando progresso do menor...");
 
             yield return apiClient.GetJson(
-                $"progress/summary?childId={sessionState.ActiveChild.id}",
+                $"progress/summary?childId={sessionState.SelectedMinor.id}",
                 response =>
                 {
                     var summary = JsonUtility.FromJson<ProgressSummaryResponse>(response);
@@ -918,13 +1029,14 @@ namespace Leggau.App
             }
         }
 
-        private void ApplyDevelopmentDefaults(AppEnvironment environment)
+        private void ApplyDevelopmentDefaults(AppEnvironment environment, string targetShell)
         {
             var email = string.IsNullOrWhiteSpace(environment.devLoginEmail) ? "parent@leggau.local" : environment.devLoginEmail;
             var name = string.IsNullOrWhiteSpace(environment.devLoginName) ? "Responsavel Demo" : environment.devLoginName;
-            var password = string.IsNullOrWhiteSpace(environment.devAuthPassword) ? "Leggau123!" : environment.devAuthPassword;
+            var password = string.IsNullOrWhiteSpace(environment.devAuthPassword) ? "Parent123!" : environment.devAuthPassword;
             sessionState.SetDraftResponsible(email, name, password);
-            sessionState.SetDraftChildName("Gau");
+            sessionState.SetDraftChildName(targetShell == AdolescentShellMode ? "Gau Teen" : "Gau");
+            sessionState.SetDraftCreateAdolescent(targetShell == AdolescentShellMode);
             sessionState.SetDraftConsentsAccepted(false);
         }
 
@@ -945,9 +1057,14 @@ namespace Leggau.App
                     sessionState.DraftPassword);
             }
 
-            if (string.IsNullOrWhiteSpace(sessionState.DraftChildName) && sessionState.ActiveChild != null)
+            if (string.IsNullOrWhiteSpace(sessionState.DraftChildName) && sessionState.SelectedMinor != null)
             {
-                sessionState.SetDraftChildName(sessionState.ActiveChild.name);
+                sessionState.SetDraftChildName(sessionState.SelectedMinor.name);
+            }
+
+            if (sessionState.IsAuthenticated)
+            {
+                apiClient.SetAccessToken(sessionState.AccessToken);
             }
 
             return true;
@@ -958,6 +1075,10 @@ namespace Leggau.App
             if (sessionState.HasPersistableState)
             {
                 LeggauLocalSessionStore.Save(sessionState);
+            }
+            else
+            {
+                LeggauLocalSessionStore.Clear();
             }
         }
 
@@ -970,24 +1091,24 @@ namespace Leggau.App
 
             isBusy = true;
             dashboardPresenter?.SyncOnboardingControls(sessionState, true);
-            dashboardPresenter?.SetHero("Retomando sua jornada", "Encontramos um progresso salvo e estamos posicionando voce no proximo passo.");
+            dashboardPresenter?.SetHero("Retomando o menor certo", "Vamos confirmar a sessao do responsavel, os menores vinculados e a policy antes de abrir o shell.");
             dashboardPresenter?.RenderLoadingState(sessionState, BuildResumeStatus());
 
             var requestFailed = false;
 
-            if (sessionState.IsAuthenticated && sessionState.LegalDocuments == null)
+            if (sessionState.IsAuthenticated)
             {
-                dashboardPresenter?.MarkFlowLoading("Legal", "carregando documentos");
-                yield return LoadLegalDocumentsOnly(value => requestFailed = value);
+                apiClient.SetAccessToken(sessionState.AccessToken);
             }
 
-            if (!requestFailed &&
-                sessionState.IsAuthenticated &&
-                (sessionState.ConsentsRecorded || sessionState.LegalDocuments == null || sessionState.LegalDocuments.Length == 0) &&
-                sessionState.ActiveChild == null)
+            if (sessionState.LinkedMinors == null)
             {
-                dashboardPresenter?.MarkFlowLoading("Familia", "overview");
                 yield return LoadFamilyOverview(value => requestFailed = value);
+            }
+
+            if (!requestFailed && sessionState.SelectedMinor != null && sessionState.SelectedMinorPolicy == null)
+            {
+                yield return EnsureSelectedMinorPolicyLoaded(value => requestFailed = value);
             }
 
             SyncFlowFromSession();
@@ -1004,7 +1125,7 @@ namespace Leggau.App
                 yield break;
             }
 
-            dashboardPresenter?.SetHero("Sua home esta de volta", "Atualizando atividades, progresso e recompensas direto da vm2.");
+            dashboardPresenter?.SetHero("Sua home esta de volta", "Atualizando a experiencia do menor direto da vm2.");
             yield return CompleteHomeStepRoutine();
         }
 
@@ -1017,34 +1138,29 @@ namespace Leggau.App
                 dashboardPresenter?.MarkFlowDone("Auth", sessionState.UsedDevLoginFallback ? "login de desenvolvimento" : "responsavel autenticado");
             }
 
-            if (sessionState.LegalDocuments != null)
+            if (sessionState.LinkedMinors != null)
             {
-                if (sessionState.LegalDocuments.Length == 0)
-                {
-                    dashboardPresenter?.MarkFlowDone("Legal", "sem consentimentos extras");
-                }
-                else if (sessionState.ConsentsRecorded)
-                {
-                    dashboardPresenter?.MarkFlowDone("Legal", "consentimentos confirmados");
-                }
-                else if (sessionState.IsAuthenticated)
-                {
-                    dashboardPresenter?.MarkFlowLoading("Legal", "aguardando aceite");
-                }
+                dashboardPresenter?.MarkFlowDone("Familia", sessionState.HasLinkedMinors
+                    ? $"{sessionState.LinkedMinors.Length} perfil(is)"
+                    : "sem menores ativos");
             }
 
-            if (sessionState.Parent != null)
+            if (sessionState.SelectedMinor != null)
             {
-                dashboardPresenter?.MarkFlowDone("Familia", "responsavel identificado");
+                dashboardPresenter?.MarkFlowDone("Menor", sessionState.SelectedMinor.name);
+            }
+            else if (sessionState.LinkedMinors != null)
+            {
+                dashboardPresenter?.MarkFlowLoading("Menor", sessionState.HasLinkedMinors ? "selecao pendente" : "sem perfil");
             }
 
-            if (sessionState.ActiveChild != null)
+            if (sessionState.SelectedMinorPolicy != null)
             {
-                dashboardPresenter?.MarkFlowDone("Crianca", "perfil infantil pronto");
+                dashboardPresenter?.MarkFlowDone("Politica", $"{sessionState.ResolvedAgeBand} · {sessionState.ActiveShell}");
             }
-            else if (sessionState.IsAuthenticated && (sessionState.ConsentsRecorded || sessionState.LegalDocuments == null || sessionState.LegalDocuments.Length == 0))
+            else if (sessionState.SelectedMinor != null)
             {
-                dashboardPresenter?.MarkFlowLoading("Crianca", "aguardando definicao");
+                dashboardPresenter?.MarkFlowLoading("Politica", "aguardando policy");
             }
 
             if (sessionState.Activities != null)
@@ -1059,7 +1175,7 @@ namespace Leggau.App
 
             if (sessionState.HomeReady)
             {
-                dashboardPresenter?.MarkFlowDone("Progresso", "home pronta");
+                dashboardPresenter?.MarkFlowDone("Progresso", "shell pronta");
             }
         }
 
@@ -1067,13 +1183,16 @@ namespace Leggau.App
         {
             return sessionState.ResolveResumeStep() switch
             {
-                "Home" => "Voltamos direto para a home salva. Atualizando dados do dia...",
-                "Entrada" => "A crianca ja esta pronta. Falta apenas entrar na home.",
-                "Crianca" => sessionState.ActiveChild != null
-                    ? $"Encontramos a crianca {sessionState.ActiveChild.name}. Confirme para continuar."
-                    : "Seu onboarding continua na etapa da crianca.",
-                "Legal" => "Seu onboarding continua na confirmacao dos consentimentos.",
-                _ => "Seu onboarding continua na etapa do responsavel.",
+                "Home" => "Voltamos direto para o shell salvo. Atualizando a home do menor...",
+                "Entrada" => "A policy ja foi carregada. Falta apenas abrir a experiencia do menor.",
+                "Politica" => sessionState.SelectedMinor != null
+                    ? $"Falta confirmar a policy de {sessionState.SelectedMinor.name}."
+                    : "Falta carregar a policy do menor.",
+                "Menor" => sessionState.HasLinkedMinors
+                    ? "Escolha qual menor deve abrir o app."
+                    : "Nenhum menor vinculado. Use /pais ou o atalho dev.",
+                "Familia" => "Retomando a familia vinculada para descobrir os menores ativos.",
+                _ => "Sua jornada continua na ativacao do responsavel.",
             };
         }
 
@@ -1089,6 +1208,169 @@ namespace Leggau.App
             {
                 dashboardPresenter?.SetStatus($"Catalogo local do Gau indisponivel: {exception.Message}");
             }
+        }
+
+        private void RenderSelectionState(string status)
+        {
+            dashboardPresenter?.SetHero("Escolha o menor certo", "A sessao do responsavel ja foi ativada. Agora confirme qual perfil deve abrir a experiencia.");
+            dashboardPresenter?.RenderLoadingState(sessionState, status);
+            dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+        }
+
+        private string BuildSelectionStatus(bool triggeredByAuth)
+        {
+            if (!sessionState.HasLinkedMinors)
+            {
+                return "Nenhum menor ativo. Use /pais ou o atalho dev para criar um perfil demo.";
+            }
+
+            if (sessionState.SelectedMinorPolicy != null)
+            {
+                return triggeredByAuth
+                    ? $"{sessionState.SelectedMinor.name} foi encontrada(o) e a policy ja esta pronta."
+                    : $"Policy pronta para {sessionState.SelectedMinor.name}. Abra a experiencia.";
+            }
+
+            if (sessionState.HasMultipleLinkedMinors)
+            {
+                return $"Selecione o perfil correto. {sessionState.LinkedMinors.Length} menores estao vinculados a esta conta.";
+            }
+
+            return $"{sessionState.SelectedMinor?.name ?? "O menor"} foi encontrado(a). Confirme a policy para seguir.";
+        }
+
+        private string BuildShellOpeningCopy()
+        {
+            return sessionState.ResolvedAgeBand switch
+            {
+                "10-12" => "Entrando em uma apresentacao mais densa, com mais autonomia e atividades em destaque.",
+                "13-17" => "Entrando em um shell mais calmo, com foco em progresso e objetivos.",
+                _ => "Entrando em um shell mais ludico, com Gau em primeiro plano e passos mais curtos.",
+            };
+        }
+
+        private MinorProfileRecord FindMinorByRole(string targetShell)
+        {
+            if (sessionState.LinkedMinors == null)
+            {
+                return null;
+            }
+
+            var desiredRole = targetShell == AdolescentShellMode ? "adolescent" : "child";
+            for (var index = 0; index < sessionState.LinkedMinors.Length; index += 1)
+            {
+                var item = sessionState.LinkedMinors[index];
+                if (item != null && item.role == desiredRole)
+                {
+                    return item;
+                }
+            }
+
+            return null;
+        }
+
+        private void EnsureDevelopmentDrafts(string targetShell)
+        {
+            if (currentEnvironment == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(sessionState.DraftParentEmail))
+            {
+                ApplyDevelopmentDefaults(currentEnvironment, targetShell);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(sessionState.DraftChildName))
+            {
+                sessionState.SetDraftChildName(targetShell == AdolescentShellMode ? "Gau Teen" : "Gau");
+            }
+
+            sessionState.SetDraftCreateAdolescent(targetShell == AdolescentShellMode);
+        }
+
+        private IEnumerator EnsureProvisioningRequirementsForDevelopment(System.Action<bool> setFailed)
+        {
+            if (sessionState.ConsentsRecorded)
+            {
+                setFailed?.Invoke(false);
+                yield break;
+            }
+
+            var requestFailed = false;
+            yield return LoadLegalDocumentsOnly(value => requestFailed = value);
+            if (requestFailed)
+            {
+                setFailed?.Invoke(true);
+                yield break;
+            }
+
+            if (sessionState.LegalDocuments == null || sessionState.LegalDocuments.Length == 0)
+            {
+                setFailed?.Invoke(false);
+                yield break;
+            }
+
+            if (currentEnvironment == null || !currentEnvironment.autoAcceptLegalConsents)
+            {
+                setFailed?.Invoke(true);
+                dashboardPresenter?.SetError("O perfil demo exige consentimentos publicados e a autoaceitacao dev nao esta habilitada.");
+                yield break;
+            }
+
+            sessionState.SetDraftConsentsAccepted(true);
+            yield return RecordLegalConsents(value => requestFailed = value);
+            setFailed?.Invoke(requestFailed);
+        }
+
+        private void ApplyRecognizedGuardianOverride(InteractionPolicyRecord policy)
+        {
+            if (policy?.guardianOverride == null)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(policy.guardianOverride.preferredGauVariantId))
+            {
+                var preferredId = policy.guardianOverride.preferredGauVariantId;
+                if (sessionState.GauVariantsCatalog?.variants != null)
+                {
+                    for (var index = 0; index < sessionState.GauVariantsCatalog.variants.Length; index += 1)
+                    {
+                        if (sessionState.GauVariantsCatalog.variants[index].id == preferredId)
+                        {
+                            while (sessionState.ActiveGauVariantIndex != index)
+                            {
+                                sessionState.SelectNextGauVariant();
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private bool IsSessionError(string error)
+        {
+            return !string.IsNullOrWhiteSpace(error) &&
+                   (error.Contains("401") || error.Contains("403") || error.Contains("Unauthorized"));
+        }
+
+        private void HandleExpiredSession(string status)
+        {
+            var email = sessionState.CurrentUserEmail;
+            var name = sessionState.Parent?.name ?? sessionState.User?.displayName;
+            var password = sessionState.DraftPassword;
+
+            apiClient.ClearAccessToken();
+            sessionState.InvalidateAuthentication();
+            sessionState.SetDraftResponsible(email, name, password);
+            dashboardPresenter?.ResetFlow();
+            SyncFlowFromSession();
+            dashboardPresenter?.SetHero("Sessao expirada", "Ative novamente o responsavel para voltar ao shell do menor.");
+            dashboardPresenter?.RenderLoadingState(sessionState, status);
+            PersistLocalSession();
         }
     }
 }

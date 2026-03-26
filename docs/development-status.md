@@ -213,10 +213,18 @@ Date checked: `2026-03-26`
   - provider secret masking in the admin surface
   - simulated OCR and biometric verification jobs
   - scripted security validation for auth, legal, links and verification flows
-- The next execution step now shifts to Phase D:
-  - split the Unity experience into clearer `child` and `adolescent` shells
-  - add the age-profile presentation system
-  - preserve the completed Phase C adult web/PWA and admin-governance surfaces as the stable companion layer
+- Phase D is now completed:
+  - the Unity app now enters through responsible activation plus linked-minor selection
+  - the one-scene runtime now resolves and persists `SelectedMinor`, `ResolvedAgeBand` and `ActiveShell`
+  - explicit `child` and `adolescent` shells now render in the same `Bootstrap.unity` scene
+  - the presentation system now differentiates `6-9`, `10-12` and `13-17`
+  - `InteractionPolicy` now directly gates rooms, presence, messaging affordances and therapist participation affordances in the Unity UI
+  - the Unity probe now records `selectedMinorId`, `minorRole`, `ageBand` and `activeShell`
+  - batch validation now reaches `state=ready` for both a `child` shell and an `adolescent` shell against the canonical `vm2`
+- The next execution step now shifts to Phase E:
+  - build monitored interaction surfaces on top of the now-policy-aware Unity runtime
+  - keep the completed Phase C adult web/PWA and admin-governance surfaces as the stable companion layer
+  - keep Phase F admin/compliance/billing hardening as a parallel operational thread
 
 ## Adult Portal Status
 
@@ -250,6 +258,41 @@ Date checked: `2026-03-26`
   - responsive task/radar cards for parent and therapist
   - stronger mobile navigation treatment
   - installable PWA metadata and service worker shell caching
+
+## Unity Runtime Status
+
+- `./scripts/build-unity-bootstrap.sh` passes with the Phase D runtime layout
+- The Unity runtime now opens by:
+  - activating the responsible session
+  - loading `families/overview`
+  - selecting the linked minor
+  - loading `interaction-policies/:minorProfileId`
+  - entering the resolved shell before refreshing activities, rewards and progress
+- Local persistence now keeps:
+  - linked minors
+  - selected minor
+  - resolved age band
+  - active shell
+  - selected policy snapshot
+- The runtime now blocks the product home when no linked minor exists and redirects the responsible actor to `/pais`, while preserving a dev-only quick-create path
+- Latest validated child-shell probe against `vm2` reached:
+  - `state=ready`
+  - `childName=Gau`
+  - `selectedMinorId=40db73f9-f746-45c0-a436-6b09f4a99924`
+  - `minorRole=child`
+  - `ageBand=6-9`
+  - `activeShell=child`
+  - `activityCount=3`
+  - `rewardCount=2`
+- Latest validated adolescent-shell probe against `vm2` reached:
+  - `state=ready`
+  - `childName=Gau Teen`
+  - `selectedMinorId=aaf64358-c3ba-4e69-a4c8-5b181b9327fd`
+  - `minorRole=adolescent`
+  - `ageBand=13-17`
+  - `activeShell=adolescent`
+  - `activityCount=3`
+  - `rewardCount=2`
 
 ## Web Admin Status
 

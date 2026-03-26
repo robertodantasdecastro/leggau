@@ -28,7 +28,62 @@ namespace Leggau.Models
         public string parentId;
         public string name;
         public int age;
+        public string ageBand;
         public string avatar;
+        public string role;
+    }
+
+    [Serializable]
+    public class GuardianLinkRecord
+    {
+        public string id;
+        public string parentUserId;
+        public string parentProfileId;
+        public string minorProfileId;
+        public string minorRole;
+        public string status;
+        public string approvedAt;
+        public string revokedAt;
+    }
+
+    [Serializable]
+    public class MinorProfileRecord
+    {
+        public string id;
+        public string name;
+        public int age;
+        public string ageBand;
+        public string avatar;
+        public string role;
+        public GuardianLinkRecord guardianLink;
+    }
+
+    [Serializable]
+    public class GuardianOverrideRecord
+    {
+        public string updatedBy;
+        public string preferredAgeBand;
+        public string shellTone;
+        public string preferredGauVariantId;
+        public bool hideMascot;
+        public bool compactLayout;
+        public string focusArea;
+    }
+
+    [Serializable]
+    public class InteractionPolicyRecord
+    {
+        public string id;
+        public string minorProfileId;
+        public string minorRole;
+        public string ageBand;
+        public bool roomsEnabled;
+        public bool presenceEnabled;
+        public string messagingMode;
+        public bool therapistParticipationAllowed;
+        public GuardianOverrideRecord guardianOverride;
+        public string effectiveFrom;
+        public string effectiveTo;
     }
 
     [Serializable]
@@ -103,6 +158,7 @@ namespace Leggau.Models
         public string refreshToken;
         public AppUserProfile user;
         public ParentProfile parent;
+        public string actorRole;
     }
 
     [Serializable]
@@ -144,7 +200,10 @@ namespace Leggau.Models
     public class FamilyOverviewResponse
     {
         public ParentProfile parent;
+        public ParentProfile guardian;
         public ChildProfile[] children;
+        public GuardianLinkRecord[] guardianLinks;
+        public MinorProfileRecord[] minorProfiles;
     }
 
     [Serializable]

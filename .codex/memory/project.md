@@ -117,10 +117,14 @@
   - adolescent progress/check-in compatibility is now validated on the Postgres-backed runtime
   - `web/admin` now also exposes care-team review, audit trail, incidents and moderation in the same operational console as provider governance and verification monitoring
   - `web/portal` now ships with installable PWA metadata and an online-first service worker shell
-- The next execution phase is now Phase D:
-  - split the Unity runtime into clearer `child` and `adolescent` shells
-  - build the age-profile presentation system
-  - preserve the now-completed adult web/PWA and admin-governance surfaces as stable companion layers
+- Phase D is now completed:
+  - the Unity runtime now activates through the responsible session, linked-minor selection and policy resolution
+  - the runtime now persists `SelectedMinor`, `ResolvedAgeBand`, `ActiveShell` and the resolved policy snapshot
+  - explicit `child` and `adolescent` shells now exist in the same scene with age-profile presentation for `6-9`, `10-12` and `13-17`
+  - both a `child` shell and an `adolescent` shell now validate against `vm2` with `state=ready`
+- The next execution phase is now Phase E:
+  - add monitored interaction, presence and room affordances on top of the policy-aware Unity shells
+  - preserve the completed Phase C adult web/PWA and admin-governance surfaces as stable companion layers
 - After the machine reboot later on `2026-03-26`, `vm2` had to be started again from `~/leggau`, and the refreshed batch validation still reached:
   - `state=ready`
   - `parentName=Responsavel Demo`
@@ -149,6 +153,21 @@
   - `activeGauVariant=gau-rounded-pixel`
   - `activityCount=3`
   - `rewardCount=2`
+- After the Phase D shell split later on `2026-03-26`, the canonical VM-backed Unity validations reached:
+  - child shell:
+    - `state=ready`
+    - `childName=Gau`
+    - `selectedMinorId=40db73f9-f746-45c0-a436-6b09f4a99924`
+    - `minorRole=child`
+    - `ageBand=6-9`
+    - `activeShell=child`
+  - adolescent shell:
+    - `state=ready`
+    - `childName=Gau Teen`
+    - `selectedMinorId=aaf64358-c3ba-4e69-a4c8-5b181b9327fd`
+    - `minorRole=adolescent`
+    - `ageBand=13-17`
+    - `activeShell=adolescent`
 
 ## Delivery Workflow
 

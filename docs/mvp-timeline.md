@@ -105,15 +105,16 @@
 
 ### Phase D — Child and adolescent Unity app
 
-- Status: `partially advanced`
+- Status: `completed`
 - Completed:
-  - Unity bootstrap and runtime validation
-  - first persistent onboarding/home flow
-  - VM-backed runtime validation at `state=ready`
-- Remaining:
-  - child/adolescent shell split
-  - age-profile presentation system
-  - policy-aware interaction model
+  - responsible activation plus linked-minor selection inside the Unity runtime
+  - local persistence for `SelectedMinor`, `ResolvedAgeBand`, `ActiveShell` and the resolved policy snapshot
+  - explicit `child` shell for `6-9` and `10-12`
+  - explicit `adolescent` shell for `13-17`
+  - policy-aware shell gating for rooms, presence, messaging visibility and therapist participation affordances
+  - VM-backed batch validation at `state=ready` for both the `child` shell and the `adolescent` shell
+- Exit criteria:
+  - satisfied
 
 ### Phase E — Monitored interaction and moderation
 
@@ -140,9 +141,9 @@
 
 ## Next Execution Step
 
-1. Start Phase D on top of the now-completed adult web/PWA and admin-governance layer.
-2. Split the Unity runtime into clearer `child` and `adolescent` shells with age-profile presentation.
-3. Preserve the completed Phase C portal/admin surfaces as stable companions while Unity becomes the critical path again.
+1. Start Phase E on top of the now-policy-aware Unity runtime and the already-completed adult web/admin surfaces.
+2. Add monitored interaction, presence and room affordances only where `InteractionPolicy` explicitly allows them.
+3. Preserve the completed Phase C portal/admin surfaces and the completed Phase D Unity shells as stable foundations.
 4. Keep Phase F admin/compliance/billing hardening as a parallel operational thread on top of the live governance console.
 
 ## Branch and Delivery Rule

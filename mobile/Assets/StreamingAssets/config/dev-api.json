@@ -7,5 +7,5 @@
   "allowDevLoginFallback": true,
   "devLoginEmail": "parent@leggau.local",
   "devLoginName": "Responsavel Demo",
-  "devAuthPassword": "Leggau123!"
+  "devAuthPassword": "Parent123!"
 }
