@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuditService } from '../audit/audit.service';
@@ -14,7 +14,29 @@ export class ParentApprovalsService {
     private readonly parentApprovalRepository: Repository<ParentApproval>,
   ) {}
 
+  async list(
+    actor: { subjectId: string; actorRole: string },
+    filters: { targetId?: string; approvalType?: string },
+  ) {
+    if (actor.actorRole !== 'parent_guardian') {
+      return [];
+    }
+
+    return this.parentApprovalRepository.find({
+      where: {
+        parentUserId: actor.subjectId,
+        ...(filters.targetId ? { targetId: filters.targetId } : {}),
+        ...(filters.approvalType ? { approvalType: filters.approvalType } : {}),
+      },
+      order: { updatedAt: 'DESC' },
+    });
+  }
+
   async create(dto: CreateParentApprovalDto, actor: { subjectId: string; actorRole: string }) {
+    if (actor.actorRole !== 'parent_guardian') {
+      throw new ForbiddenException('Only guardians can create parent approvals');
+    }
+
     const saved = await this.parentApprovalRepository.save(
       this.parentApprovalRepository.create({
         parentUserId: actor.subjectId,
@@ -45,6 +67,10 @@ export class ParentApprovalsService {
       throw new NotFoundException('Parent approval not found');
     }
 
+    if (actor.actorRole !== 'parent_guardian' || approval.parentUserId !== actor.subjectId) {
+      throw new ForbiddenException('Only the owning guardian can update this approval');
+    }
+
     approval.decision = dto.decision ?? approval.decision;
     approval.status = dto.status ?? approval.status;
     approval.decidedAt = new Date();
@@ -65,4 +91,3 @@ export class ParentApprovalsService {
     return saved;
   }
 }
-

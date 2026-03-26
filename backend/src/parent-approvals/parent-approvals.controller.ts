@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AppTokenGuard } from '../auth/app-token.guard';
 import { CreateParentApprovalDto } from './dto/create-parent-approval.dto';
 import { UpdateParentApprovalDto } from './dto/update-parent-approval.dto';
@@ -8,6 +8,18 @@ import { ParentApprovalsService } from './parent-approvals.service';
 @Controller('parent-approvals')
 export class ParentApprovalsController {
   constructor(private readonly parentApprovalsService: ParentApprovalsService) {}
+
+  @Get()
+  list(
+    @Req() request: { appSession: { subjectId: string; actorRole: string } },
+    @Query('targetId') targetId?: string,
+    @Query('approvalType') approvalType?: string,
+  ) {
+    return this.parentApprovalsService.list(request.appSession, {
+      targetId,
+      approvalType,
+    });
+  }
 
   @Post()
   create(
@@ -26,4 +38,3 @@ export class ParentApprovalsController {
     return this.parentApprovalsService.update(id, dto, request.appSession);
   }
 }
-

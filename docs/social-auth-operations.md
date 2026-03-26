@@ -112,7 +112,11 @@ As validated on `2026-03-26`, it covers:
 - `child` and `adolescent` provisioning
 - family overview using canonical guardian links
 - social register/login for `therapist`
+- scoped invite creation from guardian to therapist
+- scoped invite acceptance by the addressed therapist session
+- guardian approval ledger creation and isolation
 - parent and admin approval split for `care-team`
+- adolescent progress summary and check-in compatibility
 - persistent session listing
 - OCR and biometric verification simulation
 - admin secret masking

@@ -44,3 +44,4 @@ Own backend, reverse proxy, persistence and operational scripts on `vm2`.
 - Phase B sign-off is authoritative only on the Postgres-backed VM runtime.
 - The local `sqljs` fallback may still be useful for limited debugging, but it is not a release gate for the multiactor schema.
 - The social-auth and verification checkpoint is also authoritative only on `vm2`, because provider config, masked admin responses and audited verification jobs must be exercised against the real Postgres-backed runtime.
+- The current Phase C portal checkpoint is also authoritative on `vm2`, because invite ownership, guardian approval visibility and adolescent progress compatibility now depend on the migrated Postgres schema.

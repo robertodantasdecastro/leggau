@@ -83,10 +83,14 @@
   - `web/portal/pais` now ships an initial parent shell for auth, consent, family overview, minor provisioning, parent-side care-team approval and session management
   - `web/portal/profissionais` now ships an initial therapist shell for auth, family lookup, care-team requests and session management
   - the public provider catalog is restored to an operational state after automated negative-path security checks
+  - parent shell now also ships scoped therapist invites, explicit permission ledger, selected-minor reports and quick check-in refresh
+  - therapist shell now also ships invite inbox handling and clearer selected-family context before care-team requests
+  - invite and parent-approval backend contracts are now consumable from the portal without breaking Unity compatibility
+  - adolescent progress and check-in now work in the canonical backend runtime
 - Remaining:
   - responsive/PWA behavior
-  - richer supervision, reports and permissions
-  - invite-driven family and therapist journeys
+  - richer supervision polish and more visual reporting treatment
+  - product polish for invite-led family and therapist journeys
   - stronger product polish for the adult shells
 
 ### Phase D — Child and adolescent Unity app
@@ -127,7 +131,7 @@
 ## Next Execution Step
 
 1. Continue Phase C on top of the completed Phase B backend core, the social-auth checkpoint and the first live adult shells.
-2. Deepen the `parent_guardian` and `therapist` shells in `web/portal` with reports, permissions, invite-led journeys and stronger PWA polish.
+2. Deepen the `parent_guardian` and `therapist` shells in `web/portal` with stronger PWA polish and more product-facing reporting/supervision treatment.
 3. Expand web/admin from provider governance into approvals, audit, incidents, moderation and care-team review.
 4. Preserve the current Unity child flow as a compatibility client while the adult surfaces continue catching up to the backend runtime now live on `vm2`.
 

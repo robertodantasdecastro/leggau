@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Activity } from '../common/entities/activity.entity';
+import { AdolescentProfile } from '../common/entities/adolescent-profile.entity';
 import { ChildProfile } from '../common/entities/child-profile.entity';
 import { ProgressEntry } from '../common/entities/progress-entry.entity';
 import { CreateCheckinDto } from './dto/create-checkin.dto';
@@ -13,15 +14,14 @@ export class ProgressService {
     private readonly progressRepository: Repository<ProgressEntry>,
     @InjectRepository(ChildProfile)
     private readonly childRepository: Repository<ChildProfile>,
+    @InjectRepository(AdolescentProfile)
+    private readonly adolescentRepository: Repository<AdolescentProfile>,
     @InjectRepository(Activity)
     private readonly activityRepository: Repository<Activity>,
   ) {}
 
   async getSummary(childId: string) {
-    const child = await this.childRepository.findOne({ where: { id: childId } });
-    if (!child) {
-      throw new NotFoundException('Child not found');
-    }
+    const child = await this.resolveMinor(childId);
 
     const entries = await this.progressRepository.find({
       where: { childId },
@@ -32,6 +32,7 @@ export class ProgressService {
 
     return {
       child,
+      minor: child,
       totalPoints: entries.reduce((sum, entry) => sum + entry.pointsEarned, 0),
       completedActivities: entries.length,
       latestEntries: entries,
@@ -39,12 +40,7 @@ export class ProgressService {
   }
 
   async createCheckin(dto: CreateCheckinDto) {
-    const child = await this.childRepository.findOne({
-      where: { id: dto.childId },
-    });
-    if (!child) {
-      throw new NotFoundException('Child not found');
-    }
+    const child = await this.resolveMinor(dto.childId);
 
     const activity = await this.activityRepository.findOne({
       where: { id: dto.activityId },
@@ -71,8 +67,29 @@ export class ProgressService {
     return {
       entry,
       child,
+      minor: child,
       activity,
       totalPoints: Number(total?.total ?? 0),
     };
+  }
+
+  private async resolveMinor(childId: string) {
+    const child = await this.childRepository.findOne({ where: { id: childId } });
+    if (child) {
+      return {
+        ...child,
+        role: 'child',
+      };
+    }
+
+    const adolescent = await this.adolescentRepository.findOne({ where: { id: childId } });
+    if (adolescent) {
+      return {
+        ...adolescent,
+        role: 'adolescent',
+      };
+    }
+
+    throw new NotFoundException('Minor profile not found');
   }
 }

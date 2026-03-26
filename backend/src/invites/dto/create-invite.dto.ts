@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class CreateInviteDto {
   @IsString()
@@ -9,6 +9,13 @@ export class CreateInviteDto {
 
   @IsOptional()
   @IsString()
-  minorProfileId?: string;
-}
+  targetActorRole?: string;
 
+  @IsOptional()
+  @IsString()
+  minorProfileId?: string;
+
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, unknown>;
+}

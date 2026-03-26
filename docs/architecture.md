@@ -93,5 +93,8 @@
 - `external_identities` conecta sujeitos externos do Google/Apple aos atores `parent_guardian` e `therapist`.
 - `media_verification_jobs` sustenta simulacoes auditaveis de OCR e biometria para validacao e readiness.
 - `web/admin` agora expoe configuracao de provedores e observacao dos jobs de verificacao.
-- `web/portal` agora expoe shells iniciais para `parent_guardian` e `therapist`, consumindo provedores publicados, consentimentos, familia, sessoes e `care-team`.
+- `web/portal` agora expoe shells iniciais para `parent_guardian` e `therapist`, consumindo provedores publicados, consentimentos, familia, sessoes, convites, permissoes explicitas e `care-team`.
+- `invites` agora carregam ownership e alvo por ator, permitindo jornadas rastreaveis de familia para terapeuta sem abrir descoberta livre.
+- `parent_approvals` agora funcionam como ledger auditavel do lado do responsavel para OCR, presenca estruturada e vinculacao clinica.
+- `progress_entries` foi desacoplado do FK legado de `child_profiles`, permitindo continuidade do modelo multiactor tambem para `adolescent`.
 - A compatibilidade com o Unity atual permanece via `auth`, `legal`, `children` e `families/overview`, enquanto as superficies adultas avancam para os namespaces canônicos na Fase C.

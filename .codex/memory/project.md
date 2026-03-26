@@ -109,10 +109,14 @@
   - `/pais` handles password/social auth, legal consent, family overview, minor provisioning and parent-side `care-team` approvals
   - `/profissionais` handles password/social auth, guardian email lookup, minor selection and `care-team` request creation
   - the public provider catalog now remains operational after the scripted negative-path security checks
+  - `/pais` now also handles selected-minor reports, quick check-in, explicit parent approvals and scoped therapist invites
+  - `/profissionais` now also handles scoped invite acceptance and clearer family/minor context before clinical requests
+  - backend invite ownership and parent-approval listing are now aligned with these portal shells
+  - adolescent progress/check-in compatibility is now validated on the Postgres-backed runtime
 - The next execution phase remains Phase C:
   - parent_guardian web/PWA shell
   - therapist web/PWA shell
-  - responsive supervision/reporting flows
+  - responsive supervision/reporting flows with more product polish
   - user-facing consumption of the now-live social auth/provider catalog
   - broader admin exposure of audit, moderation and approval operations
 - After the machine reboot later on `2026-03-26`, `vm2` had to be started again from `~/leggau`, and the refreshed batch validation still reached:

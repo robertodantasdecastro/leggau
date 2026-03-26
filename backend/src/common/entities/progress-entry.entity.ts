@@ -30,6 +30,7 @@ export class ProgressEntry {
 
   @ManyToOne(() => ChildProfile, (child) => child.progressEntries, {
     onDelete: 'CASCADE',
+    createForeignKeyConstraints: false,
   })
   child: ChildProfile;
 

@@ -262,6 +262,57 @@ async function main() {
   );
   logStep('family overview', 'guardian links and minor profiles exposed');
 
+  const parentInvite = await request('/invites', {
+    method: 'POST',
+    headers: authHeaders(parentToken),
+    body: JSON.stringify({
+      inviteType: 'care_team_invite',
+      targetEmail: appleTherapistEmail,
+      targetActorRole: 'therapist',
+      minorProfileId: createdAdolescent.id,
+      metadata: {
+        parentEmail: googleParentEmail,
+        parentName: 'Helena Dantas',
+        minorName: 'Noah',
+        minorRole: 'adolescent',
+        ageBand: '13-17',
+      },
+    }),
+  });
+  const parentInvites = await request(`/invites?minorProfileId=${encodeURIComponent(createdAdolescent.id)}`, {
+    headers: authHeaders(parentToken),
+  });
+  assert(
+    parentInvites.some((invite) => invite.id === parentInvite.id && invite.targetEmail === appleTherapistEmail),
+    'parent invite should be visible to its creator',
+  );
+  logStep('invite creation', 'parent created scoped therapist invite');
+
+  const parentApprovalRecord = await request('/parent-approvals', {
+    method: 'POST',
+    headers: authHeaders(parentToken),
+    body: JSON.stringify({
+      approvalType: 'therapist_linking',
+      targetId: createdAdolescent.id,
+      metadata: {
+        channel: 'portal',
+        approvedBy: 'guardian',
+      },
+    }),
+  });
+  const parentApprovalList = await request(
+    `/parent-approvals?targetId=${encodeURIComponent(createdAdolescent.id)}`,
+    {
+      headers: authHeaders(parentToken),
+    },
+  );
+  assert(
+    parentApprovalRecord.status === 'active' &&
+      parentApprovalList.some((approval) => approval.id === parentApprovalRecord.id),
+    'guardian approval ledger should list explicit approvals',
+  );
+  logStep('parent approvals', 'guardian approval ledger is queryable by target profile');
+
   const socialParentRelogin = await request('/auth/social/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -295,6 +346,37 @@ async function main() {
   logStep('social therapist register', 'apple therapist created pending approvals');
 
   const therapistToken = socialTherapist.accessToken;
+  const therapistInvites = await request('/invites', {
+    headers: authHeaders(therapistToken),
+  });
+  assert(
+    therapistInvites.some((invite) => invite.id === parentInvite.id && invite.targetEmail === appleTherapistEmail),
+    'therapist should see only invites addressed to their email',
+  );
+  await request(`/invites/${parentInvite.id}/accept`, {
+    method: 'POST',
+    headers: authHeaders(therapistToken),
+  });
+  const therapistInvitesAfterAccept = await request('/invites', {
+    headers: authHeaders(therapistToken),
+  });
+  assert(
+    therapistInvitesAfterAccept.some(
+      (invite) => invite.id === parentInvite.id && invite.status === 'accepted',
+    ),
+    'therapist should be able to accept a scoped invite',
+  );
+  logStep('invite acceptance', 'therapist accepted parent-scoped invite');
+
+  const therapistApprovalView = await request('/parent-approvals', {
+    headers: authHeaders(therapistToken),
+  });
+  assert(
+    Array.isArray(therapistApprovalView) && therapistApprovalView.length === 0,
+    'therapists should not list guardian approvals from the ledger',
+  );
+  logStep('approval isolation', 'guardian approvals stay hidden from therapist sessions');
+
   const careTeamMembership = await request('/care-team', {
     method: 'POST',
     headers: authHeaders(therapistToken),
@@ -343,6 +425,27 @@ async function main() {
   });
   assert(adminApproval.status === 'active', 'admin approval should activate care-team');
   logStep('care-team approvals', 'parent and admin approvals enforced separately');
+
+  const activities = await request('/activities');
+  await request('/progress/checkins', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      childId: createdAdolescent.id,
+      activityId: activities.items[0].id,
+      notes: 'Check-in adolescente no shell adulto',
+    }),
+  });
+  const adolescentSummary = await request(
+    `/progress/summary?childId=${encodeURIComponent(createdAdolescent.id)}`,
+  );
+  assert(
+    adolescentSummary.child.id === createdAdolescent.id &&
+      adolescentSummary.child.role === 'adolescent' &&
+      adolescentSummary.totalPoints >= activities.items[0].points,
+    'adolescent progress should support canonical summary and check-in flow',
+  );
+  logStep('adolescent progress', 'summary and check-in work for adolescent profiles');
 
   const sessions = await request('/sessions', {
     headers: authHeaders(parentToken),

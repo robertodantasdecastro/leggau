@@ -159,9 +159,15 @@
   - admin provider configuration updates
   - OCR and biometric simulation jobs via `media-verification`
   - end-to-end coverage through `scripts/test-social-auth-security.mjs`
+- Adult-shell runtime is now validated on the VM for:
+  - scoped `invites` creation and acceptance
+  - guardian-only `parent-approvals` listing and revoke flow
+  - adolescent-compatible `progress/summary` and `progress/checkins`
 - The adult web shell runtime is now also validated on the VM for:
   - `/pais` rendering the parent shell sections for auth, consent, family and `care-team`
   - `/profissionais` rendering the therapist shell sections for auth, family lookup and `care-team`
+  - `/pais` rendering reports, permissions and therapist invite sections
+  - `/profissionais` rendering invite inbox and clinical context sections
   - the public provider catalog again exposing both Google and Apple after the scripted negative-path checks finish
 - Postgres on the VM now contains and validates the new core tables:
   - `guardian_links`
@@ -182,3 +188,4 @@
 - VM memory and docs sync should continue through `./scripts/sync-codex-to-vm.sh`
 - Full Phase 0 promotion should use:
   - `./scripts/promote-stack-to-vm.sh`
+- `scripts/deploy-vm.sh` now supports `LEGGAU_SKIP_REMOTE_GIT_PULL=1` so rsync-driven VM promotion can avoid remote worktree conflicts.

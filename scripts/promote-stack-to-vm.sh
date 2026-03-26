@@ -59,7 +59,7 @@ ssh "${SSH_OPTS[@]}" "${REMOTE}" "
   ./scripts/bootstrap-vm.sh '${REPO_URL}' '${VM_IP}' && \
   [ -f .env ] || cp .env.example .env && \
   perl -0pi -e 's#^DEV_API_BASE_URL=.*#DEV_API_BASE_URL=http://${VM_IP}:8080/api#m' .env && \
-  ./scripts/deploy-vm.sh
+  LEGGAU_SKIP_REMOTE_GIT_PULL=1 ./scripts/deploy-vm.sh
 "
 
 echo "[leggau] Remote promotion finished for ${REMOTE}:${REMOTE_ROOT_RESOLVED}"

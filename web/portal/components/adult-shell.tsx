@@ -127,6 +127,78 @@ type CareTeamMembership = {
   createdAt: string;
 };
 
+type InviteRecord = {
+  id: string;
+  inviteType: string;
+  targetEmail: string;
+  targetActorRole?: string | null;
+  creatorActorRole?: string | null;
+  minorProfileId?: string | null;
+  status: string;
+  acceptedAt?: string | null;
+  createdAt: string;
+  metadata?: Record<string, string | number | boolean | null> | null;
+};
+
+type ParentApprovalRecord = {
+  id: string;
+  approvalType: string;
+  targetId: string;
+  decision: string;
+  status: string;
+  decidedAt?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
+
+type ActivityItem = {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  points: number;
+};
+
+type ActivitiesPayload = {
+  source: string;
+  items: ActivityItem[];
+};
+
+type RewardItem = {
+  id: string;
+  title: string;
+  description: string;
+  cost: number;
+  unlocked: boolean;
+};
+
+type RewardPayload = {
+  availablePoints: number;
+  items: RewardItem[];
+};
+
+type ProgressSummary = {
+  child: {
+    id: string;
+    name: string;
+    role?: string;
+  };
+  minor?: {
+    id: string;
+    name: string;
+    role?: string;
+  };
+  totalPoints: number;
+  completedActivities: number;
+  latestEntries: Array<{
+    id: string;
+    pointsEarned: number;
+    performedAt: string;
+    activity?: {
+      title?: string;
+    } | null;
+  }>;
+};
+
 const DEV_VM_API_BASE = 'http://10.211.55.22:8080/api';
 
 function resolveApiBase() {
@@ -209,6 +281,11 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
   const [lookupFamily, setLookupFamily] = useState<FamilyOverview | null>(null);
   const [careTeamMemberships, setCareTeamMemberships] = useState<CareTeamMembership[]>([]);
   const [sessions, setSessions] = useState<DeviceSession[]>([]);
+  const [invites, setInvites] = useState<InviteRecord[]>([]);
+  const [parentApprovals, setParentApprovals] = useState<ParentApprovalRecord[]>([]);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [rewardSummary, setRewardSummary] = useState<RewardPayload | null>(null);
+  const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
   const [status, setStatus] = useState('Pronto para autenticar.');
   const [error, setError] = useState('');
   const [busyKey, setBusyKey] = useState('');
@@ -236,6 +313,7 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
   const [familyLookupEmail, setFamilyLookupEmail] = useState('');
   const [lookupMinorId, setLookupMinorId] = useState('');
   const [scopeDraft, setScopeDraft] = useState('{"focus":"rotina","channel":"portal"}');
+  const [inviteTargetEmail, setInviteTargetEmail] = useState('terapeuta@exemplo.com');
 
   useEffect(() => {
     void loadProviders();
@@ -298,6 +376,11 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
     setLookupFamily(null);
     setCareTeamMemberships([]);
     setSessions([]);
+    setInvites([]);
+    setParentApprovals([]);
+    setActivities([]);
+    setRewardSummary(null);
+    setProgressSummary(null);
   }, [session]);
 
   async function loadProviders() {
@@ -321,6 +404,64 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
     }
   }
 
+  async function loadInvites(envelope: SessionEnvelope, minorProfileId?: string) {
+    const suffix = minorProfileId
+      ? `?minorProfileId=${encodeURIComponent(minorProfileId)}`
+      : '';
+    const nextInvites = await apiRequest<InviteRecord[]>(`/invites${suffix}`, {
+      token: envelope.accessToken,
+    });
+    setInvites(nextInvites);
+  }
+
+  async function loadParentApprovals(envelope: SessionEnvelope, targetId?: string) {
+    const suffix = targetId ? `?targetId=${encodeURIComponent(targetId)}` : '';
+    const approvals = await apiRequest<ParentApprovalRecord[]>(`/parent-approvals${suffix}`, {
+      token: envelope.accessToken,
+    });
+    setParentApprovals(approvals);
+  }
+
+  async function loadMinorWorkspace(envelope: SessionEnvelope, minorProfileId: string) {
+    const [memberships, activitiesPayload, rewardsPayload] = await Promise.all([
+      apiRequest<CareTeamMembership[]>(
+        `/care-team?minorProfileId=${encodeURIComponent(minorProfileId)}`,
+        { token: envelope.accessToken },
+      ),
+      apiRequest<ActivitiesPayload>('/activities'),
+      apiRequest<RewardPayload>(`/rewards?childId=${encodeURIComponent(minorProfileId)}`),
+    ]);
+
+    setCareTeamMemberships(memberships);
+    setActivities(activitiesPayload.items);
+    setRewardSummary(rewardsPayload);
+
+    if (isParent) {
+      await loadParentApprovals(envelope, minorProfileId);
+      await loadInvites(envelope, minorProfileId);
+    }
+
+    try {
+      const summary = await apiRequest<ProgressSummary>(
+        `/progress/summary?childId=${encodeURIComponent(minorProfileId)}`,
+      );
+      setProgressSummary(summary);
+    } catch {
+      setProgressSummary(null);
+    }
+  }
+
+  async function lookupFamilyByEmail(targetEmail: string) {
+    const overview = await apiRequest<FamilyOverview>(
+      `/families/overview?email=${encodeURIComponent(targetEmail)}`,
+    );
+    setLookupFamily(overview);
+    if (overview.minorProfiles?.length) {
+      setLookupMinorId(overview.minorProfiles[0].id);
+    }
+    return overview;
+  }
+
   async function refreshActorState(
     envelope: SessionEnvelope,
     options: { preserveFamilyLookup?: boolean } = {},
@@ -336,6 +477,7 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
         token: envelope.accessToken,
       });
       setSessions(nextSessions);
+      await loadInvites(envelope);
 
       if (isParent) {
         const overview = await apiRequest<FamilyOverview>(
@@ -348,15 +490,13 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
         if (overview.minorProfiles?.length) {
           const firstMinor = overview.minorProfiles[0].id;
           setSelectedMinorId((current) => current || firstMinor);
-          const memberships = await apiRequest<CareTeamMembership[]>(
-            `/care-team?minorProfileId=${encodeURIComponent(firstMinor)}`,
-            {
-              token: envelope.accessToken,
-            },
-          );
-          setCareTeamMemberships(memberships);
+          await loadMinorWorkspace(envelope, firstMinor);
         } else {
           setCareTeamMemberships([]);
+          setParentApprovals([]);
+          setActivities([]);
+          setRewardSummary(null);
+          setProgressSummary(null);
         }
 
         setSession((current) =>
@@ -546,17 +686,11 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
     setStatus('Atualizando pedidos de equipe de cuidado...');
 
     try {
-      const memberships = await apiRequest<CareTeamMembership[]>(
-        `/care-team?minorProfileId=${encodeURIComponent(minorProfileId)}`,
-        {
-          token: session.accessToken,
-        },
-      );
-      setCareTeamMemberships(memberships);
-      setStatus('Pedidos de equipe de cuidado atualizados.');
+      await loadMinorWorkspace(session, minorProfileId);
+      setStatus('Pedidos, permissoes e relatorios do perfil foram atualizados.');
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel carregar a equipe de cuidado.');
-      setStatus('Falha ao consultar equipe de cuidado.');
+      setStatus('Falha ao consultar o workspace do perfil selecionado.');
     } finally {
       setBusyKey('');
     }
@@ -596,17 +730,173 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
     setStatus('Buscando familia pelo email do responsavel...');
 
     try {
-      const overview = await apiRequest<FamilyOverview>(
-        `/families/overview?email=${encodeURIComponent(familyLookupEmail)}`,
-      );
-      setLookupFamily(overview);
-      if (overview.minorProfiles?.length) {
-        setLookupMinorId(overview.minorProfiles[0].id);
-      }
+      await lookupFamilyByEmail(familyLookupEmail);
       setStatus('Familia localizada. Escolha o perfil para solicitar o vinculo.');
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel localizar a familia.');
       setStatus('A familia informada nao foi localizada.');
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function handleCreateInvite() {
+    if (!session || !selectedMinor || !familyOverview?.parent) {
+      return;
+    }
+
+    setBusyKey('create-invite');
+    setError('');
+    setStatus('Gerando convite rastreavel para o profissional...');
+
+    try {
+      await apiRequest('/invites', {
+        method: 'POST',
+        token: session.accessToken,
+        body: {
+          inviteType: 'care_team_invite',
+          targetEmail: inviteTargetEmail,
+          targetActorRole: 'therapist',
+          minorProfileId: selectedMinor.id,
+          metadata: {
+            parentEmail: familyOverview.parent.email,
+            parentName: familyOverview.parent.name,
+            minorName: selectedMinor.name,
+            minorRole: selectedMinor.role,
+            ageBand: selectedMinor.ageBand,
+          },
+        },
+      });
+      await loadInvites(session, selectedMinor.id);
+      setStatus('Convite criado. O profissional ja pode aceitar pelo shell dele.');
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel criar o convite.');
+      setStatus('O convite rastreavel nao foi criado.');
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function handleAcceptInvite(invite: InviteRecord) {
+    if (!session) {
+      return;
+    }
+
+    setBusyKey(`accept-invite-${invite.id}`);
+    setError('');
+    setStatus('Aceitando convite e preparando o contexto da familia...');
+
+    try {
+      await apiRequest(`/invites/${invite.id}/accept`, {
+        method: 'POST',
+        token: session.accessToken,
+      });
+      await loadInvites(session);
+
+      const parentEmail =
+        typeof invite.metadata?.parentEmail === 'string' ? invite.metadata.parentEmail : '';
+      if (parentEmail) {
+        const overview = await lookupFamilyByEmail(parentEmail);
+        if (invite.minorProfileId && overview.minorProfiles.some((minor) => minor.id === invite.minorProfileId)) {
+          setLookupMinorId(invite.minorProfileId);
+        }
+      }
+
+      setStatus('Convite aceito. O contexto da familia foi preparado para o pedido clinico.');
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel aceitar o convite.');
+      setStatus('O convite nao foi aceito.');
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function handleCreateParentApproval(
+    approvalType: string,
+    targetId: string,
+    metadata?: Record<string, unknown>,
+  ) {
+    if (!session) {
+      return;
+    }
+
+    setBusyKey(`approval-${approvalType}`);
+    setError('');
+    setStatus('Registrando aprovacao explicita do responsavel...');
+
+    try {
+      await apiRequest('/parent-approvals', {
+        method: 'POST',
+        token: session.accessToken,
+        body: {
+          approvalType,
+          targetId,
+          metadata,
+        },
+      });
+      await loadParentApprovals(session, targetId);
+      setStatus('Aprovacao registrada com trilha auditavel.');
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel registrar a aprovacao.');
+      setStatus('A aprovacao explicita nao foi registrada.');
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function handleRevokeParentApproval(approvalId: string, targetId: string) {
+    if (!session) {
+      return;
+    }
+
+    setBusyKey(`revoke-approval-${approvalId}`);
+    setError('');
+    setStatus('Revogando aprovacao explicita do responsavel...');
+
+    try {
+      await apiRequest(`/parent-approvals/${approvalId}`, {
+        method: 'PATCH',
+        token: session.accessToken,
+        body: {
+          decision: 'revoked',
+          status: 'revoked',
+        },
+      });
+      await loadParentApprovals(session, targetId);
+      setStatus('Aprovacao revogada com sucesso.');
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel revogar a aprovacao.');
+      setStatus('A aprovacao nao foi revogada.');
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function handleQuickCheckin() {
+    if (!selectedMinorId || !activities.length) {
+      return;
+    }
+
+    setBusyKey('quick-checkin');
+    setError('');
+    setStatus('Registrando check-in rapido para atualizar progresso e recompensas...');
+
+    try {
+      await apiRequest('/progress/checkins', {
+        method: 'POST',
+        body: {
+          childId: selectedMinorId,
+          activityId: activities[0].id,
+          notes: 'Check-in rapido pelo shell adulto',
+        },
+      });
+      if (session) {
+        await loadMinorWorkspace(session, selectedMinorId);
+      }
+      setStatus('Check-in concluido. Os relatórios foram atualizados.');
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel registrar o check-in.');
+      setStatus('O check-in rapido nao foi concluido.');
     } finally {
       setBusyKey('');
     }
@@ -728,6 +1018,10 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
   const currentRequirements = session?.requirements;
   const selectedMinor = familyOverview?.minorProfiles.find((profile) => profile.id === selectedMinorId);
   const selectedLookupMinor = lookupFamily?.minorProfiles.find((profile) => profile.id === lookupMinorId);
+  const activeApprovals = parentApprovals.filter((approval) => approval.status === 'active');
+  const inviteInbox = isParent
+    ? invites.filter((invite) => invite.creatorActorRole === 'parent_guardian')
+    : invites.filter((invite) => invite.targetEmail === session?.user.email);
 
   return (
     <section className="actorFrame">
@@ -1186,9 +1480,271 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                 </div>
               )}
             </article>
+
+            <article className="stageCard card">
+              <div className="spread">
+                <div>
+                  <h2>Relatorios e acoes do perfil</h2>
+                  <p className="subtle">
+                    Esta area resume progresso, catalogo de atividades e recompensas do menor selecionado.
+                  </p>
+                </div>
+                <button
+                  className="button secondary"
+                  disabled={!selectedMinorId || !activities.length || busyKey === 'quick-checkin'}
+                  onClick={() => void handleQuickCheckin()}
+                  type="button"
+                >
+                  {busyKey === 'quick-checkin' ? 'Registrando...' : 'Registrar check-in rapido'}
+                </button>
+              </div>
+              {selectedMinor ? (
+                <div className="reportGrid">
+                  <div className="miniCard highlight">
+                    <span className="microLabel">Progresso acumulado</span>
+                    <strong>{progressSummary?.totalPoints ?? 0} pontos</strong>
+                    <span>{progressSummary?.completedActivities ?? 0} atividades concluidas</span>
+                  </div>
+                  <div className="miniCard">
+                    <span className="microLabel">Recompensas destravadas</span>
+                    <strong>
+                      {rewardSummary?.items.filter((reward) => reward.unlocked).length ?? 0}
+                    </strong>
+                    <span>{rewardSummary?.availablePoints ?? 0} pontos disponiveis agora</span>
+                  </div>
+                  <div className="miniCard">
+                    <span className="microLabel">Catalogo ativo</span>
+                    <strong>{activities.length} atividades</strong>
+                    <span>Primeira atividade: {activities[0]?.title ?? 'aguardando catalogo'}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="emptyState">
+                  Selecione um perfil para abrir relatorios e acoes contextualizadas.
+                </div>
+              )}
+              {selectedMinor ? (
+                <div className="grid2">
+                  <div className="stack">
+                    <strong>Ultimos check-ins</strong>
+                    {progressSummary?.latestEntries?.length ? (
+                      <div className="stack">
+                        {progressSummary.latestEntries.slice(0, 4).map((entry) => (
+                          <div key={entry.id} className="miniCard">
+                            <span className="microLabel">{formatDate(entry.performedAt)}</span>
+                            <strong>{entry.activity?.title ?? 'Atividade sem titulo'}</strong>
+                            <span>{entry.pointsEarned} pontos creditados</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="emptyState">
+                        Ainda nao ha historico de progresso para este perfil.
+                      </div>
+                    )}
+                  </div>
+                  <div className="stack">
+                    <strong>Recompensas e atividades</strong>
+                    <div className="compactList">
+                      {rewardSummary?.items.slice(0, 3).map((reward) => (
+                        <div key={reward.id} className="miniCard">
+                          <span className="microLabel">{reward.unlocked ? 'Disponivel' : 'Bloqueada'}</span>
+                          <strong>{reward.title}</strong>
+                          <span>{reward.cost} pontos · {reward.description}</span>
+                        </div>
+                      ))}
+                      {activities.slice(0, 2).map((activity) => (
+                        <div key={activity.id} className="miniCard">
+                          <span className="microLabel">Atividade</span>
+                          <strong>{activity.title}</strong>
+                          <span>{activity.points} pontos · {activity.description}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </article>
+
+            <article className="stageCard card">
+              <h2>Permissoes explicitas do responsavel</h2>
+              <p className="subtle">
+                Registre aprovacoes auditaveis para OCR, presenca estruturada e vinculacao clinica do perfil selecionado.
+              </p>
+              {selectedMinor ? (
+                <>
+                  <div className="pillRow">
+                    <button
+                      className="pill"
+                      disabled={!session || busyKey === 'approval-therapist_linking'}
+                      onClick={() =>
+                        void handleCreateParentApproval('therapist_linking', selectedMinor.id, {
+                          channel: 'portal',
+                          scope: 'care-team',
+                        })
+                      }
+                      type="button"
+                    >
+                      Aprovar vinculacao clinica
+                    </button>
+                    <button
+                      className="pill"
+                      disabled={!session || busyKey === 'approval-document_ocr_capture'}
+                      onClick={() =>
+                        void handleCreateParentApproval('document_ocr_capture', selectedMinor.id, {
+                          channel: 'portal',
+                          capability: 'device-first-ocr',
+                        })
+                      }
+                      type="button"
+                    >
+                      Aprovar OCR documental
+                    </button>
+                    <button
+                      className="pill"
+                      disabled={!session || busyKey === 'approval-presence_enabled'}
+                      onClick={() =>
+                        void handleCreateParentApproval('presence_enabled', selectedMinor.id, {
+                          channel: 'portal',
+                          capability: 'structured-presence',
+                        })
+                      }
+                      type="button"
+                    >
+                      Aprovar presenca estruturada
+                    </button>
+                  </div>
+                  {parentApprovals.length ? (
+                    <div className="stack">
+                      {parentApprovals.map((approval) => (
+                        <div key={approval.id} className="miniCard">
+                          <span className="microLabel">{approval.id}</span>
+                          <strong>{slugToLabel(approval.approvalType)}</strong>
+                          <span>
+                            {approval.status} · decisao {approval.decision} · {formatDate(approval.decidedAt)}
+                          </span>
+                          <div className="ctaRow">
+                            <span className="badge">{approval.targetId === selectedMinor.id ? 'perfil atual' : 'outro perfil'}</span>
+                            {approval.status === 'active' ? (
+                              <button
+                                className="button ghost"
+                                disabled={busyKey === `revoke-approval-${approval.id}`}
+                                onClick={() => void handleRevokeParentApproval(approval.id, selectedMinor.id)}
+                                type="button"
+                              >
+                                Revogar permissao
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="emptyState">
+                      Nenhuma permissao explicita registrada para este perfil ainda.
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="emptyState">
+                  Selecione um perfil para registrar permissoes auditaveis.
+                </div>
+              )}
+            </article>
+
+            <article className="stageCard card">
+              <h2>Convites para terapeutas</h2>
+              <p className="subtle">
+                Use convites rastreaveis para puxar o profissional certo para o fluxo de `care-team`.
+              </p>
+              <div className="toolbar">
+                <label className="field grow">
+                  <span>Email do profissional</span>
+                  <input
+                    className="input"
+                    value={inviteTargetEmail}
+                    onChange={(event) => setInviteTargetEmail(event.target.value)}
+                    placeholder="terapeuta@exemplo.com"
+                  />
+                </label>
+                <button
+                  className="button primary"
+                  disabled={!session || !selectedMinor || busyKey === 'create-invite'}
+                  onClick={() => void handleCreateInvite()}
+                  type="button"
+                >
+                  {busyKey === 'create-invite' ? 'Criando...' : 'Enviar convite rastreavel'}
+                </button>
+              </div>
+              {inviteInbox.length ? (
+                <div className="stack">
+                  {inviteInbox.map((invite) => (
+                    <div key={invite.id} className="miniCard">
+                      <span className="microLabel">{invite.id}</span>
+                      <strong>{invite.targetEmail}</strong>
+                      <span>
+                        {slugToLabel(invite.inviteType)} · {invite.status} · {formatDate(invite.createdAt)}
+                      </span>
+                      <span>
+                        Perfil: {String(invite.metadata?.minorName ?? 'sem nome')} · faixa{' '}
+                        {String(invite.metadata?.ageBand ?? 'n/d')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="emptyState">
+                  Nenhum convite emitido ainda para terapeutas.
+                </div>
+              )}
+            </article>
           </>
         ) : (
           <>
+            <article className="stageCard card">
+              <h2>Convites recebidos</h2>
+              <p className="subtle">
+                Convites aceitos aqui ja preenchem o contexto da familia e reduzem erro operacional na abertura do vinculo.
+              </p>
+              {inviteInbox.length ? (
+                <div className="stack">
+                  {inviteInbox.map((invite) => (
+                    <div key={invite.id} className="miniCard">
+                      <span className="microLabel">{invite.id}</span>
+                      <strong>
+                        {String(invite.metadata?.parentName ?? 'Familia Leggau')} ·{' '}
+                        {String(invite.metadata?.minorName ?? 'perfil infantojuvenil')}
+                      </strong>
+                      <span>
+                        {invite.targetEmail} · {invite.status} · {formatDate(invite.createdAt)}
+                      </span>
+                      <span>
+                        Faixa {String(invite.metadata?.ageBand ?? 'n/d')} · papel {String(invite.metadata?.minorRole ?? 'child')}
+                      </span>
+                      <div className="ctaRow">
+                        <button
+                          className="button secondary"
+                          disabled={!session || busyKey === `accept-invite-${invite.id}` || invite.status === 'accepted'}
+                          onClick={() => void handleAcceptInvite(invite)}
+                          type="button"
+                        >
+                          {busyKey === `accept-invite-${invite.id}`
+                            ? 'Aceitando...'
+                            : invite.status === 'accepted'
+                              ? 'Convite aceito'
+                              : 'Aceitar e carregar familia'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="emptyState">
+                  Nenhum convite direcionado ao seu email apareceu ainda. Voce ainda pode buscar a familia manualmente.
+                </div>
+              )}
+            </article>
+
             <article className="stageCard card">
               <h2>Busca da familia</h2>
               <p className="subtle">
@@ -1284,6 +1840,38 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                   ))}
                 </div>
               ) : null}
+            </article>
+
+            <article className="stageCard card">
+              <h2>Contexto clinico visivel</h2>
+              <p className="subtle">
+                Esta visao resume o menor alvo e os gates atuais para ajudar antes do pedido clinico e depois da aprovacao.
+              </p>
+              <div className="grid3 responsive">
+                <div className="miniCard">
+                  <span className="microLabel">Familia alvo</span>
+                  <strong>{lookupFamily?.parent?.name ?? 'Nenhuma familia carregada'}</strong>
+                  <span>{lookupFamily?.parent?.email ?? 'Aceite um convite ou busque pelo email do responsavel.'}</span>
+                </div>
+                <div className="miniCard">
+                  <span className="microLabel">Perfil alvo</span>
+                  <strong>{selectedLookupMinor?.name ?? 'Nenhum perfil selecionado'}</strong>
+                  <span>
+                    {selectedLookupMinor
+                      ? `${selectedLookupMinor.role} · ${selectedLookupMinor.ageBand}`
+                      : 'Selecione um menor para o vinculo.'}
+                  </span>
+                </div>
+                <div className="miniCard">
+                  <span className="microLabel">Pedidos visiveis</span>
+                  <strong>{careTeamMemberships.length}</strong>
+                  <span>
+                    {careTeamMemberships.some((membership) => membership.status === 'active')
+                      ? 'Ao menos um vinculo ja esta ativo'
+                      : 'Ainda aguardando gates de aprovacao'}
+                  </span>
+                </div>
+              </div>
             </article>
           </>
         )}

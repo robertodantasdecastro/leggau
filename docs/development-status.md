@@ -105,6 +105,15 @@ Date checked: `2026-03-26`
   - `PATCH /api/admin/auth/providers/:provider`
   - `POST /api/media-verification`
   - `GET /api/admin/media-verification/jobs`
+- The adult-shell expansion on `2026-03-26` now also validates against the VM for:
+  - `GET /api/invites`
+  - `POST /api/invites`
+  - `POST /api/invites/:id/accept`
+  - `GET /api/parent-approvals`
+  - `POST /api/parent-approvals`
+  - `PATCH /api/parent-approvals/:id`
+  - adolescent-safe `POST /api/progress/checkins`
+  - adolescent-safe `GET /api/progress/summary`
 - Phase B runtime checks now confirm:
   - `guardian_links` is the live source of truth for minor access
   - adolescent provisioning uses `adolescent_profiles` with `AgeBand=13-17`
@@ -119,6 +128,9 @@ Date checked: `2026-03-26`
   - provider disablement immediately blocks new social logins
   - provider secrets stay masked in admin responses
   - OCR and biometric verification simulations generate auditable jobs
+  - parent-created therapist invites are scoped to creator/target and can be accepted only by the addressed adult actor
+  - parent approval records are listable only by the owning guardian session
+  - adolescent progress now supports both summary and check-in without relying on the legacy `child_profiles` foreign key
 - During the first VM deploy on `2026-03-26`, the API initially failed behind Nginx because TypeORM used `datetime` columns incompatible with Postgres; this was corrected to `timestamp` in the shared entities and the API now boots cleanly
 - During the first Phase B deploy on `2026-03-26`, the API also failed once because the migration class name did not yet use a valid JavaScript-style timestamp suffix; this was corrected and the VM now applies the migration set cleanly
 - Phase 0 promotion helper is now validated end-to-end:
@@ -128,10 +140,17 @@ Date checked: `2026-03-26`
 - The current end-to-end validation driver for this checkpoint is:
   - `scripts/test-social-auth-security.mjs`
 - That validation script now restores the provider catalog after the negative-path disable test, so the active runtime keeps both Google and Apple published for adult shells
+- That validation script now also covers:
+  - invite creation and acceptance between guardian and therapist
+  - parent-approval ledger isolation
+  - adolescent progress/check-in compatibility
 - Dependency audit checks now also pass with zero production vulnerabilities in:
   - `backend`
   - `web/admin`
   - `web/portal`
+- The VM deployment helpers now include a safe rsync-driven path that can skip `git pull` on the remote deployment script:
+  - `scripts/deploy-vm.sh`
+  - `scripts/promote-stack-to-vm.sh`
 
 ## Platform Replan Status
 
@@ -164,6 +183,8 @@ Date checked: `2026-03-26`
   - actor dependency rules are now explicit in auth responses and runtime gates
   - `web/portal/pais` now exposes a parent shell for password/social auth, consent capture, family overview, child/adolescent provisioning, parent-side care-team approval and session revoke
   - `web/portal/profissionais` now exposes a therapist shell for password/social auth, family lookup by guardian email, care-team request and session revoke
+  - the parent shell now also exposes reports, quick check-in, permission ledger and scoped therapist invites
+  - the therapist shell now also exposes invite inbox handling and a clearer family/minor context before care-team requests
 - Phase F also has first operational groundwork in place:
   - provider secret masking in the admin surface
   - simulated OCR and biometric verification jobs
@@ -186,13 +207,19 @@ Date checked: `2026-03-26`
   - family overview
   - child/adolescent provisioning
   - parent-side `care-team` approval
+  - reports for the selected minor
+  - quick check-in and reward/progress refresh
+  - explicit parent-approval ledger for OCR, presence and therapist linking
+  - scoped therapist invite creation
   - persistent session listing and revoke
 - Therapist shell currently covers:
   - password auth
   - social auth using the public provider catalog
+  - invite inbox and invite acceptance
   - guardian email lookup
   - minor selection
   - `care-team` request creation
+  - family/minor context summary before clinical request
   - persistent session listing and revoke
 
 ## Mobile Mac Status

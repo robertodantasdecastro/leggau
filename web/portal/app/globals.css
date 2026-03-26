@@ -322,6 +322,17 @@ select.input {
   gap: 14px;
 }
 
+.reportGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.compactList {
+  display: grid;
+  gap: 12px;
+}
+
 .providerCard,
 .miniCard {
   display: grid;
@@ -421,7 +432,8 @@ select.input {
   .actorHero,
   .grid2,
   .statusRail,
-  .responsive {
+  .responsive,
+  .reportGrid {
     grid-template-columns: 1fr;
   }
 
