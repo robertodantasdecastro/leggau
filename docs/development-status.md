@@ -102,13 +102,14 @@ Date checked: `2026-03-26`
 - Unity Hub templates are now symlinked to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/Templates`
 - Blender `4.5.1 LTS`: installed
 - `xcodes` CLI is installed and available
-- Xcode CLI / `xcodebuild`: available only through Command Line Tools
-- Full Xcode app install is still missing
-- `/Applications/Xcode.app` is still absent as of `2026-03-26`
-- A direct Xcode download attempt through `xcodes` now writes to the SSD-backed tooling tree, but still requires an authenticated Apple ID session before it can proceed
-- The validated Unity editor currently exposes only `MacStandaloneSupport`
-- `AndroidPlayer` and `iOSSupport` playback modules are still missing from the currently validated editor install
-- A direct Unity Hub module-install attempt targeted at `6000.4.0f1` returned `Editor already installed in this location` and did not add `AndroidPlayer` or `iOSSupport` to the canonical editor
+- `Xcode.app` is now installed at `/Applications/Xcode.app`
+- `xcode-select -p` now points to `/Applications/Xcode.app/Contents/Developer`
+- `xcodebuild -version` now returns `Xcode 26.4`
+- `xcodebuild -runFirstLaunch` completed successfully on `2026-03-26`
+- The canonical Unity editor now exposes mobile modules through the editor-root playback layout:
+  - `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.4.0f1/PlaybackEngines/AndroidPlayer`
+  - `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.4.0f1/PlaybackEngines/iOSSupport`
+- `scripts/check-mobile-toolchain.sh` and `scripts/report-environment-status.sh` now detect that top-level `PlaybackEngines/` layout correctly
 - A headless Unity Hub installation of `6000.0.71f1` with:
   - `android`
   - `android-sdk-ndk-tools`
@@ -216,9 +217,15 @@ Date checked: `2026-03-26`
 - The bootstrap scene was regenerated after that UI change and the batch validation against `vm2` again reached:
   - `state=ready`
   - `status=Dashboard carregado.`
-- A graphical Unity validation attempt was also launched on `2026-03-26` using:
-  - `-executeMethod Leggau.Editor.UnityRuntimeDriver.RunBootstrapPlayMode`
-- That launch confirmed the graphical editor opened with the canonical project path, but it did not yet re-create the runtime probe in a way that can be treated as a completed visual sign-off
+- A full graphical Unity validation was completed on `2026-03-26` through the `Leggau > Run Bootstrap Play Mode` menu action
+- During that visual sign-off pass, the VM stack had to be restarted on `vm2`, after which the graphical bootstrap reached:
+  - `state=ready`
+  - `status=Dashboard carregado.`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
 - On `2026-03-26`, the Unity workspace was reopened from the correct `-projectPath` after a temporary accidental nested project under `mobile/Leggau`; that stray project directory was removed
 - Local catalog validation is now reproducible through:
   - `scripts/check-gau-runtime-catalog.sh`
@@ -257,10 +264,10 @@ Date checked: `2026-03-26`
 ## Current Conclusion
 
 - The official development backend is now operational on `vm2` under `~/leggau`.
-- The current remaining blockers to close the operational phase are now strictly toolchain + visual confirmation:
-  - full `Xcode.app`
-  - `AndroidPlayer` and `iOSSupport` on the canonical Unity editor
-  - manual visual sign-off of the bootstrap flow in the graphical editor
+- Phase 0 operational unblock is now complete:
+  - full `Xcode.app` is installed and selected
+  - `AndroidPlayer` and `iOSSupport` are present on the canonical Unity editor
+  - the bootstrap flow has been signed off in the graphical editor against the VM runtime
 - The mobile repository now has the first Gau 3D asset pipeline in place, including `.blend` and `.fbx`.
 - The Gau pipeline now includes a pixel-textured 3D variant alongside the base `.blend`, `.fbx` and 2D pixel-art copy.
 - The Gau pipeline now also includes a blocky Roblox-style pixel variant for alternate in-game presentation.
@@ -277,9 +284,10 @@ Date checked: `2026-03-26`
   - Unity Hub launches again after the redirection
 - Unity editor is now detected on the SSD-backed install root and the Leggau project now opens there successfully
 - Unity tooling is now aligned with the SSD policy, and the bootstrap scene now builds successfully after the first graphical import cycle
-- Unity mobile tooling still requires:
-  - full Xcode app install and selection
-  - completion of the headless Unity mobile module installation now in progress
+- Unity mobile tooling base is now validated for the next phase:
+  - Xcode selected and initialized
+  - canonical Unity editor runtime present
+  - Android and iOS build support modules detected
 - Remote backend validation on `vm2` now passes through the official VM runtime.
 - Project memory is now intended to live primarily inside the repository, not in global Codex state.
 - Heavy project files are now standardized to live inside `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data`.

@@ -60,12 +60,16 @@
 - Latest validated probe snapshot reached:
   - `state=ready`
   - `status=Dashboard carregado.`
+- Latest graphical Play Mode validation against `vm2` also reached:
+  - `state=ready`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
 - Current in-progress Unity install path is:
   - `./.data/tooling/unity/editors/6000.0.71f1/Unity.app`
 - Current mobile module status:
-  - Android build support still missing from the validated editor
-  - iOS build support still missing from the validated editor
-- A direct Unity Hub headless install attempt targeted at `6000.4.0f1` returned `Editor already installed in this location` and did not retrofit those missing modules
+  - Android build support is installed under `./.data/tooling/unity/editors/6000.4.0f1/PlaybackEngines/AndroidPlayer`
+  - iOS build support is installed under `./.data/tooling/unity/editors/6000.4.0f1/PlaybackEngines/iOSSupport`
 - Current Unity install caveats:
   - `6000.0.71f1` on the SSD currently fails macOS signature validation
   - `6000.4.0f1` is the only validated runnable editor right now
@@ -76,10 +80,13 @@
   - the Unity `Resources/PackageManager` tree on the SSD install had to be cleaned of `._*` files because they broke package resolution
   - first-import stabilization must be done in the graphical editor before retrying batch scene generation
   - after the graphical import completed, batch scene generation succeeded and produced `mobile/Assets/Scenes/Bootstrap/Bootstrap.unity`
-  - a graphical launch using `RunBootstrapPlayMode` was confirmed, but final manual visual sign-off of the scene is still pending
+  - a graphical launch using `RunBootstrapPlayMode` is now confirmed as the final visual sign-off path for the bootstrap scene
 - Unity Hub install command currently in use:
   - `'/Applications/Unity Hub.app/Contents/MacOS/Unity Hub' --headless install --version 6000.0.71f1 --architecture arm64 --module android android-sdk-ndk-tools android-open-jdk ios`
 - Local Docker Desktop may need to remain stopped while the mobile editor install runs, to satisfy Unity Hub RAM requirements
+- Xcode is now installed and selected:
+  - `/Applications/Xcode.app`
+  - `xcode-select -p` -> `/Applications/Xcode.app/Contents/Developer`
 
 ## Remote Dev Host
 

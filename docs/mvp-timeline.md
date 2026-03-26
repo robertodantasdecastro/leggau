@@ -11,7 +11,7 @@
 
 ### Phase 0 — Operational unlock and web foundation
 
-- Status: `in progress`
+- Status: `completed`
 - Completed:
   - local agent architecture is defined
   - Unity editor is present on SSD-backed storage
@@ -24,21 +24,18 @@
   - SSH automation to `vm2` is working
   - current stack is deployed to `~/leggau`
   - portal, admin and API now validate through the VM gateway
-- Blocked:
-  - full Xcode app installation
-  - Unity Android/iOS build support modules are still missing from the validated editor
-  - final visual sign-off of the bootstrap flow in the graphical editor is still pending
+  - full `Xcode.app` is installed, selected and completed through first launch
+  - the canonical Unity editor `6000.4.0f1` now exposes `AndroidPlayer` and `iOSSupport` in its top-level `PlaybackEngines/` layout
+  - the bootstrap flow was revalidated in the graphical editor against the VM runtime and reached `state=ready`
 - Current Unity state:
   - `6000.4.0f1` is the validated runnable editor on the SSD
   - `6000.0.71f1` exists on the SSD but currently fails signature validation and should not be used yet
   - package resolution now succeeds in batchmode after cleaning `._*` artifacts from the Unity SSD install
   - the first `AssetDatabase Initial Refresh` must happen in the graphical editor
   - after that first import, `./scripts/build-unity-bootstrap.sh` now succeeds
-  - a graphical launch with `RunBootstrapPlayMode` has already been exercised, but it has not yet yielded a final visual sign-off checkpoint
+  - Unity Hub installs mobile modules into the editor-root `PlaybackEngines/` directory for `6000.4.0f1`
 - Exit criteria:
-  - full Xcode app install
-  - Unity Android/iOS modules present in the validated editor
-  - Unity onboarding flow visually revalidated in the graphical editor against the VM runtime
+  - satisfied
 
 ### Phase 1 — Backend identity, legal and RBAC
 
@@ -110,19 +107,17 @@
 
 - Status: `not started`
 - Depend on:
-  - Phase 0 unblock on VM and Xcode
   - Phase 5 runtime validation in Unity
 
 ## Next Execution Step
 
-1. Install and select the full `Xcode.app`.
-2. Attach Android/iOS support modules to the canonical Unity editor `6000.4.0f1`.
-3. Reopen the Unity project in the graphical editor and complete the visual review/sign-off of the onboarding/home composition against `http://10.211.55.22:8080/api`.
-4. Add the next layer of interactive UI:
+1. Add the next layer of interactive UI:
    - explicit responsible/session entry
    - consent confirmation actions
    - child naming/selection controls
-5. Keep `vm2` as the only development backend and continue feature work from the VM runtime.
+2. Consolidate the first persistent home as the main MVP entry experience.
+3. Keep `vm2` as the only development backend and continue feature work from the VM runtime.
+4. Prepare Android/iOS build validation on top of the now-complete Phase 0 toolchain.
 
 ## Branch and Delivery Rule
 

@@ -56,11 +56,20 @@ fi
 ios_support_list=()
 android_support_list=()
 for editor_path in "${UNITY_EDITOR_PATHS[@]}"; do
-  if [ -d "${editor_path}/Contents/PlaybackEngines/iOSSupport" ]; then
-    ios_support_list+=("${editor_path}/Contents/PlaybackEngines/iOSSupport")
+  editor_root="$(cd "$(dirname "${editor_path}")" && pwd)"
+  top_level_playback_root="${editor_root}/PlaybackEngines"
+  app_playback_root="${editor_path}/Contents/PlaybackEngines"
+
+  if [ -d "${top_level_playback_root}/iOSSupport" ]; then
+    ios_support_list+=("${top_level_playback_root}/iOSSupport")
+  elif [ -d "${app_playback_root}/iOSSupport" ]; then
+    ios_support_list+=("${app_playback_root}/iOSSupport")
   fi
-  if [ -d "${editor_path}/Contents/PlaybackEngines/AndroidPlayer" ]; then
-    android_support_list+=("${editor_path}/Contents/PlaybackEngines/AndroidPlayer")
+
+  if [ -d "${top_level_playback_root}/AndroidPlayer" ]; then
+    android_support_list+=("${top_level_playback_root}/AndroidPlayer")
+  elif [ -d "${app_playback_root}/AndroidPlayer" ]; then
+    android_support_list+=("${app_playback_root}/AndroidPlayer")
   fi
 done
 

@@ -29,9 +29,12 @@
 - The SSD-backed `6000.0.71f1` editor shell currently fails macOS signature validation and should not be used yet
 - Unity Hub templates are symlinked to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unityhub/Templates`
 - Blender `4.5.1 LTS`: installed
-- `xcodebuild`: only the command line tools path is active
-- Full Xcode app installation is still missing
-- `/Applications/Xcode.app` is still absent
+- `xcodebuild` now resolves through `/Applications/Xcode.app/Contents/Developer`
+- Full Xcode app installation is complete
+- `/Applications/Xcode.app` is present and selected
+- The canonical editor `6000.4.0f1` now has:
+  - `PlaybackEngines/AndroidPlayer`
+  - `PlaybackEngines/iOSSupport`
 
 ## Current Frontend Goal
 
@@ -111,7 +114,13 @@
   - a first-home panel for responsible, child, points, progress, activities and rewards
   - a side panel for Gau preview, variant switching, retry and dev check-in
 - The regenerated bootstrap scene still validates in batch against `vm2`, and the latest probe on `2026-03-26` again reached `state=ready`
-- A graphical editor launch using `Leggau.Editor.UnityRuntimeDriver.RunBootstrapPlayMode` was exercised on `2026-03-26`, but a final visual sign-off for the new onboarding/home layout is still pending
+- A graphical editor validation using `Leggau > Run Bootstrap Play Mode` was completed on `2026-03-26`
+- That graphical validation reached `state=ready` against the VM-backed API with:
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
 - The Unity workspace had to be reopened on `2026-03-26` through the canonical `-projectPath` flow after a temporary nested project folder appeared under `mobile/`; that stray folder was removed
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination

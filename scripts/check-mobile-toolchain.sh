@@ -12,7 +12,12 @@ UNITY_EDITOR_ROOTS=(
 print_unity_modules() {
   local editor_app="$1"
   local editor_label="$2"
-  local playback_root="${editor_app}/Contents/PlaybackEngines"
+  local editor_root
+  editor_root="$(cd "$(dirname "${editor_app}")" && pwd)"
+  local playback_root="${editor_root}/PlaybackEngines"
+  if [[ ! -d "${playback_root}" ]]; then
+    playback_root="${editor_app}/Contents/PlaybackEngines"
+  fi
   local binary_path="${editor_app}/Contents/MacOS/Unity"
   local android_status="missing"
   local ios_status="missing"

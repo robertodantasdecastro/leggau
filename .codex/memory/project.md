@@ -54,11 +54,15 @@
 - The bootstrap HUD now tracks the onboarding pipeline step-by-step so auth/legal/family progress is visible during Play Mode
 - The bootstrap presentation now also includes a persistent onboarding panel and a first-home panel, so the MVP no longer depends on a purely technical HUD for the main mobile flow
 - As of `2026-03-26`, mobile development should no longer depend on a local backend fallback; VM remains the only canonical backend target
-- Unity mobile build modules are still not present in the validated editor install
+- Unity mobile build modules are now present in the validated editor install through the editor-root `PlaybackEngines/` layout
 - A second SSD-backed shell for `6000.0.71f1` exists, but it currently fails signature validation and should not be used until it is reinstalled cleanly
-- Full Xcode is still not installed; `xcodes` is available and is the preferred reproducible path for downloading to the SSD-backed tooling tree
+- Full Xcode is now installed and selected through `/Applications/Xcode.app`
 - The current delivery already includes the first Gau `.blend` and `.fbx`
 - VM promotion is now validated through `./scripts/promote-stack-to-vm.sh`
+- Phase 0 operational unlock is now complete:
+  - VM backend is running on `vm2`
+  - canonical Unity editor has Android/iOS support
+  - graphical bootstrap sign-off reached `state=ready` against the VM runtime
 
 ## Delivery Workflow
 

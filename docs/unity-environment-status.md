@@ -1,6 +1,6 @@
 # Unity Environment Status
 
-Generated: `2026-03-25 11:52:37 -03:00`
+Generated: `2026-03-26 09:47:17 -03:00`
 Editor: `6000.4.0f1`
 Project: `/Volumes/SSDExterno/Desenvolvimento/Leggau/mobile`
 
@@ -27,5 +27,5 @@ Project: `/Volumes/SSDExterno/Desenvolvimento/Leggau/mobile`
 
 ## Editor Modules
 - Editor Root: `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.4.0f1`
-- Android Support Installed: `False`
-- iOS Support Installed: `False`
+- Android Support Installed: `True`
+- iOS Support Installed: `True`
