@@ -82,10 +82,21 @@
   - canonical Unity editor has Android/iOS support
   - graphical bootstrap sign-off reached `state=ready` against the VM runtime
 - Phase A platform rulebook is now started through repo-backed docs:
+- Phase A platform rulebook is now completed through repo-backed docs:
   - `docs/platform-blueprint.md`
   - `docs/actor-matrix.md`
   - `docs/compliance-rulebook.md`
   - `docs/platform-backlog.md`
+  - `docs/platform-contracts.md`
+  - `docs/authorization-matrix.md`
+  - `docs/beta-feature-flags.md`
+  - `docs/phase-b-module-map.md`
+- The next execution phase is now Phase B:
+  - identity
+  - guardianship
+  - care-team
+  - legal/policy versions
+  - audit and moderation foundations
 - After the machine reboot later on `2026-03-26`, `vm2` had to be started again from `~/leggau`, and the refreshed batch validation still reached:
   - `state=ready`
   - `parentName=Responsavel Demo`

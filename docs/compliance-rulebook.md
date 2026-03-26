@@ -25,6 +25,14 @@ Este documento define o baseline de compliance e segurança para o Leggau em:
 - segregação entre dados de produto, mídia, auditoria e billing
 - retenção e descarte controlados por política versionada
 
+### Retenção mínima por classe de dado
+
+- `consentimentos e policy versions`: reter enquanto houver obrigação legal ou relação ativa
+- `audit_events`: reter como trilha primária de segurança e operação
+- `moderation_cases` e `incidents`: reter até encerramento e janela de revisão definida por política
+- `mídia documental`: manter pelo menor tempo operacional possível, sempre fora do código-fonte
+- `billing`: reter conforme obrigação fiscal e contratual
+
 ### Segurança de aplicação
 
 - criptografia em trânsito em todas as superfícies
@@ -39,6 +47,12 @@ Este documento define o baseline de compliance e segurança para o Leggau em:
 - IA moderadora funciona como camada de classificação, alerta e bloqueio preventivo
 - revisão humana obrigatória para incidentes relevantes
 - toda decisão automática sensível deve ser auditável
+- IA não pode liberar interação sensível por conta própria
+- IA pode:
+  - classificar
+  - sinalizar
+  - bloquear preventivamente
+  - abrir `ModerationCase`
 
 ### Interações e salas
 
@@ -54,6 +68,34 @@ Este documento define o baseline de compliance e segurança para o Leggau em:
 - OCR, classificação leve, preferências visuais e lógica não sensível devem priorizar execução no dispositivo
 - backend recebe somente o mínimo necessário para persistência, auditoria, validação e moderação
 - capabilities de biometria ficam desativadas por padrão e protegidas por feature flag, policy e revisão legal
+
+## Auditoria obrigatória
+
+Toda operação sensível deve emitir pelo menos:
+
+- `eventType`
+- `actorRole`
+- `actorUserId`
+- `resourceType`
+- `resourceId`
+- `outcome`
+- `severity`
+- `occurredAt`
+
+## Incidentes e severidade
+
+- `low`: anomalia de fluxo ou política sem impacto imediato
+- `medium`: violação potencial com necessidade de revisão
+- `high`: risco relevante para menor, dado sensível ou operação clínica
+- `critical`: evento que exige bloqueio imediato, revisão humana prioritária e trilha reforçada
+
+## Precedência de política
+
+- lei e política publicada
+- aprovação do responsável
+- vínculo clínico válido
+- feature flag técnica
+- preferência visual do usuário
 
 ## Stack de avaliação open source
 

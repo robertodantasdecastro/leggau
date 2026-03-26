@@ -59,6 +59,10 @@ npm run start:local
 - Matriz de atores: [docs/actor-matrix.md](/Volumes/SSDExterno/Desenvolvimento/Leggau/docs/actor-matrix.md)
 - Rulebook de compliance: [docs/compliance-rulebook.md](/Volumes/SSDExterno/Desenvolvimento/Leggau/docs/compliance-rulebook.md)
 - Backlog executável da plataforma: [docs/platform-backlog.md](/Volumes/SSDExterno/Desenvolvimento/Leggau/docs/platform-backlog.md)
+- Contratos multiactor: [docs/platform-contracts.md](/Volumes/SSDExterno/Desenvolvimento/Leggau/docs/platform-contracts.md)
+- Autorização por namespace: [docs/authorization-matrix.md](/Volumes/SSDExterno/Desenvolvimento/Leggau/docs/authorization-matrix.md)
+- Feature flags do beta: [docs/beta-feature-flags.md](/Volumes/SSDExterno/Desenvolvimento/Leggau/docs/beta-feature-flags.md)
+- Mapa de módulos da Fase B: [docs/phase-b-module-map.md](/Volumes/SSDExterno/Desenvolvimento/Leggau/docs/phase-b-module-map.md)
 - Timeline de entrega: [docs/mvp-timeline.md](/Volumes/SSDExterno/Desenvolvimento/Leggau/docs/mvp-timeline.md)
 
 ## Observacoes

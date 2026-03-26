@@ -6,6 +6,10 @@
 - matriz de atores: `docs/actor-matrix.md`
 - rulebook: `docs/compliance-rulebook.md`
 - backlog: `docs/platform-backlog.md`
+- contratos: `docs/platform-contracts.md`
+- autorizacao: `docs/authorization-matrix.md`
+- flags do beta: `docs/beta-feature-flags.md`
+- mapa da fase B: `docs/phase-b-module-map.md`
 
 ## Camadas
 

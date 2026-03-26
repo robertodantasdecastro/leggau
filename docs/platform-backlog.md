@@ -7,6 +7,9 @@
 - escrever rulebook de consentimento, auditoria, retenção e incidentes
 - definir limites da IA moderadora
 - definir feature flags para biometria, salas e social
+- congelar contratos multiactor por namespace
+- congelar autorização por ator e namespace
+- traduzir tudo em mapa de módulos para a Fase B
 
 ## Fase B — Backend multiactor
 

@@ -39,17 +39,19 @@
 
 ### Phase A — Platform rulebook and executable compliance
 
-- Status: `started`
+- Status: `completed`
 - Completed:
   - platform replan frozen for multiactor beta
   - blueprint created for Unity + web/PWA + admin
   - actor matrix documented
   - compliance/security rulebook documented
   - executable backlog documented
-- Remaining:
-  - translate rulebook into backend work items and policy entities
-  - freeze feature flags and moderation boundaries
-  - convert actor matrix into API/module contracts
+  - multiactor contract document created
+  - authorization matrix created
+  - beta feature flags frozen
+  - Phase B module map created
+- Exit criteria:
+  - satisfied
 
 ### Phase B — Identity, links and security base
 
@@ -103,10 +105,10 @@
 
 ## Next Execution Step
 
-1. Execute Phase A by converting the new rulebook into implementation-ready backend, frontend and admin contracts.
+1. Execute Phase B by scaffolding backend multiactor modules from the frozen contracts, flags and authorization rules.
 2. Keep `vm2` as the only development backend and treat the new docs as the canonical source for platform direction.
-3. Start backend multiactor scaffolding from the actor matrix and contract namespaces.
-4. Preserve the current Unity child flow as the seed of Phase D while adult surfaces move to web/PWA.
+3. Start with identity, guardianship, care-team, legal and audit foundations before adult shells and interaction runtime.
+4. Preserve the current Unity child flow as the seed of Phase D while Phase B creates the shared multiactor backend core.
 
 ## Branch and Delivery Rule
 

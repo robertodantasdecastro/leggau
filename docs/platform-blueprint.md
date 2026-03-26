@@ -42,6 +42,12 @@ Transformar o Leggau em uma plataforma multiactor pronta para beta fechado com:
 - `admin`
 - `support_admin`
 
+## Faixas etárias automáticas
+
+- `6-9`
+- `10-12`
+- `13-17`
+
 ## Domínios principais
 
 - `identity`: auth, reset, sessions, devices
@@ -114,6 +120,7 @@ Transformar o Leggau em uma plataforma multiactor pronta para beta fechado com:
 - escrever rulebook legal e operacional
 - fechar limites da IA moderadora
 - traduzir tudo em backlog executável
+- produzir contratos, flags e mapa de módulos para a Fase B
 
 ### Fase B
 

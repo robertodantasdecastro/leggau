@@ -127,6 +127,11 @@
   - `http://10.211.55.22:8080/api/assets-catalog`
 - End-to-end onboarding contracts now validate on VM for register, login, consents, child create, family overview, activities, rewards and progress
 - The next backend expansion wave is now defined by the platform blueprint and actor matrix
+- Backend Phase B should now follow the frozen platform artifacts:
+  - `docs/platform-contracts.md`
+  - `docs/authorization-matrix.md`
+  - `docs/beta-feature-flags.md`
+  - `docs/phase-b-module-map.md`
 - VM memory and docs sync should continue through `./scripts/sync-codex-to-vm.sh`
 - Full Phase 0 promotion should use:
   - `./scripts/promote-stack-to-vm.sh`

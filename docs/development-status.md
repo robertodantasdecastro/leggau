@@ -16,6 +16,10 @@ Date checked: `2026-03-26`
   - `docs/actor-matrix.md`
   - `docs/compliance-rulebook.md`
   - `docs/platform-backlog.md`
+  - `docs/platform-contracts.md`
+  - `docs/authorization-matrix.md`
+  - `docs/beta-feature-flags.md`
+  - `docs/phase-b-module-map.md`
 
 ## Backend Local Status
 
@@ -85,11 +89,19 @@ Date checked: `2026-03-26`
   - web responsiva/PWA for `parent_guardian` and `therapist`
   - web admin for operations, compliance, billing and support
 - Compliance, moderation, auditing and security are now treated as platform-core workstreams
-- The next execution step is now Phase A:
+- Phase A is now complete as a documentary and contractual milestone
+- Phase A deliverables now include:
   - actor matrix
-  - rulebook
-  - moderation boundaries
-  - implementation-ready backlog
+  - compliance/security rulebook
+  - multiactor contract document
+  - authorization matrix by namespace
+  - beta feature flags and boundaries
+  - Phase B module map
+- The next execution step is now Phase B:
+  - identity
+  - guardianship and care-team links
+  - consent and policy versioning
+  - audit and moderation foundations
 
 ## Mobile Mac Status
 
