@@ -40,7 +40,8 @@ Date checked: `2026-03-26`
 
 - SSH alias `vm2` resolves to `10.211.55.22`
 - Official dev backend target: `http://10.211.55.22:8080/api`
-- Codex automation now accesses `vm2` over SSH successfully through `~/.ssh/id_ed25519`
+- After the machine restart on `2026-03-26`, the VM stack had to be brought back up once more from `~/leggau`
+- Automated checks against `vm2` were revalidated after that restart and the VM gateway is healthy again
 - `~/leggau` is now the active backend runtime root on the VM
 - Docker and Docker Compose are installed and validated on the VM
 - The full remote stack is now up on `vm2`:
@@ -214,9 +215,26 @@ Date checked: `2026-03-26`
   - dedicated onboarding panel for auth, consent, child setup and home entry
   - separate first-home panel for responsible, child, Gau, progress, activities and rewards
   - mascot/actions side panel preserved for variant switching and dev check-in iteration
-- The bootstrap scene was regenerated after that UI change and the batch validation against `vm2` again reached:
+- On `2026-03-26`, the onboarding stopped auto-running on `Start()` and now waits for explicit actions in the scene:
+  - responsible auth submit
+  - consent confirmation
+  - child creation/reuse
+  - enter-home action
+  - fast dev path without silent auto-submit
+- The bootstrap scene now includes real interactive controls:
+  - responsible email, name and password fields
+  - explicit legal consent toggle
+  - child naming field
+  - onboarding action buttons for each step
+- The batch validation path now also supports an automated development run through the editor driver, without changing the user-facing runtime flow
+- After the reboot and SSH restoration on `2026-03-26`, the bootstrap scene was rebuilt and the batch validation against `vm2` again reached:
   - `state=ready`
   - `status=Dashboard carregado.`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
 - A full graphical Unity validation was completed on `2026-03-26` through the `Leggau > Run Bootstrap Play Mode` menu action
 - During that visual sign-off pass, the VM stack had to be restarted on `vm2`, after which the graphical bootstrap reached:
   - `state=ready`

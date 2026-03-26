@@ -10,6 +10,9 @@ namespace Leggau.App
 {
     public class LeggauAppBootstrap : MonoBehaviour
     {
+        private const string AutomatedDevelopmentRunKey = "leggau.bootstrap.automatedDevRun";
+        private static bool automatedDevelopmentRunRequested;
+
         [SerializeField] private TextAsset environmentAsset;
         [SerializeField] private string environmentRelativePath = "config/dev-api.json";
         [SerializeField] private ApiClient apiClient;
@@ -17,7 +20,16 @@ namespace Leggau.App
         [SerializeField] private GauVariantPreviewPresenter gauVariantPreviewPresenter;
 
         private readonly LeggauSessionState sessionState = new();
+        private AppEnvironment currentEnvironment;
         private bool isBusy;
+        private bool environmentReady;
+
+        public static void RequestAutomatedDevelopmentRun()
+        {
+            automatedDevelopmentRunRequested = true;
+            PlayerPrefs.SetInt(AutomatedDevelopmentRunKey, 1);
+            PlayerPrefs.Save();
+        }
 
         public void Configure(TextAsset environment, string environmentPath, ApiClient client, DashboardTextPresenter presenter, GauVariantPreviewPresenter previewPresenter)
         {
@@ -30,10 +42,114 @@ namespace Leggau.App
 
         private void Start()
         {
-            StartCoroutine(Bootstrap());
+            StartCoroutine(PrepareBootstrap());
         }
 
-        private IEnumerator Bootstrap()
+        public void SubmitResponsibleStep()
+        {
+            if (isBusy || !environmentReady)
+            {
+                return;
+            }
+
+            StartCoroutine(SubmitResponsibleStepRoutine(false));
+        }
+
+        public void SubmitConsentStep()
+        {
+            if (isBusy || !environmentReady)
+            {
+                return;
+            }
+
+            StartCoroutine(SubmitConsentStepRoutine());
+        }
+
+        public void SubmitChildStep()
+        {
+            if (isBusy || !environmentReady)
+            {
+                return;
+            }
+
+            StartCoroutine(SubmitChildStepRoutine());
+        }
+
+        public void CompleteHomeStep()
+        {
+            if (isBusy || !environmentReady)
+            {
+                return;
+            }
+
+            StartCoroutine(CompleteHomeStepRoutine());
+        }
+
+        public void RunDevelopmentOnboarding()
+        {
+            if (isBusy || !environmentReady)
+            {
+                return;
+            }
+
+            StartCoroutine(RunDevelopmentOnboardingRoutine());
+        }
+
+        public void RetryBootstrap()
+        {
+            if (isBusy)
+            {
+                return;
+            }
+
+            StartCoroutine(PrepareBootstrap());
+        }
+
+        public void DevCheckinFirstActivity()
+        {
+            if (isBusy)
+            {
+                return;
+            }
+
+            StartCoroutine(DevCheckinFirstActivityRoutine());
+        }
+
+        public void SelectNextGauVariant()
+        {
+            sessionState.SelectNextGauVariant();
+            if (sessionState.HomeReady)
+            {
+                dashboardPresenter?.Render(sessionState);
+            }
+            else
+            {
+                dashboardPresenter?.RenderLoadingState(sessionState, "Mascote atualizado para o onboarding.");
+            }
+
+            dashboardPresenter?.SyncOnboardingControls(sessionState, isBusy);
+            gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
+            dashboardPresenter?.SetStatus($"Mascote ativo: {sessionState.ActiveGauVariant?.displayName ?? "-"}");
+        }
+
+        public void SelectPreviousGauVariant()
+        {
+            sessionState.SelectPreviousGauVariant();
+            if (sessionState.HomeReady)
+            {
+                dashboardPresenter?.Render(sessionState);
+            }
+            else
+            {
+                dashboardPresenter?.RenderLoadingState(sessionState, "Mascote atualizado para o onboarding.");
+            }
+
+            dashboardPresenter?.SyncOnboardingControls(sessionState, isBusy);
+            gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
+            dashboardPresenter?.SetStatus($"Mascote ativo: {sessionState.ActiveGauVariant?.displayName ?? "-"}");
+        }
+
+        private IEnumerator PrepareBootstrap()
         {
             if (isBusy)
             {
@@ -41,105 +157,228 @@ namespace Leggau.App
             }
 
             isBusy = true;
+            environmentReady = false;
+            sessionState.ResetForBootstrap();
             dashboardPresenter?.ResetFlow();
-            dashboardPresenter?.SetHero("Bem-vindo ao Leggau", "Preparando o ambiente de desenvolvimento e o mascote Gau.");
+            dashboardPresenter?.SetHero("Bem-vindo ao Leggau", "Preparando a experiencia do responsavel e o mascote Gau.");
             dashboardPresenter?.RenderLoadingState(sessionState, "Carregando ambiente...");
 
-            var environment = environmentAsset != null
+            currentEnvironment = environmentAsset != null
                 ? AppEnvironmentLoader.Load(environmentAsset)
                 : AppEnvironmentLoader.LoadFromStreamingAssets(environmentRelativePath);
-            apiClient.SetBaseUrls(environment.apiBaseUrl, environment.fallbackApiBaseUrl);
+
+            apiClient.SetBaseUrls(currentEnvironment.apiBaseUrl, currentEnvironment.fallbackApiBaseUrl);
             TryLoadLocalGauCatalog();
+            ApplyDevelopmentDefaults(currentEnvironment);
 
-            var requestFailed = false;
+            dashboardPresenter?.SetHero("Onboarding pronto para comecar", "Preencha os dados do responsavel, confirme consentimentos e prepare a crianca.");
+            dashboardPresenter?.RenderLoadingState(sessionState, $"Conectado a {apiClient.ActiveBaseUrl}. Aguardando seu primeiro passo.");
 
-            if (environment.useRealAuthBootstrap)
+            environmentReady = true;
+            isBusy = false;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+
+            if (ConsumeAutomatedDevelopmentRunFlag())
             {
-                dashboardPresenter?.SetHero("Entrando como responsavel", "Criando ou reutilizando a sessao de desenvolvimento.");
-                dashboardPresenter?.MarkFlowLoading("Auth", "registro/login");
-                yield return AuthenticateWithRealAuth(environment, value => requestFailed = value);
+                StartCoroutine(RunDevelopmentOnboardingRoutine());
             }
-            else
-            {
-                dashboardPresenter?.SetHero("Ativando login dev", "Usando a trilha rapida de desenvolvimento para liberar o app.");
-                dashboardPresenter?.MarkFlowLoading("Auth", "fallback dev");
-                yield return AuthenticateWithDevLogin(environment, value => requestFailed = value);
-            }
+        }
 
-            if (requestFailed || string.IsNullOrWhiteSpace(sessionState.CurrentUserEmail))
+        private static bool ConsumeAutomatedDevelopmentRunFlag()
+        {
+            var shouldRun = automatedDevelopmentRunRequested || PlayerPrefs.GetInt(AutomatedDevelopmentRunKey, 0) == 1;
+            automatedDevelopmentRunRequested = false;
+            PlayerPrefs.DeleteKey(AutomatedDevelopmentRunKey);
+            return shouldRun;
+        }
+
+        private IEnumerator SubmitResponsibleStepRoutine(bool allowDevFallback)
+        {
+            dashboardPresenter?.ReadOnboardingDrafts(sessionState);
+
+            if (string.IsNullOrWhiteSpace(sessionState.DraftParentEmail) ||
+                string.IsNullOrWhiteSpace(sessionState.DraftParentName) ||
+                string.IsNullOrWhiteSpace(sessionState.DraftPassword))
             {
-                isBusy = false;
+                dashboardPresenter?.SetError("Preencha email, nome e senha do responsavel para continuar.");
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
                 yield break;
             }
 
-            dashboardPresenter?.MarkFlowDone("Auth", sessionState.UsedDevLoginFallback ? "login dev" : "sessao pronta");
+            isBusy = true;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, true);
+            dashboardPresenter?.SetHero("Identificando o responsavel", "Tentando cadastro ou login da conta principal.");
+            dashboardPresenter?.MarkFlowLoading("Auth", "registro/login");
+            dashboardPresenter?.RenderLoadingState(sessionState, "Autenticando responsavel...");
 
-            if (environment.autoAcceptLegalConsents && !sessionState.UsedDevLoginFallback)
+            var requestFailed = false;
+            yield return AuthenticateWithRealAuth(allowDevFallback, value => requestFailed = value);
+
+            if (requestFailed || !sessionState.IsAuthenticated)
             {
-                dashboardPresenter?.SetHero("Revisando consentimentos", "Carregando os documentos legais e registrando os aceites.");
-                dashboardPresenter?.MarkFlowLoading("Legal", "consentimentos");
-                yield return LoadAndAcceptLegalConsents(value => requestFailed = value);
+                isBusy = false;
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+                yield break;
             }
-            else
-            {
-                dashboardPresenter?.MarkFlowDone("Legal", "ignorado em dev");
-            }
+
+            dashboardPresenter?.MarkFlowDone("Auth", sessionState.UsedDevLoginFallback ? "login dev" : "autenticado");
+            dashboardPresenter?.MarkFlowLoading("Legal", "carregando documentos");
+            yield return LoadLegalDocumentsOnly(value => requestFailed = value);
 
             if (requestFailed)
             {
                 isBusy = false;
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
                 yield break;
             }
 
-            if (!sessionState.UsedDevLoginFallback)
+            if (sessionState.LegalDocuments == null || sessionState.LegalDocuments.Length == 0)
             {
-                dashboardPresenter?.MarkFlowDone("Legal", sessionState.ConsentsRecorded ? "aceites gravados" : "sem documentos");
+                dashboardPresenter?.MarkFlowDone("Legal", "sem documentos");
             }
 
-            dashboardPresenter?.MarkFlowLoading("Familia", "overview");
-            dashboardPresenter?.SetHero("Preparando a familia", "Buscando o responsavel e organizando o espaco infantil.");
-            dashboardPresenter?.SetStatus($"Carregando familia via {apiClient.ActiveBaseUrl}...");
+            dashboardPresenter?.SetHero("Consentimentos prontos", "Revise os documentos e confirme os aceites para continuar.");
+            dashboardPresenter?.RenderLoadingState(sessionState, "Responsavel autenticado. Aguarde a confirmacao dos consentimentos.");
+            isBusy = false;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+        }
 
-            yield return apiClient.GetJson(
-                $"families/overview?email={sessionState.CurrentUserEmail}",
-                response =>
-                {
-                    var family = JsonUtility.FromJson<FamilyOverviewResponse>(response);
-                    sessionState.SetFamily(family);
-                },
-                error =>
-                {
-                    requestFailed = true;
-                    dashboardPresenter?.MarkFlowFailed("Familia", "erro");
-                    dashboardPresenter?.SetError($"Falha ao carregar familia: {error}");
-                }
-            );
+        private IEnumerator SubmitConsentStepRoutine()
+        {
+            dashboardPresenter?.ReadOnboardingDrafts(sessionState);
 
-            if (!requestFailed && sessionState.ActiveChild == null)
+            if (!sessionState.IsAuthenticated)
             {
-                dashboardPresenter?.MarkFlowDone("Familia", "responsavel pronto");
+                dashboardPresenter?.SetError("Autentique o responsavel antes de confirmar os consentimentos.");
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+                yield break;
+            }
+
+            isBusy = true;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, true);
+            dashboardPresenter?.SetHero("Registrando consentimentos", "Gravando os aceites legais da jornada infantil.");
+            dashboardPresenter?.MarkFlowLoading("Legal", "aceites");
+
+            if (sessionState.LegalDocuments == null || sessionState.LegalDocuments.Length == 0)
+            {
+                dashboardPresenter?.MarkFlowDone("Legal", "sem documentos");
+                isBusy = false;
+                dashboardPresenter?.RenderLoadingState(sessionState, "Nenhum consentimento extra exigido. Prossiga para a crianca.");
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+                yield break;
+            }
+
+            if (!sessionState.DraftConsentsAccepted)
+            {
+                dashboardPresenter?.SetError("Confirme explicitamente os consentimentos para continuar.");
+                isBusy = false;
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+                yield break;
+            }
+
+            var requestFailed = false;
+            yield return RecordLegalConsents(value => requestFailed = value);
+
+            if (requestFailed)
+            {
+                isBusy = false;
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+                yield break;
+            }
+
+            dashboardPresenter?.MarkFlowDone("Legal", "aceites gravados");
+            dashboardPresenter?.SetHero("Crianca pronta para entrar", "Agora vamos reutilizar ou criar o primeiro perfil infantil.");
+            dashboardPresenter?.RenderLoadingState(sessionState, "Consentimentos salvos. Prepare a crianca.");
+            isBusy = false;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+        }
+
+        private IEnumerator SubmitChildStepRoutine()
+        {
+            dashboardPresenter?.ReadOnboardingDrafts(sessionState);
+
+            if (!sessionState.IsAuthenticated)
+            {
+                dashboardPresenter?.SetError("Autentique o responsavel antes de preparar a crianca.");
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+                yield break;
+            }
+
+            if (sessionState.LegalDocuments != null && sessionState.LegalDocuments.Length > 0 && !sessionState.ConsentsRecorded)
+            {
+                dashboardPresenter?.SetError("Confirme os consentimentos legais antes de criar ou selecionar a crianca.");
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+                yield break;
+            }
+
+            isBusy = true;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, true);
+            dashboardPresenter?.SetHero("Preparando a crianca", "Buscando a familia e criando o primeiro perfil infantil quando necessario.");
+            dashboardPresenter?.MarkFlowLoading("Familia", "overview");
+            dashboardPresenter?.RenderLoadingState(sessionState, $"Carregando familia via {apiClient.ActiveBaseUrl}...");
+
+            var requestFailed = false;
+            yield return LoadFamilyOverview(value => requestFailed = value);
+
+            if (requestFailed)
+            {
+                isBusy = false;
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+                yield break;
+            }
+
+            dashboardPresenter?.MarkFlowDone("Familia", "familia carregada");
+
+            if (sessionState.ActiveChild == null)
+            {
+                if (string.IsNullOrWhiteSpace(sessionState.DraftChildName))
+                {
+                    dashboardPresenter?.SetError("Informe o nome da crianca para criar o primeiro perfil.");
+                    isBusy = false;
+                    dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+                    yield break;
+                }
+
                 dashboardPresenter?.MarkFlowLoading("Crianca", "criacao inicial");
                 yield return EnsureFirstChildProfile(value => requestFailed = value);
             }
-            else if (!requestFailed)
+            else
             {
-                dashboardPresenter?.MarkFlowDone("Familia", "familia carregada");
                 dashboardPresenter?.MarkFlowDone("Crianca", "perfil existente");
             }
 
             if (requestFailed || sessionState.ActiveChild == null)
             {
                 dashboardPresenter?.MarkFlowFailed("Crianca", "nao disponivel");
-                dashboardPresenter?.SetError("Nao foi possivel preparar o perfil infantil inicial.");
+                dashboardPresenter?.SetError("Nao foi possivel preparar o perfil infantil.");
                 isBusy = false;
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
                 yield break;
             }
 
             dashboardPresenter?.MarkFlowDone("Crianca", "perfil ativo");
-            dashboardPresenter?.SetHero("Montando a primeira home", "Carregando atividades, catalogo, recompensas e progresso.");
-            dashboardPresenter?.SetStatus("Carregando atividades...");
-            dashboardPresenter?.MarkFlowLoading("Atividades", "catalogo diario");
+            dashboardPresenter?.SetHero("Tudo pronto para entrar", "Com responsavel, consentimentos e crianca definidos, a home pode ser carregada.");
+            dashboardPresenter?.RenderLoadingState(sessionState, "Crianca preparada. Entre na home para concluir o onboarding.");
+            isBusy = false;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+        }
 
+        private IEnumerator CompleteHomeStepRoutine()
+        {
+            if (sessionState.ActiveChild == null)
+            {
+                dashboardPresenter?.SetError("Prepare a crianca antes de entrar na home.");
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+                yield break;
+            }
+
+            isBusy = true;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, true);
+            dashboardPresenter?.SetHero("Montando a primeira home", "Carregando atividades, catalogo, recompensas e progresso.");
+            dashboardPresenter?.MarkFlowLoading("Atividades", "catalogo diario");
+            dashboardPresenter?.RenderLoadingState(sessionState, "Carregando atividades...");
+
+            var requestFailed = false;
             yield return apiClient.GetJson(
                 "activities",
                 response =>
@@ -152,17 +391,17 @@ namespace Leggau.App
                     requestFailed = true;
                     dashboardPresenter?.MarkFlowFailed("Atividades", "erro");
                     dashboardPresenter?.SetError($"Falha ao carregar atividades: {error}");
-                }
-            );
+                });
 
             if (requestFailed)
             {
                 isBusy = false;
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
                 yield break;
             }
 
             dashboardPresenter?.MarkFlowDone("Atividades", "atividades prontas");
-            dashboardPresenter?.SetStatus("Carregando catalogo 3D...");
+            dashboardPresenter?.RenderLoadingState(sessionState, "Carregando catalogo 3D...");
 
             yield return apiClient.GetJson(
                 "assets-catalog",
@@ -175,17 +414,17 @@ namespace Leggau.App
                 {
                     requestFailed = true;
                     dashboardPresenter?.SetError($"Falha ao carregar catalogo: {error}");
-                }
-            );
+                });
 
             if (requestFailed)
             {
                 isBusy = false;
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
                 yield break;
             }
 
-            dashboardPresenter?.SetStatus("Carregando recompensas...");
             dashboardPresenter?.MarkFlowLoading("Recompensas", "saldo e premios");
+            dashboardPresenter?.RenderLoadingState(sessionState, "Carregando recompensas...");
 
             yield return apiClient.GetJson(
                 $"rewards?childId={sessionState.ActiveChild.id}",
@@ -199,46 +438,87 @@ namespace Leggau.App
                     requestFailed = true;
                     dashboardPresenter?.MarkFlowFailed("Recompensas", "erro");
                     dashboardPresenter?.SetError($"Falha ao carregar recompensas: {error}");
-                }
-            );
+                });
 
             if (requestFailed)
             {
                 isBusy = false;
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
                 yield break;
             }
 
             dashboardPresenter?.MarkFlowDone("Recompensas", "saldo pronto");
             dashboardPresenter?.MarkFlowLoading("Progresso", "resumo diario");
             yield return LoadProgressSummary();
+
             if (!isBusy)
             {
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
                 yield break;
             }
 
+            sessionState.SetHomeReady(true);
             dashboardPresenter?.MarkFlowDone("Progresso", "painel pronto");
-            dashboardPresenter?.SetHero("Tudo pronto", "Responsavel, consentimentos, crianca e dashboard preparados para o MVP.");
+            dashboardPresenter?.SetHero("Tudo pronto", "Responsavel, crianca, Gau e home do MVP carregados.");
             dashboardPresenter?.Render(sessionState);
+            dashboardPresenter?.SyncOnboardingControls(sessionState, false);
             gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
             isBusy = false;
         }
 
-        private IEnumerator AuthenticateWithRealAuth(AppEnvironment environment, System.Action<bool> setFailed)
+        private IEnumerator RunDevelopmentOnboardingRoutine()
         {
-            dashboardPresenter?.SetStatus("Registrando sessao de desenvolvimento...");
+            if (!sessionState.IsAuthenticated)
+            {
+                yield return SubmitResponsibleStepRoutine(currentEnvironment != null && currentEnvironment.allowDevLoginFallback);
+                if (!sessionState.IsAuthenticated)
+                {
+                    yield break;
+                }
+            }
 
-            var email = string.IsNullOrWhiteSpace(environment.devLoginEmail) ? "parent@leggau.local" : environment.devLoginEmail;
-            var name = string.IsNullOrWhiteSpace(environment.devLoginName) ? "Responsavel Demo" : environment.devLoginName;
-            var password = string.IsNullOrWhiteSpace(environment.devAuthPassword) ? "Leggau123!" : environment.devAuthPassword;
+            if (sessionState.LegalDocuments != null && sessionState.LegalDocuments.Length > 0 && !sessionState.ConsentsRecorded)
+            {
+                sessionState.SetDraftConsentsAccepted(true);
+                dashboardPresenter?.SetConsentAccepted(true);
+                yield return SubmitConsentStepRoutine();
+                if (sessionState.LegalDocuments.Length > 0 && !sessionState.ConsentsRecorded)
+                {
+                    yield break;
+                }
+            }
+
+            if (sessionState.ActiveChild == null)
+            {
+                if (string.IsNullOrWhiteSpace(sessionState.DraftChildName))
+                {
+                    sessionState.SetDraftChildName("Gau");
+                }
+
+                yield return SubmitChildStepRoutine();
+                if (sessionState.ActiveChild == null)
+                {
+                    yield break;
+                }
+            }
+
+            if (!sessionState.HomeReady)
+            {
+                yield return CompleteHomeStepRoutine();
+            }
+        }
+
+        private IEnumerator AuthenticateWithRealAuth(bool allowDevFallback, System.Action<bool> setFailed)
+        {
             var registerSucceeded = false;
             var shouldTryLogin = false;
             string authError = null;
 
             var registerRequest = new RegisterRequest
             {
-                email = email,
-                password = password,
-                displayName = name,
+                email = sessionState.DraftParentEmail,
+                password = sessionState.DraftPassword,
+                displayName = sessionState.DraftParentName,
             };
 
             yield return apiClient.PostJson(
@@ -258,12 +538,10 @@ namespace Leggau.App
 
             if (!registerSucceeded && shouldTryLogin)
             {
-                dashboardPresenter?.SetStatus("Conta existente, entrando com login real...");
-
                 var loginRequest = new LoginRequest
                 {
-                    email = email,
-                    password = password,
+                    email = sessionState.DraftParentEmail,
+                    password = sessionState.DraftPassword,
                 };
 
                 yield return apiClient.PostJson(
@@ -276,23 +554,20 @@ namespace Leggau.App
                         registerSucceeded = true;
                         authError = null;
                     },
-                    error =>
-                    {
-                        authError = error;
-                    });
+                    error => authError = error);
             }
 
             if (registerSucceeded)
             {
-                dashboardPresenter?.MarkFlowDone("Auth", "autenticado");
+                setFailed?.Invoke(false);
                 yield break;
             }
 
-            if (environment.allowDevLoginFallback)
+            if (allowDevFallback && currentEnvironment != null && currentEnvironment.allowDevLoginFallback)
             {
-                dashboardPresenter?.SetStatus("Auth real indisponivel, usando fallback dev...");
+                dashboardPresenter?.SetStatus("Auth real indisponivel, usando o login dev para acelerar o onboarding.");
                 dashboardPresenter?.MarkFlowLoading("Auth", "fallback dev");
-                yield return AuthenticateWithDevLogin(environment, setFailed);
+                yield return AuthenticateWithDevLogin(setFailed);
                 yield break;
             }
 
@@ -301,17 +576,14 @@ namespace Leggau.App
             dashboardPresenter?.SetError($"Falha na autenticacao real: {authError}");
         }
 
-        private IEnumerator AuthenticateWithDevLogin(AppEnvironment environment, System.Action<bool> setFailed)
+        private IEnumerator AuthenticateWithDevLogin(System.Action<bool> setFailed)
         {
-            dashboardPresenter?.SetStatus("Entrando com login dev...");
-
+            var requestFailed = false;
             var loginRequest = new DevLoginRequest
             {
-                email = string.IsNullOrWhiteSpace(environment.devLoginEmail) ? "parent@leggau.local" : environment.devLoginEmail,
-                name = string.IsNullOrWhiteSpace(environment.devLoginName) ? "Responsavel Demo" : environment.devLoginName,
+                email = string.IsNullOrWhiteSpace(sessionState.DraftParentEmail) ? currentEnvironment.devLoginEmail : sessionState.DraftParentEmail,
+                name = string.IsNullOrWhiteSpace(sessionState.DraftParentName) ? currentEnvironment.devLoginName : sessionState.DraftParentName,
             };
-
-            var requestFailed = false;
 
             yield return apiClient.PostJson(
                 "auth/dev-login",
@@ -326,8 +598,7 @@ namespace Leggau.App
                     requestFailed = true;
                     dashboardPresenter?.MarkFlowFailed("Auth", "dev indisponivel");
                     dashboardPresenter?.SetError($"Falha no login dev: {error}");
-                }
-            );
+                });
 
             if (requestFailed)
             {
@@ -336,12 +607,11 @@ namespace Leggau.App
             }
 
             dashboardPresenter?.MarkFlowDone("Auth", "login dev");
+            setFailed?.Invoke(false);
         }
 
-        private IEnumerator LoadAndAcceptLegalConsents(System.Action<bool> setFailed)
+        private IEnumerator LoadLegalDocumentsOnly(System.Action<bool> setFailed)
         {
-            dashboardPresenter?.SetStatus("Carregando documentos legais...");
-
             var requestFailed = false;
 
             yield return apiClient.GetJson(
@@ -351,6 +621,8 @@ namespace Leggau.App
                     var wrapped = $"{{\"items\":{response}}}";
                     var documents = JsonUtility.FromJson<LegalDocumentsEnvelope>(wrapped);
                     sessionState.SetLegalDocuments(documents?.items);
+                    sessionState.SetDraftConsentsAccepted(false);
+                    dashboardPresenter?.SetConsentAccepted(false);
                 },
                 error =>
                 {
@@ -365,11 +637,12 @@ namespace Leggau.App
                 yield break;
             }
 
-            if (sessionState.LegalDocuments == null || sessionState.LegalDocuments.Length == 0)
-            {
-                yield break;
-            }
+            setFailed?.Invoke(false);
+        }
 
+        private IEnumerator RecordLegalConsents(System.Action<bool> setFailed)
+        {
+            var requestFailed = false;
             var currentUserEmail = sessionState.CurrentUserEmail;
             if (string.IsNullOrWhiteSpace(currentUserEmail))
             {
@@ -385,8 +658,6 @@ namespace Leggau.App
                 {
                     continue;
                 }
-
-                dashboardPresenter?.SetStatus($"Registrando aceite: {document.title}...");
 
                 var request = new RecordConsentRequest
                 {
@@ -411,6 +682,29 @@ namespace Leggau.App
                     yield break;
                 }
             }
+
+            setFailed?.Invoke(false);
+        }
+
+        private IEnumerator LoadFamilyOverview(System.Action<bool> setFailed)
+        {
+            var requestFailed = false;
+
+            yield return apiClient.GetJson(
+                $"families/overview?email={sessionState.CurrentUserEmail}",
+                response =>
+                {
+                    var family = JsonUtility.FromJson<FamilyOverviewResponse>(response);
+                    sessionState.SetFamily(family);
+                },
+                error =>
+                {
+                    requestFailed = true;
+                    dashboardPresenter?.MarkFlowFailed("Familia", "erro");
+                    dashboardPresenter?.SetError($"Falha ao carregar familia: {error}");
+                });
+
+            setFailed?.Invoke(requestFailed);
         }
 
         private IEnumerator EnsureFirstChildProfile(System.Action<bool> setFailed)
@@ -420,23 +714,18 @@ namespace Leggau.App
             {
                 setFailed?.Invoke(true);
                 dashboardPresenter?.MarkFlowFailed("Crianca", "sem responsavel");
-                dashboardPresenter?.SetError("Nao foi possivel criar a crianca inicial sem email do responsavel.");
+                dashboardPresenter?.SetError("Nao foi possivel criar a crianca sem email do responsavel.");
                 yield break;
             }
 
-            dashboardPresenter?.SetStatus("Criando primeiro perfil infantil...");
-
-            var parentName = sessionState.Parent?.name;
-            var firstName = string.IsNullOrWhiteSpace(parentName) ? "Explorador Gau" : $"Filho de {parentName.Split(' ')[0]}";
+            var requestFailed = false;
             var request = new CreateChildRequest
             {
                 parentEmail = parentEmail,
-                name = firstName,
+                name = sessionState.DraftChildName,
                 age = 6,
                 avatar = sessionState.ActiveGauVariant?.id ?? "gau-rounded-pixel",
             };
-
-            var requestFailed = false;
 
             yield return apiClient.PostJson(
                 "children",
@@ -453,49 +742,7 @@ namespace Leggau.App
                     dashboardPresenter?.SetError($"Falha ao criar perfil infantil: {error}");
                 });
 
-            if (requestFailed)
-            {
-                setFailed?.Invoke(true);
-            }
-        }
-
-        public void DevCheckinFirstActivity()
-        {
-            if (isBusy)
-            {
-                return;
-            }
-
-            StartCoroutine(DevCheckinFirstActivityRoutine());
-        }
-
-        public void RetryBootstrap()
-        {
-            if (isBusy)
-            {
-                return;
-            }
-
-            sessionState.ResetForBootstrap();
-            dashboardPresenter?.RenderLoadingState(sessionState, "Reiniciando bootstrap...");
-            gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
-            StartCoroutine(Bootstrap());
-        }
-
-        public void SelectNextGauVariant()
-        {
-            sessionState.SelectNextGauVariant();
-            dashboardPresenter?.Render(sessionState);
-            gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
-            dashboardPresenter?.SetStatus($"Mascote ativo: {sessionState.ActiveGauVariant?.displayName ?? "-"}");
-        }
-
-        public void SelectPreviousGauVariant()
-        {
-            sessionState.SelectPreviousGauVariant();
-            dashboardPresenter?.Render(sessionState);
-            gauVariantPreviewPresenter?.ShowVariant(sessionState.ActiveGauVariant);
-            dashboardPresenter?.SetStatus($"Mascote ativo: {sessionState.ActiveGauVariant?.displayName ?? "-"}");
+            setFailed?.Invoke(requestFailed);
         }
 
         private IEnumerator DevCheckinFirstActivityRoutine()
@@ -507,6 +754,7 @@ namespace Leggau.App
             }
 
             isBusy = true;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, true);
             dashboardPresenter?.SetStatus("Registrando check-in de desenvolvimento...");
 
             var request = new CreateCheckinRequest
@@ -530,12 +778,12 @@ namespace Leggau.App
                 {
                     requestFailed = true;
                     dashboardPresenter?.SetError($"Falha ao registrar check-in: {error}");
-                }
-            );
+                });
 
             if (requestFailed)
             {
                 isBusy = false;
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
                 yield break;
             }
 
@@ -551,17 +799,18 @@ namespace Leggau.App
                     requestFailed = true;
                     dashboardPresenter?.MarkFlowFailed("Recompensas", "erro");
                     dashboardPresenter?.SetError($"Falha ao atualizar recompensas: {error}");
-                }
-            );
+                });
 
             if (requestFailed)
             {
                 isBusy = false;
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
                 yield break;
             }
 
             yield return LoadProgressSummary();
             dashboardPresenter?.Render(sessionState);
+            dashboardPresenter?.SyncOnboardingControls(sessionState, false);
             dashboardPresenter?.SetStatus($"Check-in concluido via {apiClient.ActiveBaseUrl}.");
             isBusy = false;
         }
@@ -583,13 +832,22 @@ namespace Leggau.App
                     requestFailed = true;
                     dashboardPresenter?.MarkFlowFailed("Progresso", "erro");
                     dashboardPresenter?.SetError($"Falha ao carregar progresso: {error}");
-                }
-            );
+                });
 
             if (requestFailed)
             {
                 isBusy = false;
             }
+        }
+
+        private void ApplyDevelopmentDefaults(AppEnvironment environment)
+        {
+            var email = string.IsNullOrWhiteSpace(environment.devLoginEmail) ? "parent@leggau.local" : environment.devLoginEmail;
+            var name = string.IsNullOrWhiteSpace(environment.devLoginName) ? "Responsavel Demo" : environment.devLoginName;
+            var password = string.IsNullOrWhiteSpace(environment.devAuthPassword) ? "Leggau123!" : environment.devAuthPassword;
+            sessionState.SetDraftResponsible(email, name, password);
+            sessionState.SetDraftChildName("Gau");
+            sessionState.SetDraftConsentsAccepted(false);
         }
 
         private void TryLoadLocalGauCatalog()

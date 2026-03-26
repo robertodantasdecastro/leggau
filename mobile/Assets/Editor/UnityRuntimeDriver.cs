@@ -10,10 +10,15 @@ namespace Leggau.Editor
     {
         private const string BootstrapScenePath = "Assets/Scenes/Bootstrap/Bootstrap.unity";
         private const double ValidationTimeoutSeconds = 30d;
+        private const string PendingPlayModeKey = "leggau.editor.pendingPlayMode";
+        private const string PendingValidationKey = "leggau.editor.pendingValidation";
+        private const string ValidationStartedAtKey = "leggau.editor.validationStartedAtUtc";
 
-        private static DateTime validationStartedAtUtc;
-        private static string validationProbePath;
-        private static bool validationActive;
+        static UnityRuntimeDriver()
+        {
+            EditorApplication.update -= DrivePendingState;
+            EditorApplication.update += DrivePendingState;
+        }
 
         [MenuItem("Leggau/Run Bootstrap Play Mode")]
         public static void RunBootstrapPlayMode()
@@ -23,14 +28,23 @@ namespace Leggau.Editor
                 EditorApplication.isPlaying = false;
             }
 
+            SessionState.SetBool(PendingPlayModeKey, true);
             EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
             EditorSceneManager.OpenScene(BootstrapScenePath);
-            EditorApplication.delayCall += EnterPlayMode;
+        }
+
+        [MenuItem("Leggau/Run Bootstrap Development Flow")]
+        public static void RunBootstrapDevelopmentFlow()
+        {
+            Leggau.App.LeggauAppBootstrap.RequestAutomatedDevelopmentRun();
+            RunBootstrapPlayMode();
         }
 
         [MenuItem("Leggau/Stop Play Mode")]
         public static void StopPlayMode()
         {
+            SessionState.SetBool(PendingPlayModeKey, false);
+            SessionState.SetBool(PendingValidationKey, false);
             if (EditorApplication.isPlaying)
             {
                 EditorApplication.isPlaying = false;
@@ -39,46 +53,43 @@ namespace Leggau.Editor
 
         public static void RunBootstrapValidationAndQuit()
         {
-            validationProbePath = ResolveProbePath();
+            var validationProbePath = ResolveProbePath();
             if (!string.IsNullOrWhiteSpace(validationProbePath) && File.Exists(validationProbePath))
             {
                 File.Delete(validationProbePath);
             }
 
-            validationStartedAtUtc = DateTime.UtcNow;
-            validationActive = true;
+            Leggau.App.LeggauAppBootstrap.RequestAutomatedDevelopmentRun();
+            SessionState.SetString(ValidationStartedAtKey, DateTime.UtcNow.ToString("O"));
+            SessionState.SetBool(PendingValidationKey, true);
+            RunBootstrapPlayMode();
+        }
 
-            if (EditorApplication.isPlaying)
+        private static void DrivePendingState()
+        {
+            if (SessionState.GetBool(PendingPlayModeKey, false))
             {
-                EditorApplication.isPlaying = false;
+                if (!EditorApplication.isCompiling && !EditorApplication.isUpdating && !EditorApplication.isPlaying)
+                {
+                    SessionState.SetBool(PendingPlayModeKey, false);
+                    EditorApplication.isPlaying = true;
+                }
             }
 
-            EditorSceneManager.OpenScene(BootstrapScenePath);
-            EditorApplication.update += PollValidation;
-            EditorApplication.delayCall += EnterPlayMode;
-        }
-
-        private static void EnterPlayMode()
-        {
-            EditorApplication.delayCall -= EnterPlayMode;
-            EditorApplication.isPlaying = true;
-        }
-
-        private static void PollValidation()
-        {
-            if (!validationActive)
+            if (!SessionState.GetBool(PendingValidationKey, false))
             {
-                EditorApplication.update -= PollValidation;
                 return;
             }
 
-            if ((DateTime.UtcNow - validationStartedAtUtc).TotalSeconds > ValidationTimeoutSeconds)
+            var startedAt = ResolveValidationStartedAt();
+            if ((DateTime.UtcNow - startedAt).TotalSeconds > ValidationTimeoutSeconds)
             {
                 Debug.LogError("Leggau bootstrap validation timed out.");
                 FinishValidation(1);
                 return;
             }
 
+            var validationProbePath = ResolveProbePath();
             if (string.IsNullOrWhiteSpace(validationProbePath) || !File.Exists(validationProbePath))
             {
                 return;
@@ -101,14 +112,27 @@ namespace Leggau.Editor
 
         private static void FinishValidation(int exitCode)
         {
-            validationActive = false;
-            EditorApplication.update -= PollValidation;
+            SessionState.SetBool(PendingValidationKey, false);
+            SessionState.SetBool(PendingPlayModeKey, false);
+            SessionState.EraseString(ValidationStartedAtKey);
+
             if (EditorApplication.isPlaying)
             {
                 EditorApplication.isPlaying = false;
             }
 
             EditorApplication.Exit(exitCode);
+        }
+
+        private static DateTime ResolveValidationStartedAt()
+        {
+            var raw = SessionState.GetString(ValidationStartedAtKey, string.Empty);
+            if (DateTime.TryParse(raw, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed))
+            {
+                return parsed;
+            }
+
+            return DateTime.UtcNow;
         }
 
         private static string ResolveProbePath()

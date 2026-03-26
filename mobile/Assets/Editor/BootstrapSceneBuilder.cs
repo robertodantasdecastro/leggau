@@ -36,6 +36,7 @@ namespace Leggau.Editor
             var runtimeProbe = runtime.AddComponent<BootstrapRuntimeProbe>();
             var rewardHud = runtime.AddComponent<RewardHudPresenter>();
             var dashboard = runtime.AddComponent<DashboardTextPresenter>();
+            var onboardingControls = runtime.AddComponent<OnboardingControlView>();
             var previewPresenter = runtime.AddComponent<GauVariantPreviewPresenter>();
             var bootstrap = runtime.AddComponent<LeggauAppBootstrap>();
 
@@ -69,8 +70,21 @@ namespace Leggau.Editor
                 views.flow,
                 rewardHud,
                 runtimeProbe,
+                onboardingControls,
                 views.onboardingRoot.gameObject,
                 views.homeRoot.gameObject);
+            onboardingControls.Bind(
+                views.parentEmailInput,
+                views.parentNameInput,
+                views.passwordInput,
+                views.childNameInput,
+                views.legalConsentToggle,
+                views.legalDocuments,
+                views.authAction,
+                views.legalAction,
+                views.childAction,
+                views.homeAction,
+                views.devAction);
 
             bootstrap.Configure(
                 null,
@@ -80,8 +94,9 @@ namespace Leggau.Editor
                 previewPresenter);
             PersistBootstrapBindings(bootstrap, "config/dev-api.json", apiClient, dashboard, previewPresenter);
 
-            BuildActionButton(views.actionsRoot, bootstrap);
+            BuildHomeActionButton(views.actionsRoot, bootstrap);
             BuildVariantControls(views.actionsRoot, bootstrap);
+            BuildOnboardingActions(views, bootstrap);
             ConfigureVariantPreview(previewPresenter, stageRoot);
             EditorSceneManager.SaveScene(scene, ScenePath);
             EnsureBuildSettings(ScenePath);
@@ -177,6 +192,42 @@ namespace Leggau.Editor
             CreateLabel("ActionTitle", actionPanel.transform, new Vector2(0.08f, 0.92f), new Vector2(0.92f, 0.98f), 22, FontStyle.Bold, TextAnchor.MiddleLeft, "Mascote e acoes");
             CreateLabel("ActionHint", actionPanel.transform, new Vector2(0.08f, 0.86f), new Vector2(0.92f, 0.92f), 13, FontStyle.Italic, TextAnchor.MiddleLeft, "Valide onboarding, check-ins e variantes do Gau");
 
+            var authCard = CreatePanel("AuthCard", onboardingPanel.transform, new Vector2(0.06f, 0.53f), new Vector2(0.94f, 0.82f), new Color(1f, 1f, 1f, 0.74f));
+            var legalCard = CreatePanel("LegalCard", onboardingPanel.transform, new Vector2(0.06f, 0.34f), new Vector2(0.94f, 0.51f), new Color(1f, 1f, 1f, 0.74f));
+            var childCard = CreatePanel("ChildCard", onboardingPanel.transform, new Vector2(0.06f, 0.14f), new Vector2(0.94f, 0.32f), new Color(1f, 1f, 1f, 0.74f));
+            var entryCard = CreatePanel("EntryCard", onboardingPanel.transform, new Vector2(0.06f, 0.02f), new Vector2(0.94f, 0.12f), new Color(1f, 1f, 1f, 0.74f));
+
+            var authStep = CreateLabel("AuthStepValue", authCard.transform, new Vector2(0.04f, 0.7f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.UpperLeft, "Identificacao do responsavel");
+            var parentEmailInput = CreateInputField("ParentEmailInput", authCard.transform, new Vector2(0.04f, 0.43f), new Vector2(0.96f, 0.61f), "Email do responsavel");
+            var parentNameInput = CreateInputField("ParentNameInput", authCard.transform, new Vector2(0.04f, 0.24f), new Vector2(0.96f, 0.42f), "Nome do responsavel");
+            var passwordInput = CreateInputField("ParentPasswordInput", authCard.transform, new Vector2(0.04f, 0.05f), new Vector2(0.96f, 0.23f), "Senha");
+            passwordInput.contentType = InputField.ContentType.Password;
+            passwordInput.ForceLabelUpdate();
+
+            var legalStep = CreateLabel("LegalStepValue", legalCard.transform, new Vector2(0.04f, 0.72f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.UpperLeft, "Consentimentos e documentos");
+            var legalDocuments = CreateLabel("LegalDocumentsValue", legalCard.transform, new Vector2(0.04f, 0.24f), new Vector2(0.96f, 0.72f), 12, FontStyle.Normal, TextAnchor.UpperLeft, "Documentos legais");
+            var legalConsentToggle = CreateToggleField("LegalConsentToggle", legalCard.transform, new Vector2(0.04f, 0.05f), new Vector2(0.96f, 0.22f), "Confirmo os consentimentos desta etapa");
+
+            var childStep = CreateLabel("ChildStepValue", childCard.transform, new Vector2(0.04f, 0.64f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.UpperLeft, "Criacao ou selecao da crianca");
+            var childNameInput = CreateInputField("ChildNameInput", childCard.transform, new Vector2(0.04f, 0.18f), new Vector2(0.96f, 0.52f), "Nome da crianca");
+
+            var homeStep = CreateLabel("HomeStepValue", entryCard.transform, new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.92f), 12, FontStyle.Normal, TextAnchor.UpperLeft, "Entrada na home");
+
+            var authAction = BuildPrimaryButton(authCard.transform, "SubmitAuthButton", new Vector2(0.55f, 0.05f), new Vector2(0.96f, 0.2f), "Entrar / cadastrar");
+            var legalAction = BuildPrimaryButton(legalCard.transform, "SubmitLegalButton", new Vector2(0.55f, 0.05f), new Vector2(0.96f, 0.2f), "Confirmar consentimentos");
+            var childAction = BuildPrimaryButton(childCard.transform, "SubmitChildButton", new Vector2(0.55f, 0.56f), new Vector2(0.96f, 0.82f), "Preparar crianca");
+            var homeAction = BuildPrimaryButton(entryCard.transform, "EnterHomeButton", new Vector2(0.04f, 0.12f), new Vector2(0.58f, 0.88f), "Entrar na home");
+            var devAction = BuildSecondaryButton(
+                entryCard.transform,
+                "FastDevButton",
+                new Vector2(0.62f, 0.12f),
+                new Vector2(0.96f, 0.88f),
+                "Modo dev rapido",
+                null,
+                new Color(0.48f, 0.84f, 0.67f, 0.94f),
+                new Color(0.61f, 0.9f, 0.76f, 0.98f),
+                new Color(0.35f, 0.74f, 0.57f, 0.98f));
+
             return new HudViews
             {
                 onboardingRoot = onboardingPanel.transform,
@@ -186,10 +237,10 @@ namespace Leggau.Editor
                 status = CreateCardLabel("StatusCard", "Status do app", actionPanel.transform, new Vector2(0.08f, 0.74f), new Vector2(0.92f, 0.84f), 15, "Status"),
                 onboardingTitle = CreateLabel("OnboardingTitle", onboardingPanel.transform, new Vector2(0.06f, 0.91f), new Vector2(0.94f, 0.98f), 24, FontStyle.Bold, TextAnchor.MiddleLeft, "Onboarding do responsavel"),
                 onboardingBody = CreateLabel("OnboardingBody", onboardingPanel.transform, new Vector2(0.06f, 0.84f), new Vector2(0.94f, 0.91f), 14, FontStyle.Italic, TextAnchor.UpperLeft, "Autenticacao, consentimentos e crianca inicial."),
-                authStep = CreateCardLabel("AuthStepCard", "1. Identificacao", onboardingPanel.transform, new Vector2(0.06f, 0.66f), new Vector2(0.94f, 0.82f), 14, "Aguardando auth"),
-                legalStep = CreateCardLabel("LegalStepCard", "2. Consentimentos", onboardingPanel.transform, new Vector2(0.06f, 0.48f), new Vector2(0.94f, 0.64f), 14, "Aguardando documentos"),
-                childStep = CreateCardLabel("ChildStepCard", "3. Crianca", onboardingPanel.transform, new Vector2(0.06f, 0.3f), new Vector2(0.94f, 0.46f), 14, "Aguardando perfil infantil"),
-                homeStep = CreateCardLabel("HomeStepCard", "4. Entrada na home", onboardingPanel.transform, new Vector2(0.06f, 0.12f), new Vector2(0.94f, 0.28f), 13, "Aguardando dashboard"),
+                authStep = authStep,
+                legalStep = legalStep,
+                childStep = childStep,
+                homeStep = homeStep,
                 parent = CreateCardLabel("ParentCard", "Responsavel", homePanel.transform, new Vector2(0.05f, 0.74f), new Vector2(0.95f, 0.86f), 14, "Responsavel"),
                 child = CreateCardLabel("ChildCard", "Crianca ativa", homePanel.transform, new Vector2(0.05f, 0.61f), new Vector2(0.95f, 0.73f), 14, "Crianca"),
                 points = CreateCardLabel("PointsCard", "Resumo da home", homePanel.transform, new Vector2(0.05f, 0.49f), new Vector2(0.95f, 0.6f), 14, "Pontos"),
@@ -200,11 +251,22 @@ namespace Leggau.Editor
                 flow = CreateCardLabel("FlowCard", "Checklist tecnico", actionPanel.transform, new Vector2(0.08f, 0.49f), new Vector2(0.92f, 0.72f), 12, "Etapas"),
                 gauVariant = CreateCardLabel("GauVariantCard", "Mascote ativo", actionPanel.transform, new Vector2(0.08f, 0.31f), new Vector2(0.92f, 0.48f), 13, "Mascote"),
                 catalog = CreateCardLabel("CatalogCard", "Catalogo 3D", actionPanel.transform, new Vector2(0.08f, 0.14f), new Vector2(0.92f, 0.3f), 12, "Catalogo"),
+                legalDocuments = legalDocuments,
+                parentEmailInput = parentEmailInput,
+                parentNameInput = parentNameInput,
+                passwordInput = passwordInput,
+                childNameInput = childNameInput,
+                legalConsentToggle = legalConsentToggle,
+                authAction = authAction,
+                legalAction = legalAction,
+                childAction = childAction,
+                homeAction = homeAction,
+                devAction = devAction,
                 actionsRoot = actionPanel.transform,
             };
         }
 
-        private static void BuildActionButton(Transform parent, LeggauAppBootstrap bootstrap)
+        private static void BuildHomeActionButton(Transform parent, LeggauAppBootstrap bootstrap)
         {
             var buttonObject = CreateUiObject("CheckinButton", parent);
             var rectTransform = buttonObject.AddComponent<RectTransform>();
@@ -225,6 +287,34 @@ namespace Leggau.Editor
             UnityEventTools.AddPersistentListener(button.onClick, bootstrap.DevCheckinFirstActivity);
 
             CreateLabel("CheckinButtonLabel", buttonObject.transform, Vector2.zero, Vector2.one, 18, FontStyle.Bold, TextAnchor.MiddleCenter, "Registrar primeira atividade");
+        }
+
+        private static void BuildOnboardingActions(HudViews views, LeggauAppBootstrap bootstrap)
+        {
+            UnityEventTools.AddPersistentListener(views.authAction.onClick, bootstrap.SubmitResponsibleStep);
+            UnityEventTools.AddPersistentListener(views.legalAction.onClick, bootstrap.SubmitConsentStep);
+            UnityEventTools.AddPersistentListener(views.childAction.onClick, bootstrap.SubmitChildStep);
+            UnityEventTools.AddPersistentListener(views.homeAction.onClick, bootstrap.CompleteHomeStep);
+            UnityEventTools.AddPersistentListener(views.devAction.onClick, bootstrap.RunDevelopmentOnboarding);
+        }
+
+        private static Button BuildPrimaryButton(
+            Transform parent,
+            string name,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            string label)
+        {
+            return BuildSecondaryButton(
+                parent,
+                name,
+                anchorMin,
+                anchorMax,
+                label,
+                null,
+                new Color(1f, 0.78f, 0.3f, 0.92f),
+                new Color(1f, 0.84f, 0.45f, 0.98f),
+                new Color(0.97f, 0.68f, 0.22f, 0.98f));
         }
 
         private static void BuildVariantControls(Transform parent, LeggauAppBootstrap bootstrap)
@@ -257,7 +347,7 @@ namespace Leggau.Editor
                 new Color(0.35f, 0.74f, 0.57f, 0.98f));
         }
 
-        private static void BuildSecondaryButton(
+        private static Button BuildSecondaryButton(
             Transform parent,
             string name,
             Vector2 anchorMin,
@@ -284,9 +374,13 @@ namespace Leggau.Editor
             colors.highlightedColor = highlightedColor ?? new Color(0.56f, 0.79f, 1f, 0.98f);
             colors.pressedColor = pressedColor ?? new Color(0.29f, 0.61f, 0.87f, 0.98f);
             button.colors = colors;
-            UnityEventTools.AddPersistentListener(button.onClick, action);
+            if (action != null)
+            {
+                UnityEventTools.AddPersistentListener(button.onClick, action);
+            }
 
             CreateLabel($"{name}Label", buttonObject.transform, Vector2.zero, Vector2.one, 14, FontStyle.Bold, TextAnchor.MiddleCenter, label);
+            return button;
         }
 
         private static void ConfigureVariantPreview(GauVariantPreviewPresenter presenter, Transform stageRoot)
@@ -335,6 +429,46 @@ namespace Leggau.Editor
             var cardObject = CreatePanel(name, parent, anchorMin, anchorMax, new Color(1f, 1f, 1f, 0.7f));
             CreateLabel($"{name}Title", cardObject.transform, new Vector2(0.04f, 0.7f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.MiddleLeft, title);
             return CreateLabel($"{name}Value", cardObject.transform, new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.76f), fontSize, FontStyle.Normal, TextAnchor.UpperLeft, initialText);
+        }
+
+        private static InputField CreateInputField(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, string placeholder)
+        {
+            var fieldObject = CreatePanel(name, parent, anchorMin, anchorMax, new Color(0.98f, 0.97f, 0.94f, 0.98f));
+            var image = fieldObject.GetComponent<Image>();
+            if (image != null)
+            {
+                image.color = new Color(0.98f, 0.97f, 0.94f, 0.98f);
+            }
+
+            var inputField = fieldObject.AddComponent<InputField>();
+            var text = CreateLabel($"{name}Text", fieldObject.transform, new Vector2(0.04f, 0.16f), new Vector2(0.96f, 0.84f), 14, FontStyle.Normal, TextAnchor.MiddleLeft, string.Empty);
+            var placeholderView = CreateLabel($"{name}Placeholder", fieldObject.transform, new Vector2(0.04f, 0.16f), new Vector2(0.96f, 0.84f), 14, FontStyle.Italic, TextAnchor.MiddleLeft, placeholder);
+
+            inputField.textComponent = text.GetComponent<Text>();
+            inputField.placeholder = placeholderView.GetComponent<Text>();
+            inputField.lineType = InputField.LineType.SingleLine;
+            inputField.text = string.Empty;
+            return inputField;
+        }
+
+        private static Toggle CreateToggleField(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, string label)
+        {
+            var toggleObject = CreateUiObject(name, parent);
+            var rectTransform = toggleObject.AddComponent<RectTransform>();
+            rectTransform.anchorMin = anchorMin;
+            rectTransform.anchorMax = anchorMax;
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
+
+            var background = CreatePanel($"{name}Background", toggleObject.transform, new Vector2(0f, 0f), new Vector2(0.12f, 1f), new Color(1f, 1f, 1f, 0.88f));
+            var checkmark = CreatePanel($"{name}Checkmark", background.transform, new Vector2(0.22f, 0.22f), new Vector2(0.78f, 0.78f), new Color(0.31f, 0.72f, 0.49f, 0.98f));
+            var labelView = CreateLabel($"{name}Label", toggleObject.transform, new Vector2(0.16f, 0f), new Vector2(1f, 1f), 12, FontStyle.Normal, TextAnchor.MiddleLeft, label);
+
+            var toggle = toggleObject.AddComponent<Toggle>();
+            toggle.graphic = checkmark.GetComponent<Image>();
+            toggle.targetGraphic = background.GetComponent<Image>();
+            checkmark.SetActive(false);
+            return toggle;
         }
 
         private static void PersistBootstrapBindings(
@@ -453,6 +587,17 @@ namespace Leggau.Editor
             public TextValueView gauVariant;
             public TextValueView catalog;
             public TextValueView flow;
+            public TextValueView legalDocuments;
+            public InputField parentEmailInput;
+            public InputField parentNameInput;
+            public InputField passwordInput;
+            public InputField childNameInput;
+            public Toggle legalConsentToggle;
+            public Button authAction;
+            public Button legalAction;
+            public Button childAction;
+            public Button homeAction;
+            public Button devAction;
             public Transform actionsRoot;
         }
 

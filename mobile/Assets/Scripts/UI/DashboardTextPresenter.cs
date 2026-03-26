@@ -2,6 +2,7 @@ using System.Text;
 using Leggau.App;
 using Leggau.Gameplay;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Leggau.UI
 {
@@ -39,6 +40,7 @@ namespace Leggau.UI
         [SerializeField] private TextValueView flowLabel;
         [SerializeField] private RewardHudPresenter rewardHudPresenter;
         [SerializeField] private BootstrapRuntimeProbe runtimeProbe;
+        [SerializeField] private OnboardingControlView onboardingControls;
         [SerializeField] private GameObject onboardingRoot;
         [SerializeField] private GameObject homeRoot;
 
@@ -68,6 +70,7 @@ namespace Leggau.UI
             TextValueView flow,
             RewardHudPresenter rewardHud,
             BootstrapRuntimeProbe probe,
+            OnboardingControlView controls,
             GameObject onboardingPanel,
             GameObject homePanel)
         {
@@ -92,6 +95,7 @@ namespace Leggau.UI
             flowLabel = flow;
             rewardHudPresenter = rewardHud;
             runtimeProbe = probe;
+            onboardingControls = controls;
             onboardingRoot = onboardingPanel;
             homeRoot = homePanel;
             ResetFlow();
@@ -109,6 +113,22 @@ namespace Leggau.UI
             RenderOnboardingSteps();
             SetPanelState(false);
             RenderFlow();
+        }
+
+        public void SyncOnboardingControls(LeggauSessionState session, bool busy)
+        {
+            onboardingControls?.PopulateFromSession(session);
+            onboardingControls?.ApplyState(session, busy);
+        }
+
+        public void ReadOnboardingDrafts(LeggauSessionState session)
+        {
+            onboardingControls?.ReadDrafts(session);
+        }
+
+        public void SetConsentAccepted(bool accepted)
+        {
+            onboardingControls?.SetConsentAccepted(accepted);
         }
 
         public void SetHero(string title, string body)
@@ -212,7 +232,7 @@ namespace Leggau.UI
         {
             if (onboardingRoot != null)
             {
-                onboardingRoot.SetActive(!homeReady);
+                onboardingRoot.SetActive(true);
             }
 
             if (homeRoot != null)
@@ -237,8 +257,12 @@ namespace Leggau.UI
         public void RenderLoadingState(LeggauSessionState session, string status)
         {
             ApplySessionSnapshot(session);
-            runtimeProbe?.ReportSession(session);
-            SetPanelState(false);
+            if (session != null && session.HomeReady)
+            {
+                runtimeProbe?.ReportSession(session);
+            }
+            SetPanelState(session != null && session.HomeReady);
+            SyncOnboardingControls(session, true);
             SetStatus(status);
         }
 
@@ -246,7 +270,8 @@ namespace Leggau.UI
         {
             ApplySessionSnapshot(session);
             runtimeProbe?.ReportSession(session);
-            SetPanelState(true);
+            SetPanelState(session != null && session.HomeReady);
+            SyncOnboardingControls(session, false);
             SetStatus("Dashboard carregado.");
         }
 

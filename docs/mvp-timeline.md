@@ -87,7 +87,7 @@
 
 ### Phase 5 — Mobile MVP functional
 
-- Status: `foundation ready, integration pending`
+- Status: `interactive onboarding in progress`
 - Completed:
   - Unity bootstrap, Gau catalog and art variants
   - generated bootstrap scene
@@ -99,9 +99,14 @@
   - onboarding/bootstrap progress is now visible as a live checklist inside the Unity HUD
   - the same backend contract is now validated on `vm2`
   - bootstrap UI now has a persistent onboarding panel and a first-home panel instead of only debug cards
+  - onboarding is now action-driven instead of silent on startup
+  - the bootstrap scene now exposes interactive inputs for responsible auth, consent confirmation and child naming
+  - the editor driver now supports an automated development pass for repeatable validation of the onboarding flow
+  - after the machine reboot and VM restart on `2026-03-26`, batch validation again reached `state=ready` against `vm2`
 - Remaining:
-  - replace the current dev-automation-led onboarding with player-facing interactive inputs where needed
-  - visually confirm the same flow in the graphical editor after each major UI pass
+  - refine the onboarding layout from functional UI into stronger product UI
+  - persist the first-home experience as the main entry state after onboarding
+  - keep validating the same flow in the graphical editor after each major UI pass
 
 ### Phase 6 and beyond
 
@@ -112,9 +117,9 @@
 ## Next Execution Step
 
 1. Add the next layer of interactive UI:
-   - explicit responsible/session entry
-   - consent confirmation actions
-   - child naming/selection controls
+   - stronger visual treatment for responsible/session entry
+   - clearer consent review and acceptance copy
+   - child selection/creation affordances
 2. Consolidate the first persistent home as the main MVP entry experience.
 3. Keep `vm2` as the only development backend and continue feature work from the VM runtime.
 4. Prepare Android/iOS build validation on top of the now-complete Phase 0 toolchain.

@@ -20,6 +20,13 @@ namespace Leggau.Gameplay
         public int ActiveGauVariantIndex { get; private set; }
         public bool UsedDevLoginFallback { get; private set; }
         public bool ConsentsRecorded { get; private set; }
+        public string DraftParentEmail { get; private set; }
+        public string DraftParentName { get; private set; }
+        public string DraftPassword { get; private set; }
+        public string DraftChildName { get; private set; }
+        public bool DraftConsentsAccepted { get; private set; }
+        public bool HomeReady { get; private set; }
+        public bool IsAuthenticated => !string.IsNullOrWhiteSpace(AccessToken);
 
         public GauVariantDescriptor ActiveGauVariant
         {
@@ -152,6 +159,7 @@ namespace Leggau.Gameplay
         public void MarkConsentsRecorded()
         {
             ConsentsRecorded = true;
+            DraftConsentsAccepted = true;
         }
 
         public void SetGauVariantsCatalog(GauVariantsCatalog response)
@@ -176,6 +184,30 @@ namespace Leggau.Gameplay
             LegalDocuments = null;
             UsedDevLoginFallback = false;
             ConsentsRecorded = false;
+            DraftConsentsAccepted = false;
+            HomeReady = false;
+        }
+
+        public void SetDraftResponsible(string email, string name, string password)
+        {
+            DraftParentEmail = email?.Trim() ?? string.Empty;
+            DraftParentName = name?.Trim() ?? string.Empty;
+            DraftPassword = password ?? string.Empty;
+        }
+
+        public void SetDraftChildName(string name)
+        {
+            DraftChildName = name?.Trim() ?? string.Empty;
+        }
+
+        public void SetDraftConsentsAccepted(bool accepted)
+        {
+            DraftConsentsAccepted = accepted;
+        }
+
+        public void SetHomeReady(bool ready)
+        {
+            HomeReady = ready;
         }
 
         public void SelectNextGauVariant()

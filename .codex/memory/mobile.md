@@ -47,15 +47,15 @@
 - Load rewards and progress
 - Present dashboard flow that can evolve into actual game scenes
 - Place the Gau mascot in the first bootstrap scene
-- Keep the VM API as primary and localhost as fallback
+- Keep the VM API as the only canonical backend target
 
 ## Immediate Next UI Targets
 
-1. Boot and environment loading
-2. Dev authentication and session state
-3. Activities dashboard and progress
-4. Check-in action
-5. Reward display
+1. Interactive responsible/session entry
+2. Explicit legal acceptance
+3. Child creation or reuse
+4. Persistent first-home flow
+5. Check-in and reward refresh
 
 ## Current Recommended Next Step
 
@@ -113,7 +113,22 @@
   - an onboarding panel for auth, legal, child setup and home entry
   - a first-home panel for responsible, child, points, progress, activities and rewards
   - a side panel for Gau preview, variant switching, retry and dev check-in
+- The onboarding is now driven by explicit scene actions instead of silent `Start()` automation
+- The bootstrap scene now exposes:
+  - responsible email, name and password fields
+  - legal confirmation toggle
+  - child naming field
+  - per-step action buttons
+  - a fast dev action for controlled validation against the VM backend
 - The regenerated bootstrap scene still validates in batch against `vm2`, and the latest probe on `2026-03-26` again reached `state=ready`
+- After the machine reboot on `2026-03-26`, the VM stack had to be restarted and a fresh batch validation still reached:
+  - `state=ready`
+  - `status=Dashboard carregado.`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
 - A graphical editor validation using `Leggau > Run Bootstrap Play Mode` was completed on `2026-03-26`
 - That graphical validation reached `state=ready` against the VM-backed API with:
   - `parentName=Responsavel Demo`
