@@ -55,16 +55,24 @@
 
 ### Phase B — Identity, links and security base
 
-- Status: `planned`
-- Scope:
-  - auth, reset, sessions and devices
-  - guardian links and care-team memberships
-  - RBAC/ABAC
-  - audit, secret handling and secure logging
+- Status: `completed`
+- Completed:
+  - `app_users.role` expanded to the canonical app actor roles
+  - persistent opaque sessions now run through `device_sessions`
+  - password reset moved into persistent tokens and canonical namespace aliases
+  - `guardian_links` now govern family/minor reads
+  - `care_team_memberships` now exist with explicit admin approval gate
+  - `policy_versions` now project legal documents for the current clients
+  - `consent_records` now persist `policyVersionId`
+  - `audit_events`, `moderation_cases` and `incidents` foundations are in runtime
+  - `families/overview` and `children` now serve the Unity flow from the new source of truth
+  - the VM runtime validates register, consent, child/adolescent provisioning, sessions, care-team and password reset flows
+- Exit criteria:
+  - satisfied
 
 ### Phase C — Adult web/PWA surfaces
 
-- Status: `planned`
+- Status: `next`
 - Scope:
   - parent shell
   - therapist shell
@@ -105,10 +113,10 @@
 
 ## Next Execution Step
 
-1. Execute Phase B by scaffolding backend multiactor modules from the frozen contracts, flags and authorization rules.
-2. Keep `vm2` as the only development backend and treat the new docs as the canonical source for platform direction.
-3. Start with identity, guardianship, care-team, legal and audit foundations before adult shells and interaction runtime.
-4. Preserve the current Unity child flow as the seed of Phase D while Phase B creates the shared multiactor backend core.
+1. Execute Phase C on top of the completed Phase B backend core.
+2. Build the `parent_guardian` and `therapist` responsive shells in `web/portal` with the new multiactor endpoints.
+3. Expand web/admin to expose the new operational surfaces for policy versions, audit, incidents and care-team approvals.
+4. Preserve the current Unity child flow as a compatibility client while the adult surfaces catch up to the backend runtime now live on `vm2`.
 
 ## Branch and Delivery Rule
 

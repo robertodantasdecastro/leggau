@@ -91,12 +91,20 @@
   - `docs/authorization-matrix.md`
   - `docs/beta-feature-flags.md`
   - `docs/phase-b-module-map.md`
-- The next execution phase is now Phase B:
-  - identity
-  - guardianship
-  - care-team
-  - legal/policy versions
-  - audit and moderation foundations
+- Phase B backend core is now completed in runtime on `vm2`:
+  - canonical `parent_guardian` and `therapist` self-register
+  - persistent opaque sessions in `device_sessions`
+  - password reset through canonical and legacy-compatible routes
+  - `guardian_links` as the family/minor source of truth
+  - `care_team_memberships` with explicit admin gate before activation
+  - `policy_versions` backing legal projection and versioned consent writes
+  - `audit_events`, `moderation_cases` and `incidents` scaffolding in the live API
+  - compatibility preserved for the current Unity `children` and `families/overview` flow
+- The next execution phase is now Phase C:
+  - parent_guardian web/PWA shell
+  - therapist web/PWA shell
+  - responsive supervision/reporting flows
+  - admin exposure of the new multiactor operational surfaces
 - After the machine reboot later on `2026-03-26`, `vm2` had to be started again from `~/leggau`, and the refreshed batch validation still reached:
   - `state=ready`
   - `parentName=Responsavel Demo`

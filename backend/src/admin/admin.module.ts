@@ -26,6 +26,6 @@ import { AdminTokenGuard } from './admin-token.guard';
   ],
   controllers: [AdminAuthController, AdminController],
   providers: [AdminAuthService, AdminService, AdminTokenGuard],
-  exports: [AdminAuthService],
+  exports: [AdminAuthService, AdminTokenGuard],
 })
 export class AdminModule {}

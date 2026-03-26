@@ -17,7 +17,7 @@ export class AppUser {
   @Column()
   displayName: string;
 
-  @Column({ default: 'parent' })
+  @Column({ default: 'parent_guardian' })
   role: string;
 
   @Column()

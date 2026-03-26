@@ -18,7 +18,7 @@
 - `web/portal`: portal institucional e base para entrada web responsiva/PWA
 - `web/admin`: web admin tecnico-operacional, compliance e billing
 - `postgres`: persistencia principal
-- `redis`: cache leve, sessões e futura base de presença/filas
+- `redis`: cache leve e futura base de presença/filas; as sessoes canônicas da Fase B agora persistem em Postgres
 - `nginx`: reverse proxy e entrega de portal, admin, API e uploads
 
 ## Superfícies por ator
@@ -47,14 +47,18 @@
 - `adolescent_profiles`
 - `guardian_links`
 - `care_team_memberships`
+- `parent_approvals`
+- `invites`
 - `activities`
 - `rewards`
 - `progress_entries`
 - `legal_documents`
+- `policy_versions`
 - `consent_records`
 - `interaction_policies`
 - `audit_events`
 - `moderation_cases`
+- `incidents`
 - `device_sessions`
 - `media_verification_jobs`
 - `billing_providers`
@@ -75,3 +79,11 @@
 - Builds mobile, cache local do Unity e artefatos do Blender devem usar diretorios dentro de `./.data/`.
 - Processamento deve priorizar execução no dispositivo quando seguro e viável.
 - A EC2 de producao deve replicar essa topologia antes de endurecer a operacao.
+
+## Estado runtime atual
+
+- A Fase B ja roda no backend oficial da `vm2` com migracoes formais em Postgres.
+- `GuardianLink` e a fonte de verdade para responsavel-menor.
+- `device_sessions` sustenta sessoes opacas persistidas por dispositivo.
+- `policy_versions` projeta as policies legais publicadas para os clientes atuais.
+- A compatibilidade com o Unity atual permanece via `auth`, `legal`, `children` e `families/overview`, enquanto as superficies adultas avancam para os namespaces canônicos na Fase C.

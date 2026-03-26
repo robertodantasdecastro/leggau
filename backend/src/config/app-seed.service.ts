@@ -9,8 +9,12 @@ import { BillingPlan } from '../common/entities/billing-plan.entity';
 import { BillingProvider } from '../common/entities/billing-provider.entity';
 import { BillingTransaction } from '../common/entities/billing-transaction.entity';
 import { ChildProfile } from '../common/entities/child-profile.entity';
+import { GuardianLink } from '../common/entities/guardian-link.entity';
+import { InteractionPolicy } from '../common/entities/interaction-policy.entity';
 import { LegalDocument } from '../common/entities/legal-document.entity';
 import { ParentProfile } from '../common/entities/parent-profile.entity';
+import { PolicyVersion } from '../common/entities/policy-version.entity';
+import { resolveAgeBand } from '../common/platform.constants';
 import { Reward } from '../common/entities/reward.entity';
 import { randomBytes, scryptSync } from 'crypto';
 
@@ -28,12 +32,18 @@ export class AppSeedService implements OnModuleInit {
     private readonly parentRepository: Repository<ParentProfile>,
     @InjectRepository(ChildProfile)
     private readonly childRepository: Repository<ChildProfile>,
+    @InjectRepository(GuardianLink)
+    private readonly guardianLinkRepository: Repository<GuardianLink>,
+    @InjectRepository(InteractionPolicy)
+    private readonly interactionPolicyRepository: Repository<InteractionPolicy>,
     @InjectRepository(Activity)
     private readonly activityRepository: Repository<Activity>,
     @InjectRepository(Reward)
     private readonly rewardRepository: Repository<Reward>,
     @InjectRepository(LegalDocument)
     private readonly legalDocumentRepository: Repository<LegalDocument>,
+    @InjectRepository(PolicyVersion)
+    private readonly policyVersionRepository: Repository<PolicyVersion>,
     @InjectRepository(BillingProvider)
     private readonly billingProviderRepository: Repository<BillingProvider>,
     @InjectRepository(BillingPlan)
@@ -61,7 +71,7 @@ export class AppSeedService implements OnModuleInit {
       'parent@leggau.local';
 
     const { passwordHash, passwordSalt } = this.hashPassword('Parent123!');
-    await this.appUserRepository.save(
+    const savedUser = await this.appUserRepository.save(
       this.appUserRepository.create({
         email: defaultEmail,
         displayName:
@@ -69,26 +79,56 @@ export class AppSeedService implements OnModuleInit {
           'Responsavel Demo',
         passwordHash,
         passwordSalt,
-        role: 'parent',
+        role: 'parent_guardian',
       }),
     );
 
     const savedParent = await this.parentRepository.save(
       this.parentRepository.create({
+        appUserId: savedUser.id,
         name:
           this.configService.get<string>('DEFAULT_PARENT_NAME') ??
           'Responsavel Demo',
         email: defaultEmail,
-        role: 'guardian',
+        role: 'parent_guardian',
       }),
     );
 
-    await this.childRepository.save(
+    const savedChild = await this.childRepository.save(
       this.childRepository.create({
         parentId: savedParent.id,
         name: 'Gau',
         age: 6,
+        ageBand: resolveAgeBand(6),
         avatar: 'mascot-thumb-blue',
+      }),
+    );
+
+    await this.guardianLinkRepository.save(
+      this.guardianLinkRepository.create({
+        parentUserId: savedUser.id,
+        parentProfileId: savedParent.id,
+        minorProfileId: savedChild.id,
+        minorRole: 'child',
+        status: 'active',
+        approvedAt: new Date(),
+        createdBy: savedUser.id,
+        auditContext: {
+          source: 'seed',
+        },
+      }),
+    );
+
+    await this.interactionPolicyRepository.save(
+      this.interactionPolicyRepository.create({
+        minorProfileId: savedChild.id,
+        minorRole: 'child',
+        ageBand: savedChild.ageBand,
+        roomsEnabled: true,
+        presenceEnabled: true,
+        messagingMode: 'none',
+        therapistParticipationAllowed: false,
+        effectiveFrom: new Date(),
       }),
     );
 
@@ -176,34 +216,63 @@ export class AppSeedService implements OnModuleInit {
   }
 
   private async seedLegalDocuments() {
-    if ((await this.legalDocumentRepository.count()) > 0) {
-      return;
+    if ((await this.legalDocumentRepository.count()) === 0) {
+      await this.legalDocumentRepository.save(
+        [
+          {
+            key: 'privacy-policy',
+            version: '2026.03',
+            title: 'Politica de Privacidade',
+            audience: 'parent_guardian',
+            contentMarkdown:
+              'Politica base do beta fechado do Leggau, com foco em protecao de dados de responsaveis e criancas.',
+            effectiveAt: new Date(),
+          },
+          {
+            key: 'terms-of-use',
+            version: '2026.03',
+            title: 'Termos de Uso',
+            audience: 'parent_guardian',
+            contentMarkdown:
+              'Termos base de uso do Leggau para beta fechado e operacao controlada.',
+            effectiveAt: new Date(),
+          },
+        ].map((document) => this.legalDocumentRepository.create(document)),
+      );
+
+      this.logger.log('Seeded legal documents.');
     }
 
-    await this.legalDocumentRepository.save(
-      [
-        {
-          key: 'privacy-policy',
-          version: '2026.03',
-          title: 'Politica de Privacidade',
-          audience: 'parent',
-          contentMarkdown:
-            'Politica base do beta fechado do Leggau, com foco em protecao de dados de responsaveis e criancas.',
-          effectiveAt: new Date(),
-        },
-        {
-          key: 'terms-of-use',
-          version: '2026.03',
-          title: 'Termos de Uso',
-          audience: 'parent',
-          contentMarkdown:
-            'Termos base de uso do Leggau para beta fechado e operacao controlada.',
-          effectiveAt: new Date(),
-        },
-      ].map((document) => this.legalDocumentRepository.create(document)),
-    );
+    const documents = await this.legalDocumentRepository.find({
+      where: { isActive: true },
+      order: { createdAt: 'ASC' },
+    });
 
-    this.logger.log('Seeded legal documents.');
+    for (const document of documents) {
+      const existingPolicy = await this.policyVersionRepository.findOne({
+        where: {
+          policyKey: document.key,
+          version: document.version,
+        },
+      });
+
+      if (existingPolicy) {
+        continue;
+      }
+
+      await this.policyVersionRepository.save(
+        this.policyVersionRepository.create({
+          policyKey: document.key,
+          version: document.version,
+          title: document.title,
+          audience: document.audience,
+          contentMarkdown: document.contentMarkdown,
+          status: document.isActive ? 'published' : 'draft',
+          sourceDocumentId: document.id,
+          publishedAt: document.effectiveAt,
+        }),
+      );
+    }
   }
 
   private async seedBilling() {

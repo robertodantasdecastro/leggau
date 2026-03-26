@@ -22,6 +22,9 @@ export class ChildProfile {
   @Column({ type: 'int' })
   age: number;
 
+  @Column({ default: '6-9' })
+  ageBand: string;
+
   @Column({ default: 'default-avatar' })
   avatar: string;
 

@@ -34,8 +34,16 @@ export class AdminAuthService {
       throw new UnauthorizedException('Invalid admin credentials');
     }
 
+    const session = await this.sessionStoreService.createSession(
+      'admin',
+      admin.id,
+      admin.email,
+      admin.role,
+      7200,
+    );
+
     return {
-      ...this.sessionStoreService.createSession('admin', admin.id, admin.email, 7200),
+      ...session,
       admin: this.serializeAdmin(admin),
     };
   }
@@ -85,8 +93,8 @@ export class AdminAuthService {
     return this.serializeAdmin(admin);
   }
 
-  getAdminSession(token?: string) {
-    const session = this.sessionStoreService.getSession(token);
+  async getAdminSession(token?: string) {
+    const session = await this.sessionStoreService.getSession(token, 'admin');
     if (!session || session.scope !== 'admin') {
       return null;
     }

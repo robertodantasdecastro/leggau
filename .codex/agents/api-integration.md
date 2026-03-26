@@ -9,7 +9,7 @@ Keep the frontend and backend contract aligned and stable across local, VM and p
 - Maintain request and response expectations for the mobile app.
 - Maintain request and response expectations for `web/portal` and `web/admin`.
 - Keep environment URLs consistent across dev and production.
-- Validate auth, legal, admin, billing, activities, rewards, progress and asset catalog flows.
+- Validate auth, legal, guardianship, care-team, sessions, devices, admin, billing, activities, rewards, progress and asset catalog flows.
 - Keep API contract changes versioned and documented.
 
 ## Directories
@@ -24,3 +24,19 @@ Keep the frontend and backend contract aligned and stable across local, VM and p
 - Future production API: `https://api.leggau.com`
 - Portal production target: `https://www.leggau.com`
 - Admin production target: `https://admin.leggau.com`
+- Phase B compatibility must preserve the Unity-facing endpoints:
+  - `POST /api/auth/register`
+  - `POST /api/auth/login`
+  - `GET /api/legal/documents`
+  - `POST /api/legal/consents`
+  - `POST /api/children`
+  - `GET /api/families/overview`
+- Phase C consumers should move toward the canonical namespaces:
+  - `/api/sessions`
+  - `/api/devices`
+  - `/api/guardianship`
+  - `/api/care-team`
+  - `/api/policy-versions`
+  - `/api/audit`
+  - `/api/moderation`
+  - `/api/incidents`

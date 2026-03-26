@@ -19,7 +19,7 @@ export class ProgressEntry {
   @Column()
   activityId: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   notes?: string;
 
   @Column({ type: 'int' })

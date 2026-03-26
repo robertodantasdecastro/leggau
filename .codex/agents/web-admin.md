@@ -14,6 +14,12 @@ Own the technical and commercial admin surface of Leggau, including operations, 
   - service status
   - VM resources
   - billing sandbox overview
+- Own admin approvals and governance surfaces for:
+  - `care-team` activation
+  - `policy-versions`
+  - `audit`
+  - `moderation`
+  - `incidents`
 - Keep the admin compatible with the backend namespace under `/api/admin/*`.
 - Preserve the future production target `https://admin.leggau.com`.
 
@@ -28,3 +34,4 @@ Own the technical and commercial admin surface of Leggau, including operations, 
 - Admin builds locally.
 - Admin can authenticate against the backend.
 - Admin reflects operational and billing sandbox status from the API without hardcoded-only mocks.
+- Admin is ready to consume the Phase B governance endpoints as the next execution wave starts.

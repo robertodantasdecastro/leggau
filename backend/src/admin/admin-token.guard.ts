@@ -10,14 +10,14 @@ import { AdminAuthService } from './admin-auth.service';
 export class AdminTokenGuard implements CanActivate {
   constructor(private readonly adminAuthService: AdminAuthService) {}
 
-  canActivate(context: ExecutionContext) {
+  async canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();
     const authorization = request.headers.authorization as string | undefined;
     const token = authorization?.startsWith('Bearer ')
       ? authorization.slice('Bearer '.length)
       : null;
 
-    const session = this.adminAuthService.getAdminSession(token ?? undefined);
+    const session = await this.adminAuthService.getAdminSession(token ?? undefined);
     if (!session) {
       throw new UnauthorizedException('Admin session required');
     }

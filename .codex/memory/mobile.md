@@ -41,6 +41,7 @@
 - keep Unity as the primary surface for `child` and `adolescent`
 - evolve the current bootstrap into actor-aware child/adolescent shells
 - preserve the VM API as the only canonical backend target
+- preserve compatibility with the new Phase B multiactor backend core while adult surfaces catch up
 - leave adult experiences to responsive web/PWA surfaces in the next platform wave
 - follow the frozen Phase A contracts and policy boundaries while the backend multiactor core is implemented
 
@@ -51,6 +52,7 @@
 3. Policy-aware interaction gates
 4. More interactive first-home experience
 5. Check-in and reward refresh
+6. Keep compatibility with `guardian_links`, `policy_versions` and persistent sessions while Phase C starts on web
 
 ## Current Recommended Next Step
 
@@ -164,6 +166,11 @@
   - `activityCount=3`
   - `rewardCount=2`
 - With Phase A completed, the mobile side should wait for Phase B shared contracts before introducing deeper actor-specific runtime changes beyond the current child seed flow
+- With Phase B now completed in runtime, the mobile side can safely keep consuming:
+  - `families/overview` backed by `guardian_links`
+  - legal documents projected from `policy_versions`
+  - persistent opaque sessions compatible with resume/retry behavior
+  - adolescent provisioning returned through the legacy-compatible `children` projection
 - The Unity workspace had to be reopened on `2026-03-26` through the canonical `-projectPath` flow after a temporary nested project folder appeared under `mobile/`; that stray folder was removed
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination

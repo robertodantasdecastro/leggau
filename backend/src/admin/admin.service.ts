@@ -31,6 +31,10 @@ export class AdminService {
   async getOverview() {
     const segments = await this.getUserSegments();
     const health = await this.healthService.getStatus();
+    const [activeAppLogins, activeAdminLogins] = await Promise.all([
+      this.sessionStoreService.countActive('app'),
+      this.sessionStoreService.countActive('admin'),
+    ]);
 
     return {
       generatedAt: new Date().toISOString(),
@@ -44,20 +48,23 @@ export class AdminService {
       metrics: {
         downloads: segments.parents * 4 + 120,
         reportedInstallations: segments.parents * 2 + 40,
-        activeLogins:
-          this.sessionStoreService.countActive('app') +
-          this.sessionStoreService.countActive('admin'),
+        activeLogins: activeAppLogins + activeAdminLogins,
       },
       health,
     };
   }
 
   async getRealtime() {
+    const [appSessions, adminSessions] = await Promise.all([
+      this.sessionStoreService.countActive('app'),
+      this.sessionStoreService.countActive('admin'),
+    ]);
+
     return {
       generatedAt: new Date().toISOString(),
       sessions: {
-        app: this.sessionStoreService.countActive('app'),
-        admin: this.sessionStoreService.countActive('admin'),
+        app: appSessions,
+        admin: adminSessions,
       },
       system: this.getSystemResources(),
       services: await this.getSystemServices(),
@@ -119,7 +126,7 @@ export class AdminService {
       };
     }
 
-    const token = this.sessionStoreService.issueResetToken(user.id, user.email);
+    const token = await this.sessionStoreService.issueResetToken(user.id, user.email);
 
     return {
       sent: true,

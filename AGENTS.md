@@ -107,6 +107,18 @@ Use `.env.example` as the non-sensitive source of truth.
 ## Backend Modules
 
 - `auth`
+- `password-reset`
+- `sessions`
+- `devices`
+- `guardianship`
+- `care-team`
+- `invites`
+- `parent-approvals`
+- `policy-versions`
+- `interaction-policies`
+- `audit`
+- `moderation`
+- `incidents`
 - `profiles`
 - `families`
 - `activities`
@@ -123,6 +135,7 @@ As of `2026-03-26`:
 - Official dev backend target is `vm2` at `10.211.55.22`.
 - Backend infrastructure must run on `vm2` under `~/leggau`.
 - Local backend remains fallback-only at `http://localhost:8080/api` and should stay off on the Mac unless the VM path is blocked.
+- The authoritative Phase B backend validation path is now Postgres on `vm2`; the local `sqljs` fallback is not a reliable sign-off path for the timestamp-heavy multiactor schema.
 - `vm2` SSH automation is working again and the active runtime root is `~/leggau`.
 - The full remote stack is validated on the VM:
   - `leggau-api`
@@ -141,6 +154,12 @@ As of `2026-03-26`:
   - Unity for `child` and `adolescent`
   - responsive web/PWA for `parent_guardian` and `therapist`
   - web admin for operations, compliance, moderation and billing
+- Phase B runtime is now live on the VM with:
+  - opaque persistent sessions in `device_sessions`
+  - `GuardianLink` as the canonical guardian-to-minor source of truth
+  - `CareTeamMembership` with parent and admin approval gates
+  - `policy_versions` projecting published legal policies and consent versions
+  - `audit_events` and base moderation/incident tables for security tracing
 - Mac toolchain status:
   - Docker: ready
   - Java 17: present
@@ -167,6 +186,11 @@ As of `2026-03-26`:
   - `docs/actor-matrix.md`
   - `docs/compliance-rulebook.md`
   - `docs/platform-backlog.md`
+- Phase B executable contract artifacts are now canonical docs:
+  - `docs/platform-contracts.md`
+  - `docs/authorization-matrix.md`
+  - `docs/beta-feature-flags.md`
+  - `docs/phase-b-module-map.md`
 - Heavy project files must stay on the external SSD under `/Volumes/SSDExterno/Desenvolvimento/Leggau`.
 - Local Docker persistence must stay under `./.data/docker/`, not Docker named volumes on the internal disk.
 - Cleanup and sync routines are now repository-owned scripts so the Mac coordinator and remote agents can rerun them consistently.

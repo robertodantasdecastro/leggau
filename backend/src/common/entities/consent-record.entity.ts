@@ -25,8 +25,17 @@ export class ConsentRecord {
   @Column()
   documentVersion: string;
 
+  @Column({ type: 'text', nullable: true })
+  policyVersionId?: string | null;
+
+  @Column({ default: 'accepted' })
+  status: string;
+
   @Column({ type: 'timestamp' })
   acceptedAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  revokedAt?: Date | null;
 
   @CreateDateColumn()
   createdAt: Date;

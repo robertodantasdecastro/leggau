@@ -8,6 +8,8 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli -d src/typeorm.datasource.ts migration:run",
+    "migration:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli -d src/typeorm.datasource.ts migration:revert",
     "start": "nest start",
     "start:local": "DB_HOST= REDIS_ENABLED=false nest start --watch",
     "start:dev": "nest start --watch",

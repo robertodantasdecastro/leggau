@@ -16,6 +16,7 @@
   - admin/compliance/billing
 - Backend code build passes with `cd backend && npm run build`
 - Backend runtime now lives on `vm2`; the local stack is fallback-only
+- The local `start:local` fallback is not currently a reliable sign-off path for the Phase B schema because `sqljs` does not match the timestamp-heavy Postgres runtime; authoritative validation must happen on `vm2`
 
 ## Validated Services
 
@@ -40,6 +41,13 @@
 - `POST /api/auth/dev-login`
 - `POST /api/progress/checkins`
 - `GET /api/progress/summary`
+- `POST /api/password-reset/request`
+- `POST /api/password-reset/confirm`
+- `GET /api/sessions`
+- `DELETE /api/sessions/:id`
+- `POST /api/care-team`
+- `PATCH /api/care-team/:id`
+- `PATCH /api/care-team/:id/admin`
 
 ## Persistence
 
@@ -126,12 +134,25 @@
   - `http://10.211.55.22:8080/api/legal/documents`
   - `http://10.211.55.22:8080/api/assets-catalog`
 - End-to-end onboarding contracts now validate on VM for register, login, consents, child create, family overview, activities, rewards and progress
-- The next backend expansion wave is now defined by the platform blueprint and actor matrix
-- Backend Phase B should now follow the frozen platform artifacts:
-  - `docs/platform-contracts.md`
-  - `docs/authorization-matrix.md`
-  - `docs/beta-feature-flags.md`
-  - `docs/phase-b-module-map.md`
+- Phase B multiactor runtime is now validated on the VM for:
+  - parent self-register
+  - therapist self-register
+  - password reset in canonical and legacy-compatible namespaces
+  - session revoke persistence across API restart
+  - guardian-link-backed family overview
+  - adolescent creation via `children`
+  - pending `care-team` request plus admin-gated activation
+- Postgres on the VM now contains and validates the new core tables:
+  - `guardian_links`
+  - `care_team_memberships`
+  - `device_sessions`
+  - `policy_versions`
+  - `audit_events`
+  - `moderation_cases`
+  - `incidents`
+- The next backend expansion wave is now Phase C consumer work on top of this runtime:
+  - parent and therapist web/PWA shells
+  - admin exposure of policy/audit/incident/care-team operations
 - VM memory and docs sync should continue through `./scripts/sync-codex-to-vm.sh`
 - Full Phase 0 promotion should use:
   - `./scripts/promote-stack-to-vm.sh`

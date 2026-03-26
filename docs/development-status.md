@@ -26,24 +26,24 @@ Date checked: `2026-03-26`
 - `npm run build` passes in `backend/`
 - The local stack is intended as fallback only; the official dev target is now `http://10.211.55.22:8080/api`
 - Backend infrastructure should run in `vm2` under `~/leggau`, not on the MacBook
-- Backend now includes foundation modules for:
-  - auth real
-  - legal documents and consent
-  - admin auth and operational overview
-  - billing providers, plans, transactions and sandbox overview
-- Local smoke validation passed in `start:local` for:
-  - `GET /api/legal/documents`
-  - `POST /api/auth/register`
-  - `POST /api/admin/auth/login`
-  - `GET /api/admin/overview`
-  - `GET /api/admin/billing/overview`
-  - `POST /api/admin/dev/cloudflare-alias/sync`
-- At the moment of this status refresh, `localhost:8080` was not responding, so the local fallback stack is currently down
+- Backend now includes the Phase B multiactor core for:
+  - canonical actor roles in `app_users`
+  - `guardian_links`
+  - `care_team_memberships`
+  - `device_sessions`
+  - `policy_versions`
+  - `audit_events`
+  - `moderation_cases`
+  - `incidents`
+  - compatibility responses for the current Unity runtime
+- The local `start:local` fallback is no longer the phase-signoff path:
+  - `sqljs` is not a reliable runtime for the timestamp-heavy schema now used by the multiactor backend
+  - the canonical backend validation path is Postgres on `vm2`
 - Persistence validated:
   - Compose configuration now points Postgres and Redis to `./.data/docker/` bind mounts on the external SSD
   - Uploads and backups remain under `./.data/`
   - SSD directory structure was created with `./scripts/bootstrap-ssd-storage.sh`
-  - The Docker daemon still needs a controlled `docker compose down` / `up` to re-establish the local fallback stack cleanly
+  - the authoritative migration path is now `migrationsRun=true` on the Postgres runtime, not `DATABASE_SYNC`
 
 ## vm2 Status
 
@@ -53,6 +53,7 @@ Date checked: `2026-03-26`
 - Automated checks against `vm2` were revalidated after that restart and the VM gateway is healthy again
 - `~/leggau` is now the active backend runtime root on the VM
 - Docker and Docker Compose are installed and validated on the VM
+- The API now boots on `vm2` with formal Phase B migrations enabled automatically at startup
 - The full remote stack is now up on `vm2`:
   - `leggau-api`
   - `leggau-portal`
@@ -75,7 +76,27 @@ Date checked: `2026-03-26`
   - `GET /api/activities`
   - `GET /api/rewards`
   - `GET /api/progress/summary`
+- Phase B multiactor validation now also passes against the VM:
+  - `POST /api/auth/register` for `parent_guardian`
+  - `POST /api/auth/register` for `therapist`
+  - `POST /api/password-reset/request`
+  - `POST /api/password-reset/confirm`
+  - legacy aliases `POST /api/auth/password/forgot` and `POST /api/auth/password/reset`
+  - `GET /api/sessions`
+  - `DELETE /api/sessions/:id`
+  - `POST /api/care-team`
+  - `PATCH /api/care-team/:id`
+  - `PATCH /api/care-team/:id/admin`
+- Phase B runtime checks now confirm:
+  - `guardian_links` is the live source of truth for minor access
+  - adolescent provisioning uses `adolescent_profiles` with `AgeBand=13-17`
+  - `policy_versions` backs `GET /api/legal/documents`
+  - consent writes now persist `policyVersionId`
+  - session revocation survives API container restart
+  - parent-side `care-team` updates can no longer self-approve `adminApprovalStatus`
+  - activation of `care-team` remains blocked until an admin route approves the admin side
 - During the first VM deploy on `2026-03-26`, the API initially failed behind Nginx because TypeORM used `datetime` columns incompatible with Postgres; this was corrected to `timestamp` in the shared entities and the API now boots cleanly
+- During the first Phase B deploy on `2026-03-26`, the API also failed once because the migration class name did not yet use a valid JavaScript-style timestamp suffix; this was corrected and the VM now applies the migration set cleanly
 - Phase 0 promotion helper is now validated end-to-end:
   - `scripts/promote-stack-to-vm.sh`
 - The VM preflight helper remains available for spot checks:
@@ -90,6 +111,7 @@ Date checked: `2026-03-26`
   - web admin for operations, compliance, billing and support
 - Compliance, moderation, auditing and security are now treated as platform-core workstreams
 - Phase A is now complete as a documentary and contractual milestone
+- Phase B is now complete as the first runtime multiactor backend milestone
 - Phase A deliverables now include:
   - actor matrix
   - compliance/security rulebook
@@ -97,11 +119,19 @@ Date checked: `2026-03-26`
   - authorization matrix by namespace
   - beta feature flags and boundaries
   - Phase B module map
-- The next execution step is now Phase B:
-  - identity
-  - guardianship and care-team links
-  - consent and policy versioning
-  - audit and moderation foundations
+- Phase B runtime deliverables now include:
+  - canonical self-register roles `parent_guardian` and `therapist`
+  - persistent opaque device sessions
+  - `GuardianLink`-governed family reads
+  - `CareTeamMembership` with explicit admin gate
+  - `PolicyVersion`-backed legal projection
+  - `AuditEvent` coverage across auth, legal, sessions and links
+  - compatibility-preserving `families/overview` and `children` responses for the Unity app
+- The next execution step is now Phase C:
+  - parent web/PWA shell
+  - therapist web/PWA shell
+  - responsive supervision flows
+  - reporting, permissions and care-team operations on top of the new backend core
 
 ## Mobile Mac Status
 

@@ -34,4 +34,8 @@ This directory is the canonical Codex memory for the Leggau repository.
 - `../docs/actor-matrix.md`: actor roles, permissions and supervision rules
 - `../docs/compliance-rulebook.md`: compliance, security and moderation baseline
 - `../docs/platform-backlog.md`: executable platform phases and work items
+- `../docs/platform-contracts.md`: canonical multiactor API contracts and event expectations
+- `../docs/authorization-matrix.md`: namespace authorization and auditability matrix
+- `../docs/beta-feature-flags.md`: sensitive capability flags and beta boundaries
+- `../docs/phase-b-module-map.md`: backend module ownership and Phase C consumer handoff
 - `docs/art-pipeline.md`: Gau Blender to Unity workflow
