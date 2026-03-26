@@ -379,7 +379,8 @@ namespace Leggau.UI
         {
             var builder = new StringBuilder();
             builder.AppendLine("Resumo do progresso");
-            builder.AppendLine($"{session.CompletedActivities} check-ins e {session.TotalPoints} pontos acumulados ate agora");
+            builder.AppendLine($"{session.CompletedActivities} check-ins");
+            builder.AppendLine($"{session.TotalPoints} pontos acumulados");
 
             if (session.LatestEntries == null || session.LatestEntries.Length == 0)
             {
@@ -387,14 +388,19 @@ namespace Leggau.UI
                 return builder.ToString();
             }
 
-            builder.AppendLine("Ultimos registros");
+            builder.AppendLine("Ultimo destaque");
 
-            var limit = Mathf.Min(3, session.LatestEntries.Length);
+            var limit = Mathf.Min(2, session.LatestEntries.Length);
             for (var index = 0; index < limit; index += 1)
             {
                 var item = session.LatestEntries[index];
                 var title = item.activity != null ? item.activity.title : item.activityId;
                 builder.AppendLine($"• {title}: {item.pointsEarned} pts");
+            }
+
+            if (session.LatestEntries.Length > limit)
+            {
+                builder.AppendLine($"+{session.LatestEntries.Length - limit} registro(s) recente(s)");
             }
 
             return builder.ToString();
@@ -411,9 +417,16 @@ namespace Leggau.UI
                 return builder.ToString();
             }
 
-            foreach (var item in session.Activities)
+            var limit = Mathf.Min(2, session.Activities.Length);
+            for (var index = 0; index < limit; index += 1)
             {
+                var item = session.Activities[index];
                 builder.AppendLine($"• {item.title} · {item.points} pts");
+            }
+
+            if (session.Activities.Length > limit)
+            {
+                builder.AppendLine($"+{session.Activities.Length - limit} atividade(s) na fila");
             }
 
             return builder.ToString();
@@ -430,10 +443,17 @@ namespace Leggau.UI
                 return builder.ToString();
             }
 
-            foreach (var item in session.Rewards)
+            var limit = Mathf.Min(2, session.Rewards.Length);
+            for (var index = 0; index < limit; index += 1)
             {
+                var item = session.Rewards[index];
                 var status = item.unlocked ? "liberada" : "bloqueada";
                 builder.AppendLine($"• {item.title} · {item.cost} pts · {status}");
+            }
+
+            if (session.Rewards.Length > limit)
+            {
+                builder.AppendLine($"+{session.Rewards.Length - limit} recompensa(s) disponiveis");
             }
 
             return builder.ToString();

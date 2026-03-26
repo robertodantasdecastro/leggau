@@ -108,6 +108,8 @@
   - the child step now makes reuse of an existing child profile explicit in the onboarding summary
   - onboarding CTAs and child/home summaries now adapt to the current state of the journey
   - the side panel now guides the next step of the experience instead of acting only as a technical catalog card
+  - the scene now exposes an explicit local reset action for the saved journey
+  - home summary cards are now more compact and less dependent on long text lists
 - Remaining:
   - refine the onboarding layout from functional UI into stronger product UI
   - add richer in-home interactions beyond the first persistent summary

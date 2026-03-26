@@ -105,6 +105,19 @@ namespace Leggau.App
             StartCoroutine(PrepareBootstrap());
         }
 
+        public void ResetLocalJourney()
+        {
+            if (isBusy)
+            {
+                return;
+            }
+
+            LeggauLocalSessionStore.Clear();
+            sessionState.ResetForBootstrap();
+            dashboardPresenter?.SetStatus("Jornada local limpa. Reiniciando onboarding...");
+            StartCoroutine(PrepareBootstrap());
+        }
+
         public void DevCheckinFirstActivity()
         {
             if (isBusy)

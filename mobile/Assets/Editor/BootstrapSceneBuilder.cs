@@ -344,13 +344,24 @@ namespace Leggau.Editor
             BuildSecondaryButton(
                 parent,
                 "RetryBootstrapButton",
-                new Vector2(0.08f, 0.03f),
-                new Vector2(0.92f, 0.09f),
+                new Vector2(0.08f, 0.08f),
+                new Vector2(0.92f, 0.14f),
                 "Atualizar jornada",
                 bootstrap.RetryBootstrap,
                 new Color(0.48f, 0.84f, 0.67f, 0.94f),
                 new Color(0.61f, 0.9f, 0.76f, 0.98f),
                 new Color(0.35f, 0.74f, 0.57f, 0.98f));
+
+            BuildSecondaryButton(
+                parent,
+                "ResetJourneyButton",
+                new Vector2(0.08f, 0.01f),
+                new Vector2(0.92f, 0.07f),
+                "Reiniciar jornada local",
+                bootstrap.ResetLocalJourney,
+                new Color(0.95f, 0.67f, 0.48f, 0.94f),
+                new Color(0.98f, 0.76f, 0.58f, 0.98f),
+                new Color(0.89f, 0.56f, 0.35f, 0.98f));
         }
 
         private static Button BuildSecondaryButton(

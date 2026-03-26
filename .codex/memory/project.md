@@ -65,6 +65,8 @@
 - When a saved home already exists, the app now refreshes the same home data again from `vm2` before rendering the main dashboard
 - The child step now explicitly communicates whether the app will reuse an existing child or create the first one
 - The home-side panel now acts as a product-style next-step summary instead of only exposing catalog/debug data
+- The bootstrap scene now also includes a dedicated local reset action for quickly clearing the saved journey during iteration
+- Home summary cards now favor shorter daily signals over longer technical text blocks
 - As of `2026-03-26`, mobile development should no longer depend on a local backend fallback; VM remains the only canonical backend target
 - Unity mobile build modules are now present in the validated editor install through the editor-root `PlaybackEngines/` layout
 - A second SSD-backed shell for `6000.0.71f1` exists, but it currently fails signature validation and should not be used until it is reinstalled cleanly
@@ -90,6 +92,13 @@
   - `activityCount=3`
   - `rewardCount=2`
 - After the child/home UX refinement later on `2026-03-26`, another batch validation still reached:
+  - `state=ready`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
+- After the local-recovery/compact-home refinement later on `2026-03-26`, another batch validation still reached:
   - `state=ready`
   - `parentName=Responsavel Demo`
   - `childName=Gau`

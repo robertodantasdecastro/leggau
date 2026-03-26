@@ -126,6 +126,8 @@
   - preserve the active Gau variant between launches
 - The child step now also shows whether the app will reuse an existing child profile or create a new one from the typed name
 - The side panel now summarizes the next recommended action in the journey instead of showing only technical catalog information
+- The side panel now also exposes a dedicated local reset action for clearing the saved onboarding/home journey
+- Home cards now summarize only the most relevant daily activity, reward and progress signals
 - The regenerated bootstrap scene still validates in batch against `vm2`, and the latest probe on `2026-03-26` again reached `state=ready`
 - After the machine reboot on `2026-03-26`, the VM stack had to be restarted and a fresh batch validation still reached:
   - `state=ready`
@@ -151,6 +153,14 @@
   - `activityCount=3`
   - `rewardCount=2`
 - After the child/home UX refinement later on `2026-03-26`, another batch validation still reached:
+  - `state=ready`
+  - `status=Dashboard carregado.`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
+- After the local-recovery/compact-home refinement later on `2026-03-26`, another batch validation still reached:
   - `state=ready`
   - `status=Dashboard carregado.`
   - `parentName=Responsavel Demo`

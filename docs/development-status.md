@@ -234,6 +234,9 @@ Date checked: `2026-03-26`
   - the child step now states clearly whether the app will create a new child or continue with an existing profile
   - onboarding buttons now adapt their labels to the current state of the journey
   - the side panel now summarizes next actions instead of only exposing technical catalog information
+- On `2026-03-26`, the bootstrap scene also gained a safer recovery path for local testing:
+  - the side panel now includes an explicit local-journey reset action
+  - home cards were compacted to reduce long text blocks and surface only the most useful daily signals
 - The batch validation path now also supports an automated development run through the editor driver, without changing the user-facing runtime flow
 - After the reboot and SSH restoration on `2026-03-26`, the bootstrap scene was rebuilt and the batch validation against `vm2` again reached:
   - `state=ready`
@@ -261,6 +264,14 @@ Date checked: `2026-03-26`
   - `activityCount=3`
   - `rewardCount=2`
 - After the child/home UX refinement cut later on `2026-03-26`, a new batch validation against `vm2` again reached:
+  - `state=ready`
+  - `status=Dashboard carregado.`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
+- After the local-recovery and compact-home cut later on `2026-03-26`, another batch validation against `vm2` again reached:
   - `state=ready`
   - `status=Dashboard carregado.`
   - `parentName=Responsavel Demo`
