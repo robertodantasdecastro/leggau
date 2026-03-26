@@ -11,6 +11,7 @@ Keep the frontend and backend contract aligned and stable across local, VM and p
 - Keep environment URLs consistent across dev and production.
 - Validate auth, legal, guardianship, care-team, sessions, devices, admin, billing, activities, rewards, progress and asset catalog flows.
 - Validate social auth, provider governance and media-verification flows.
+- Keep the live `web/portal` parent and therapist shells aligned with the backend responses they now consume in production-like VM routing.
 - Keep API contract changes versioned and documented.
 
 ## Directories

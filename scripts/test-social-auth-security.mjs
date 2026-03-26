@@ -417,6 +417,15 @@ async function main() {
   });
   logStep('provider disable security', 'disabled provider blocks social auth');
 
+  await request('/admin/auth/providers/google', {
+    method: 'PATCH',
+    headers: authHeaders(adminToken),
+    body: JSON.stringify({
+      provider: 'google',
+      enabled: true,
+    }),
+  });
+
   await expectFailure('/auth/social/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

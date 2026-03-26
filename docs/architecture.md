@@ -16,7 +16,7 @@
 
 - `mobile/`: cliente Unity para `child` e `adolescent`
 - `backend/`: API NestJS multiactor para identidade, vínculos, legal, moderação, experiência, admin e billing
-- `web/portal`: portal institucional e base para entrada web responsiva/PWA
+- `web/portal`: portal institucional e base ativa para shells web/PWA de `parent_guardian` e `therapist`
 - `web/admin`: web admin tecnico-operacional, compliance e billing
 - `postgres`: persistencia principal
 - `redis`: cache leve e futura base de presença/filas; as sessoes canônicas da Fase B agora persistem em Postgres
@@ -93,4 +93,5 @@
 - `external_identities` conecta sujeitos externos do Google/Apple aos atores `parent_guardian` e `therapist`.
 - `media_verification_jobs` sustenta simulacoes auditaveis de OCR e biometria para validacao e readiness.
 - `web/admin` agora expoe configuracao de provedores e observacao dos jobs de verificacao.
+- `web/portal` agora expoe shells iniciais para `parent_guardian` e `therapist`, consumindo provedores publicados, consentimentos, familia, sessoes e `care-team`.
 - A compatibilidade com o Unity atual permanece via `auth`, `legal`, `children` e `families/overview`, enquanto as superficies adultas avancam para os namespaces canônicos na Fase C.

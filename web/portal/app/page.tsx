@@ -16,28 +16,28 @@ export default function HomePage() {
             operando com rastreabilidade e evolucao continua.
           </p>
           <div className="ctaRow">
-            <Link className="button primary" href="/download">
-              Entrar no beta
+            <Link className="button primary" href="/pais">
+              Area de pais
             </Link>
-            <Link className="button secondary" href="/pais">
-              Ver recursos para pais
+            <Link className="button secondary" href="/profissionais">
+              Area profissional
             </Link>
           </div>
         </article>
         <aside className="card">
-          <h2>O que ja estamos montando</h2>
+          <h2>O que ja esta ativo no beta tecnico</h2>
           <div className="grid3">
             <div className="metric">
               <strong>App</strong>
               Android e iOS via Unity com Gau integrado.
             </div>
             <div className="metric">
-              <strong>Portal</strong>
-              Distribuicao, narrativa institucional e legal.
+              <strong>Adultos</strong>
+              Shell web/PWA com consentimentos, familia e equipe de cuidado.
             </div>
             <div className="metric">
               <strong>Admin</strong>
-              Operacao, usuarios, billing e status da VM.
+              Operacao, provedores Google/Apple, seguranca e status da VM.
             </div>
           </div>
         </aside>
@@ -46,9 +46,9 @@ export default function HomePage() {
       <section className="section">
         <h2>Ecossistema Leggau</h2>
         <ul className="list">
-          <li>Pais acompanham progresso, atividades e recompensas da crianca.</li>
-          <li>Profissionais ganham uma trilha preparada para evolucao futura.</li>
-          <li>O time operacional administra usuarios, servicos e cobrancas sandbox.</li>
+          <li>Pais agora ja podem entrar por senha ou login rapido e seguir a trilha legal antes do cadastro dos menores.</li>
+          <li>Profissionais localizam familias, pedem vinculo clinico e ficam sujeitos a aprovacao dupla.</li>
+          <li>O admin governa provedores de identidade, jobs de verificacao e a saude da plataforma.</li>
         </ul>
       </section>
     </>

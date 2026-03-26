@@ -31,9 +31,10 @@ This directory defines the local agent architecture for Leggau.
 ## Current Baton
 
 - Phase B is completed and establishes the shared backend core on `vm2`.
-- Phase C is now the active execution front:
+- Phase C is now partially advanced:
   - `vm-backend.md` owns the canonical runtime and migration validation
-  - `api-integration.md` owns compatibility between legacy Unity consumers and the new multiactor namespaces
-  - `adult-web.md` owns the next parent and therapist web/PWA shells on top of the Phase B contracts and the now-live Google/Apple quick-auth foundation
+  - `api-integration.md` owns compatibility between Unity, the adult portal shells and the multiactor namespaces
+  - `adult-web.md` owns the next wave on top of the live `parent_guardian` and `therapist` shells in `web/portal`
+  - `web-portal.md` owns the hosted experience for `/pais` and `/profissionais` plus the public narrative routes
   - `web-admin.md` owns the admin surfaces for provider governance, approvals, audit, moderation and policy operations exposed by the runtime
-  - `safety-compliance.md` owns the legal gates, provider-secret handling expectations and OCR/biometric simulation rules that now back the auth and verification checkpoint
+  - `safety-compliance.md` owns the legal gates, provider-secret handling expectations and OCR/biometric simulation rules that now back both auth and the live adult shells

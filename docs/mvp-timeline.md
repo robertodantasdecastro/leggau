@@ -75,16 +75,19 @@
 
 ### Phase C — Adult web/PWA surfaces
 
-- Status: `started`
+- Status: `partially advanced`
 - Completed:
   - provider-backed quick-auth foundation is live for `parent_guardian` and `therapist`
   - web admin already exposes provider configuration for Google and Apple/iCloud
   - legal and actor-dependency gates are now validated for adult identity flows
+  - `web/portal/pais` now ships an initial parent shell for auth, consent, family overview, minor provisioning, parent-side care-team approval and session management
+  - `web/portal/profissionais` now ships an initial therapist shell for auth, family lookup, care-team requests and session management
+  - the public provider catalog is restored to an operational state after automated negative-path security checks
 - Remaining:
-  - parent shell
-  - therapist shell
   - responsive/PWA behavior
-  - supervision, reports and permissions
+  - richer supervision, reports and permissions
+  - invite-driven family and therapist journeys
+  - stronger product polish for the adult shells
 
 ### Phase D — Child and adolescent Unity app
 
@@ -123,10 +126,10 @@
 
 ## Next Execution Step
 
-1. Continue Phase C on top of the completed Phase B backend core and the new social-auth checkpoint.
-2. Build the `parent_guardian` and `therapist` responsive shells in `web/portal` with `/api/auth/social/providers`, `/api/auth/social/login`, `sessions`, `care-team`, legal and family flows.
+1. Continue Phase C on top of the completed Phase B backend core, the social-auth checkpoint and the first live adult shells.
+2. Deepen the `parent_guardian` and `therapist` shells in `web/portal` with reports, permissions, invite-led journeys and stronger PWA polish.
 3. Expand web/admin from provider governance into approvals, audit, incidents, moderation and care-team review.
-4. Preserve the current Unity child flow as a compatibility client while the adult surfaces catch up to the backend runtime now live on `vm2`.
+4. Preserve the current Unity child flow as a compatibility client while the adult surfaces continue catching up to the backend runtime now live on `vm2`.
 
 ## Branch and Delivery Rule
 

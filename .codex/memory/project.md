@@ -105,6 +105,10 @@
   - `external_identities` binding provider subjects to app actors
   - versioned legal gate enforcement before child/adolescent provisioning
   - simulated OCR and biometric verification jobs plus fixture assets and security script coverage
+- Phase C is now partially advanced through the first live adult shells in `web/portal`:
+  - `/pais` handles password/social auth, legal consent, family overview, minor provisioning and parent-side `care-team` approvals
+  - `/profissionais` handles password/social auth, guardian email lookup, minor selection and `care-team` request creation
+  - the public provider catalog now remains operational after the scripted negative-path security checks
 - The next execution phase remains Phase C:
   - parent_guardian web/PWA shell
   - therapist web/PWA shell

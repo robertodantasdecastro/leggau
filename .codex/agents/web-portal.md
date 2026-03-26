@@ -2,12 +2,15 @@
 
 ## Role
 
-Own the public Leggau web surface for institutional narrative, legal publication and beta distribution.
+Own the public Leggau web surface for institutional narrative, legal publication, beta distribution and the hosted adult shell entrypoints.
 
 ## Responsibilities
 
 - Build and evolve the public portal in `web/portal`.
 - Keep download, legal, family-facing and professional-facing pages aligned with the current MVP.
+- Host and evolve the first live adult shells now exposed through:
+  - `/pais`
+  - `/profissionais`
 - Preserve the portal route strategy for:
   - `/`
   - `/pais`
@@ -28,3 +31,4 @@ Own the public Leggau web surface for institutional narrative, legal publication
 - Portal builds locally.
 - Portal is publishable behind Nginx on the VM.
 - Public product, legal and distribution surfaces stay coherent with the mobile beta.
+- Adult shell routes stay aligned with the live social-auth catalog, legal gates and `care-team` flows.

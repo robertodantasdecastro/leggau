@@ -171,6 +171,10 @@ As of `2026-03-26`:
   - provider secrets are masked in responses and encrypted at rest behind `AUTH_PROVIDER_SECRET_KEY`
   - `scripts/test-social-auth-security.mjs` validates social auth, legal gates, actor links, OCR and biometrics against `vm2`
   - `npm audit --omit=dev` is clean for `backend`, `web/admin` and `web/portal`
+- Phase C is now partially advanced in `web/portal`:
+  - `/pais` is a live parent shell for auth, consent, family overview, minor provisioning and parent-side care-team approvals
+  - `/profissionais` is a live therapist shell for auth, family lookup, care-team requests and session management
+  - the automated security script restores the Google/Apple catalog after negative-path checks so the adult shells stay operational
 - Mac toolchain status:
   - Docker: ready
   - Java 17: present

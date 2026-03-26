@@ -173,6 +173,7 @@
   - persistent opaque sessions compatible with resume/retry behavior
   - adolescent provisioning returned through the legacy-compatible `children` projection
 - Adult-oriented quick auth is now available in the backend through Google and Apple/iCloud plus admin-managed provider configuration, but the Unity app should remain focused on the child/adolescent surface while Phase C advances in `web/portal`
+- The first live adult shells now exist in `web/portal/pais` and `web/portal/profissionais`, so parental and therapist bootstrap work can move web-first while Unity keeps ownership of the child/adolescent experience
 - The Unity workspace had to be reopened on `2026-03-26` through the canonical `-projectPath` flow after a temporary nested project folder appeared under `mobile/`; that stray folder was removed
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination

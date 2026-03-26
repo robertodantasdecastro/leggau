@@ -29,6 +29,9 @@
 
 ## Validated Endpoints
 
+- `GET /`
+- `GET /pais`
+- `GET /profissionais`
 - `GET /api/health`
 - `GET /api/activities`
 - `GET /api/assets-catalog`
@@ -156,6 +159,10 @@
   - admin provider configuration updates
   - OCR and biometric simulation jobs via `media-verification`
   - end-to-end coverage through `scripts/test-social-auth-security.mjs`
+- The adult web shell runtime is now also validated on the VM for:
+  - `/pais` rendering the parent shell sections for auth, consent, family and `care-team`
+  - `/profissionais` rendering the therapist shell sections for auth, family lookup and `care-team`
+  - the public provider catalog again exposing both Google and Apple after the scripted negative-path checks finish
 - Postgres on the VM now contains and validates the new core tables:
   - `guardian_links`
   - `care_team_memberships`

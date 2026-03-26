@@ -20,6 +20,7 @@ Date checked: `2026-03-26`
   - `docs/authorization-matrix.md`
   - `docs/beta-feature-flags.md`
   - `docs/phase-b-module-map.md`
+  - `docs/social-auth-operations.md`
 
 ## Backend Local Status
 
@@ -70,6 +71,8 @@ Date checked: `2026-03-26`
   - `leggau-redis`
 - Gateway validation on `10.211.55.22:8080` now passes for:
   - `/`
+  - `/pais`
+  - `/profissionais`
   - `/admin`
   - `/api/health`
   - `/api/legal/documents`
@@ -124,6 +127,7 @@ Date checked: `2026-03-26`
   - `scripts/check-vm2-access.sh`
 - The current end-to-end validation driver for this checkpoint is:
   - `scripts/test-social-auth-security.mjs`
+- That validation script now restores the provider catalog after the negative-path disable test, so the active runtime keeps both Google and Apple published for adult shells
 - Dependency audit checks now also pass with zero production vulnerabilities in:
   - `backend`
   - `web/admin`
@@ -158,14 +162,38 @@ Date checked: `2026-03-26`
   - Google and Apple/iCloud quick auth is live for `parent_guardian` and `therapist`
   - the admin already exposes provider configuration and verification-job monitoring
   - actor dependency rules are now explicit in auth responses and runtime gates
+  - `web/portal/pais` now exposes a parent shell for password/social auth, consent capture, family overview, child/adolescent provisioning, parent-side care-team approval and session revoke
+  - `web/portal/profissionais` now exposes a therapist shell for password/social auth, family lookup by guardian email, care-team request and session revoke
 - Phase F also has first operational groundwork in place:
   - provider secret masking in the admin surface
   - simulated OCR and biometric verification jobs
   - scripted security validation for auth, legal, links and verification flows
 - The next execution step remains Phase C:
-  - build the actual `parent_guardian` and `therapist` shells in `web/portal`
-  - consume the live social-provider catalog and quick-auth endpoints
-  - expose supervision, reporting and care-team operations on top of the now-governed auth base
+  - deepen the new `parent_guardian` and `therapist` shells in `web/portal`
+  - add reports, permissions, invite-driven family/professional flows and stronger PWA polish
+  - expand admin review around approvals, audit, moderation and incidents on top of the now-governed auth base
+
+## Adult Portal Status
+
+- `npm run build` passes in `web/portal`
+- The portal now renders initial actor shells through:
+  - `/pais`
+  - `/profissionais`
+- Parent shell currently covers:
+  - password auth
+  - social auth using the public provider catalog
+  - legal consent capture
+  - family overview
+  - child/adolescent provisioning
+  - parent-side `care-team` approval
+  - persistent session listing and revoke
+- Therapist shell currently covers:
+  - password auth
+  - social auth using the public provider catalog
+  - guardian email lookup
+  - minor selection
+  - `care-team` request creation
+  - persistent session listing and revoke
 
 ## Mobile Mac Status
 

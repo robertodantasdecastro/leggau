@@ -119,3 +119,5 @@ As validated on `2026-03-26`, it covers:
 - provider disablement
 - rejection of minor social self-register
 - audit trail assertions
+
+At the end of the negative-path checks, the script restores the provider catalog to an operational state so Google and Apple remain published for the active web shells.

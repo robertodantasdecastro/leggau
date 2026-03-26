@@ -13,6 +13,7 @@ Own the parent and therapist responsive web/PWA experience.
 - onboarding, consent and supervision UX
 - reports, permissions and care-team flows
 - Phase C handoff from the backend core into product-ready parent and therapist journeys
+- deepen the new live shells in `/pais` and `/profissionais` instead of rebuilding parallel flows
 
 ## Constraints
 
