@@ -80,6 +80,8 @@ namespace Leggau.Editor
                 views.childNameInput,
                 views.legalConsentToggle,
                 views.legalDocuments,
+                views.childSummary,
+                views.entrySummary,
                 views.authAction,
                 views.legalAction,
                 views.childAction,
@@ -208,10 +210,12 @@ namespace Leggau.Editor
             var legalDocuments = CreateLabel("LegalDocumentsValue", legalCard.transform, new Vector2(0.04f, 0.24f), new Vector2(0.96f, 0.72f), 12, FontStyle.Normal, TextAnchor.UpperLeft, "Consentimentos");
             var legalConsentToggle = CreateToggleField("LegalConsentToggle", legalCard.transform, new Vector2(0.04f, 0.05f), new Vector2(0.96f, 0.22f), "Confirmo os consentimentos desta etapa");
 
-            var childStep = CreateLabel("ChildStepValue", childCard.transform, new Vector2(0.04f, 0.64f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.UpperLeft, "3. Perfil da crianca");
-            var childNameInput = CreateInputField("ChildNameInput", childCard.transform, new Vector2(0.04f, 0.18f), new Vector2(0.96f, 0.52f), "Nome da crianca");
+            var childStep = CreateLabel("ChildStepValue", childCard.transform, new Vector2(0.04f, 0.7f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.UpperLeft, "3. Perfil da crianca");
+            var childSummary = CreateLabel("ChildSummaryValue", childCard.transform, new Vector2(0.04f, 0.46f), new Vector2(0.96f, 0.68f), 12, FontStyle.Normal, TextAnchor.UpperLeft, "Perfil infantil");
+            var childNameInput = CreateInputField("ChildNameInput", childCard.transform, new Vector2(0.04f, 0.17f), new Vector2(0.96f, 0.45f), "Nome da crianca");
 
-            var homeStep = CreateLabel("HomeStepValue", entryCard.transform, new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.92f), 12, FontStyle.Normal, TextAnchor.UpperLeft, "4. Entrada na home");
+            var homeStep = CreateLabel("HomeStepValue", entryCard.transform, new Vector2(0.04f, 0.48f), new Vector2(0.96f, 0.92f), 12, FontStyle.Normal, TextAnchor.UpperLeft, "4. Entrada na home");
+            var entrySummary = CreateLabel("EntrySummaryValue", entryCard.transform, new Vector2(0.04f, 0.06f), new Vector2(0.96f, 0.46f), 11, FontStyle.Normal, TextAnchor.UpperLeft, "Entrada na home");
 
             var authAction = BuildPrimaryButton(authCard.transform, "SubmitAuthButton", new Vector2(0.55f, 0.05f), new Vector2(0.96f, 0.2f), "Continuar");
             var legalAction = BuildPrimaryButton(legalCard.transform, "SubmitLegalButton", new Vector2(0.55f, 0.05f), new Vector2(0.96f, 0.2f), "Aceitar e continuar");
@@ -234,7 +238,7 @@ namespace Leggau.Editor
                 homeRoot = homePanel.transform,
                 heroTitle = CreateLabel("HomeTitle", homePanel.transform, new Vector2(0.05f, 0.93f), new Vector2(0.95f, 0.99f), 25, FontStyle.Bold, TextAnchor.MiddleLeft, "Sua home no Leggau"),
                 heroBody = CreateLabel("HomeSubtitle", homePanel.transform, new Vector2(0.05f, 0.87f), new Vector2(0.95f, 0.93f), 14, FontStyle.Italic, TextAnchor.UpperLeft, "Responsavel, crianca, progresso e recompensas no mesmo fluxo."),
-                status = CreateCardLabel("StatusCard", "Status da jornada", actionPanel.transform, new Vector2(0.08f, 0.74f), new Vector2(0.92f, 0.84f), 15, "Status"),
+                status = CreateCardLabel("StatusCard", "Status da jornada", actionPanel.transform, new Vector2(0.08f, 0.76f), new Vector2(0.92f, 0.85f), 15, "Status"),
                 onboardingTitle = CreateLabel("OnboardingTitle", onboardingPanel.transform, new Vector2(0.06f, 0.91f), new Vector2(0.94f, 0.98f), 24, FontStyle.Bold, TextAnchor.MiddleLeft, "Vamos comecar"),
                 onboardingBody = CreateLabel("OnboardingBody", onboardingPanel.transform, new Vector2(0.06f, 0.84f), new Vector2(0.94f, 0.91f), 14, FontStyle.Italic, TextAnchor.UpperLeft, "Organize o responsavel, os consentimentos e a primeira crianca."),
                 authStep = authStep,
@@ -248,10 +252,12 @@ namespace Leggau.Editor
                 progress = CreateCardLabel("ProgressCard", "Progresso", homePanel.transform, new Vector2(0.05f, 0.18f), new Vector2(0.95f, 0.32f), 12, "Progresso"),
                 activities = CreateCardLabel("ActivitiesCard", "Atividades do dia", homePanel.transform, new Vector2(0.05f, 0.02f), new Vector2(0.48f, 0.17f), 12, "Atividades"),
                 rewards = CreateCardLabel("RewardsCard", "Recompensas", homePanel.transform, new Vector2(0.52f, 0.02f), new Vector2(0.95f, 0.17f), 12, "Recompensas"),
-                flow = CreateCardLabel("FlowCard", "Checklist da jornada", actionPanel.transform, new Vector2(0.08f, 0.49f), new Vector2(0.92f, 0.72f), 12, "Etapas"),
-                gauVariant = CreateCardLabel("GauVariantCard", "Mascote ativo", actionPanel.transform, new Vector2(0.08f, 0.31f), new Vector2(0.92f, 0.48f), 13, "Mascote"),
-                catalog = CreateCardLabel("CatalogCard", "Catalogo 3D", actionPanel.transform, new Vector2(0.08f, 0.14f), new Vector2(0.92f, 0.3f), 12, "Catalogo"),
+                flow = CreateCardLabel("FlowCard", "Checklist da jornada", actionPanel.transform, new Vector2(0.08f, 0.53f), new Vector2(0.92f, 0.74f), 12, "Etapas"),
+                gauVariant = CreateCardLabel("GauVariantCard", "Mascote ativo", actionPanel.transform, new Vector2(0.08f, 0.34f), new Vector2(0.92f, 0.51f), 13, "Mascote"),
+                catalog = CreateCardLabel("CatalogCard", "Proximos passos", actionPanel.transform, new Vector2(0.08f, 0.19f), new Vector2(0.92f, 0.33f), 12, "Proximos passos"),
                 legalDocuments = legalDocuments,
+                childSummary = childSummary,
+                entrySummary = entrySummary,
                 parentEmailInput = parentEmailInput,
                 parentNameInput = parentNameInput,
                 passwordInput = passwordInput,
@@ -271,7 +277,7 @@ namespace Leggau.Editor
             var buttonObject = CreateUiObject("CheckinButton", parent);
             var rectTransform = buttonObject.AddComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0.08f, 0.11f);
-            rectTransform.anchorMax = new Vector2(0.92f, 0.19f);
+            rectTransform.anchorMax = new Vector2(0.92f, 0.17f);
             rectTransform.offsetMin = Vector2.zero;
             rectTransform.offsetMax = Vector2.zero;
 
@@ -286,7 +292,7 @@ namespace Leggau.Editor
             button.colors = colors;
             UnityEventTools.AddPersistentListener(button.onClick, bootstrap.DevCheckinFirstActivity);
 
-            CreateLabel("CheckinButtonLabel", buttonObject.transform, Vector2.zero, Vector2.one, 18, FontStyle.Bold, TextAnchor.MiddleCenter, "Registrar primeira atividade");
+            CreateLabel("CheckinButtonLabel", buttonObject.transform, Vector2.zero, Vector2.one, 16, FontStyle.Bold, TextAnchor.MiddleCenter, "Registrar check-in do dia");
         }
 
         private static void BuildOnboardingActions(HudViews views, LeggauAppBootstrap bootstrap)
@@ -338,9 +344,9 @@ namespace Leggau.Editor
             BuildSecondaryButton(
                 parent,
                 "RetryBootstrapButton",
-                new Vector2(0.08f, 0.21f),
-                new Vector2(0.92f, 0.28f),
-                "Recarregar bootstrap",
+                new Vector2(0.08f, 0.03f),
+                new Vector2(0.92f, 0.09f),
+                "Atualizar jornada",
                 bootstrap.RetryBootstrap,
                 new Color(0.48f, 0.84f, 0.67f, 0.94f),
                 new Color(0.61f, 0.9f, 0.76f, 0.98f),
@@ -588,6 +594,8 @@ namespace Leggau.Editor
             public TextValueView catalog;
             public TextValueView flow;
             public TextValueView legalDocuments;
+            public TextValueView childSummary;
+            public TextValueView entrySummary;
             public InputField parentEmailInput;
             public InputField parentNameInput;
             public InputField passwordInput;

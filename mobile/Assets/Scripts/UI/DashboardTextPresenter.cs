@@ -442,22 +442,44 @@ namespace Leggau.UI
         private static string BuildCatalog(LeggauSessionState session)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("Cenario da experiencia");
+            builder.AppendLine("Proximos passos");
 
-            if (session.AssetsCatalog?.mascot == null)
+            if (session == null)
             {
-                builder.AppendLine("Catalogo ainda nao carregado.");
+                builder.AppendLine("Aguardando dados da jornada.");
                 return builder.ToString();
             }
 
-            builder.AppendLine($"Mascote: {session.AssetsCatalog.mascot.name} ({session.AssetsCatalog.mascot.visualStyle})");
-
-            if (session.AssetsCatalog.scenes == null || session.AssetsCatalog.scenes.Length == 0)
+            if (session.HomeReady)
             {
-                builder.AppendLine("Nenhuma cena 3D informada.");
+                if (session.Activities != null && session.Activities.Length > 0)
+                {
+                    builder.AppendLine($"Comece por {session.Activities[0].title} para ganhar {session.Activities[0].points} pts.");
+                }
+                else
+                {
+                    builder.AppendLine("Sua home esta pronta para o primeiro check-in do dia.");
+                }
+
+                if (session.Rewards != null && session.Rewards.Length > 0)
+                {
+                    builder.AppendLine($"Voce tem {session.Rewards.Length} recompensa(s) visiveis na home.");
+                }
+
+                builder.AppendLine($"Mascote atual: {session.ActiveGauVariant?.displayName ?? "Gau"}.");
             }
             else
             {
+                builder.AppendLine("Conclua o onboarding para liberar a home principal.");
+            }
+
+            if (session.AssetsCatalog?.scenes == null || session.AssetsCatalog.scenes.Length == 0)
+            {
+                builder.AppendLine("Cenarios ainda nao carregados.");
+            }
+            else
+            {
+                builder.AppendLine($"Cenarios ativos: {session.AssetsCatalog.scenes.Length}");
                 foreach (var item in session.AssetsCatalog.scenes)
                 {
                     builder.AppendLine($"• {item.key}: {item.objective}");
@@ -466,11 +488,10 @@ namespace Leggau.UI
 
             if (session.GauVariantsCatalog?.variants == null || session.GauVariantsCatalog.variants.Length == 0)
             {
-                builder.AppendLine("Variantes locais do Gau ainda nao carregadas.");
                 return builder.ToString();
             }
 
-            builder.AppendLine($"Variantes locais: {session.GauVariantsCatalog.variants.Length}");
+            builder.AppendLine($"Variantes do Gau: {session.GauVariantsCatalog.variants.Length}");
 
             foreach (var item in session.GauVariantsCatalog.variants)
             {

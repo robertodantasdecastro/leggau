@@ -230,6 +230,10 @@ Date checked: `2026-03-26`
   - local session snapshot is stored for parent, child, Gau variant and home state
   - reopening the app now restores the pending onboarding step or re-enters the home directly
   - when a persisted home exists, the app refreshes activities, rewards and progress again from `vm2`
+- On `2026-03-26`, the product-facing onboarding/home copy was refined further:
+  - the child step now states clearly whether the app will create a new child or continue with an existing profile
+  - onboarding buttons now adapt their labels to the current state of the journey
+  - the side panel now summarizes next actions instead of only exposing technical catalog information
 - The batch validation path now also supports an automated development run through the editor driver, without changing the user-facing runtime flow
 - After the reboot and SSH restoration on `2026-03-26`, the bootstrap scene was rebuilt and the batch validation against `vm2` again reached:
   - `state=ready`
@@ -249,6 +253,14 @@ Date checked: `2026-03-26`
   - `activityCount=3`
   - `rewardCount=2`
 - After the onboarding persistence cut on `2026-03-26`, a fresh batch validation against `vm2` again reached:
+  - `state=ready`
+  - `status=Dashboard carregado.`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
+- After the child/home UX refinement cut later on `2026-03-26`, a new batch validation against `vm2` again reached:
   - `state=ready`
   - `status=Dashboard carregado.`
   - `parentName=Responsavel Demo`

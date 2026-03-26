@@ -12,6 +12,8 @@ namespace Leggau.UI
         [SerializeField] private InputField childNameInput;
         [SerializeField] private Toggle consentToggle;
         [SerializeField] private TextValueView consentDocumentsLabel;
+        [SerializeField] private TextValueView childSummaryLabel;
+        [SerializeField] private TextValueView entrySummaryLabel;
         [SerializeField] private Button authButton;
         [SerializeField] private Button legalButton;
         [SerializeField] private Button childButton;
@@ -25,6 +27,8 @@ namespace Leggau.UI
             InputField childName,
             Toggle legalConsent,
             TextValueView legalDocuments,
+            TextValueView childSummary,
+            TextValueView entrySummary,
             Button authAction,
             Button legalAction,
             Button childAction,
@@ -37,6 +41,8 @@ namespace Leggau.UI
             childNameInput = childName;
             consentToggle = legalConsent;
             consentDocumentsLabel = legalDocuments;
+            childSummaryLabel = childSummary;
+            entrySummaryLabel = entrySummary;
             authButton = authAction;
             legalButton = legalAction;
             childButton = childAction;
@@ -62,6 +68,8 @@ namespace Leggau.UI
             }
 
             consentDocumentsLabel?.SetText(BuildConsentSummary(session));
+            childSummaryLabel?.SetText(BuildChildSummary(session));
+            entrySummaryLabel?.SetText(BuildEntrySummary(session));
         }
 
         public void ReadDrafts(LeggauSessionState session)
@@ -107,21 +115,25 @@ namespace Leggau.UI
             if (authButton != null)
             {
                 authButton.interactable = canEditResponsible;
+                SetButtonText(authButton, canEditResponsible ? "Continuar" : "Conta pronta");
             }
 
             if (legalButton != null)
             {
                 legalButton.interactable = !busy && legalReady;
+                SetButtonText(legalButton, legalReady ? "Aceitar e continuar" : "Consentimentos prontos");
             }
 
             if (childButton != null)
             {
                 childButton.interactable = !busy && childReady;
+                SetButtonText(childButton, BuildChildButtonText(session, busy));
             }
 
             if (homeButton != null)
             {
                 homeButton.interactable = !busy && homeReady;
+                SetButtonText(homeButton, homeReady ? "Abrir minha home" : "Aguardando etapa anterior");
             }
 
             if (devButton != null)
@@ -145,6 +157,20 @@ namespace Leggau.UI
             if (selectable != null)
             {
                 selectable.interactable = interactable;
+            }
+        }
+
+        private static void SetButtonText(Button button, string value)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            var text = button.GetComponentInChildren<Text>();
+            if (text != null)
+            {
+                text.text = value;
             }
         }
 
@@ -173,6 +199,56 @@ namespace Leggau.UI
             }
 
             return lines;
+        }
+
+        private static string BuildChildSummary(LeggauSessionState session)
+        {
+            if (session?.ActiveChild != null)
+            {
+                return $"Perfil infantil\nEncontramos {session.ActiveChild.name} para continuar a jornada.";
+            }
+
+            if (!string.IsNullOrWhiteSpace(session?.DraftChildName))
+            {
+                return $"Perfil infantil\n{session.DraftChildName} sera usado como primeira crianca do app.";
+            }
+
+            return "Perfil infantil\nDigite o nome da crianca para criar o primeiro perfil.";
+        }
+
+        private static string BuildEntrySummary(LeggauSessionState session)
+        {
+            if (session == null)
+            {
+                return "Entrada na home\nAguardando informacoes do onboarding.";
+            }
+
+            if (session.HomeReady)
+            {
+                return $"Entrada na home\nHome salva para {session.ActiveChild?.name ?? "a crianca"} e pronta para continuar.";
+            }
+
+            if (session.ActiveChild != null)
+            {
+                return $"Entrada na home\nTudo pronto para abrir a home de {session.ActiveChild.name}.";
+            }
+
+            return "Entrada na home\nConclua as etapas anteriores para abrir a experiencia principal.";
+        }
+
+        private static string BuildChildButtonText(LeggauSessionState session, bool busy)
+        {
+            if (busy)
+            {
+                return "Processando...";
+            }
+
+            if (session?.ActiveChild != null)
+            {
+                return $"Usar {session.ActiveChild.name}";
+            }
+
+            return "Confirmar crianca";
         }
     }
 }

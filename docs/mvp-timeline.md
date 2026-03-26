@@ -106,6 +106,8 @@
   - onboarding and first-home state now persist locally between app launches
   - reopening the app now resumes the pending onboarding step or refreshes the saved home directly from `vm2`
   - the child step now makes reuse of an existing child profile explicit in the onboarding summary
+  - onboarding CTAs and child/home summaries now adapt to the current state of the journey
+  - the side panel now guides the next step of the experience instead of acting only as a technical catalog card
 - Remaining:
   - refine the onboarding layout from functional UI into stronger product UI
   - add richer in-home interactions beyond the first persistent summary

@@ -63,6 +63,8 @@
 - The Unity editor driver now supports a development-flow validation pass that reuses the real VM backend while preserving the manual UX in normal Play Mode
 - The mobile bootstrap now persists its local session snapshot and resumes the correct onboarding/home state after reopening the app
 - When a saved home already exists, the app now refreshes the same home data again from `vm2` before rendering the main dashboard
+- The child step now explicitly communicates whether the app will reuse an existing child or create the first one
+- The home-side panel now acts as a product-style next-step summary instead of only exposing catalog/debug data
 - As of `2026-03-26`, mobile development should no longer depend on a local backend fallback; VM remains the only canonical backend target
 - Unity mobile build modules are now present in the validated editor install through the editor-root `PlaybackEngines/` layout
 - A second SSD-backed shell for `6000.0.71f1` exists, but it currently fails signature validation and should not be used until it is reinstalled cleanly
@@ -81,6 +83,13 @@
   - `activityCount=3`
   - `rewardCount=2`
 - After the persistence cut later on `2026-03-26`, a new batch validation still reached:
+  - `state=ready`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
+  - `activityCount=3`
+  - `rewardCount=2`
+- After the child/home UX refinement later on `2026-03-26`, another batch validation still reached:
   - `state=ready`
   - `parentName=Responsavel Demo`
   - `childName=Gau`

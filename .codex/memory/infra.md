@@ -66,6 +66,12 @@
   - `parentName=Responsavel Demo`
   - `childName=Gau`
   - `activeGauVariant=gau-rounded-pixel`
+- After the child/home UX refinement later on `2026-03-26`, the same probe path again reached:
+  - `state=ready`
+  - `status=Dashboard carregado.`
+  - `parentName=Responsavel Demo`
+  - `childName=Gau`
+  - `activeGauVariant=gau-rounded-pixel`
 - Latest graphical Play Mode validation against `vm2` also reached:
   - `state=ready`
   - `parentName=Responsavel Demo`
