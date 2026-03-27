@@ -17,6 +17,8 @@ Implement the Unity mobile frontend for Android and iOS.
 - Surface supervision summaries that distinguish guardian-only, invite-sent and therapist-authorized runtime states.
 - Reflect admin runtime locks and participant-removal state without breaking `state=ready`.
 - Prefer operational runtime messages over generic blocked-state messaging when the backend returns admin lock context.
+- Reflect monitored-session lifecycle states such as `stale` and `closed_by_timeout` without breaking the shell.
+- Prefer the HTTPS API alias for sign-off and keep raw-HTTP fallback limited to editor/development recovery.
 - Store large Unity outputs under `.data/mobile/`.
 
 ## Directories
@@ -27,7 +29,8 @@ Implement the Unity mobile frontend for Android and iOS.
 
 ## Inputs
 
-- API base URL from `DEV_API_BASE_URL`
+- Canonical API base URL from `DEV_API_ALIAS_URL`
+- Explicit debug fallback from `DEV_API_BASE_URL`
 - Variant catalog from `gau-variants.json`
 - Gau prefabs and exports from the Blender pipeline
 

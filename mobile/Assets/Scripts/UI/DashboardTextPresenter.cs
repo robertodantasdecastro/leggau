@@ -35,6 +35,7 @@ namespace Leggau.UI
         [SerializeField] private TextValueView activitiesLabel;
         [SerializeField] private TextValueView rewardsLabel;
         [SerializeField] private TextValueView gauVariantLabel;
+        [SerializeField] private TextValueView lifecycleLabel;
         [SerializeField] private TextValueView catalogLabel;
         [SerializeField] private TextValueView flowLabel;
         [SerializeField] private RewardHudPresenter rewardHudPresenter;
@@ -66,6 +67,7 @@ namespace Leggau.UI
             TextValueView activities,
             TextValueView rewards,
             TextValueView gauVariant,
+            TextValueView lifecycle,
             TextValueView catalog,
             TextValueView flow,
             RewardHudPresenter rewardHud,
@@ -91,6 +93,7 @@ namespace Leggau.UI
             activitiesLabel = activities;
             rewardsLabel = rewards;
             gauVariantLabel = gauVariant;
+            lifecycleLabel = lifecycle;
             catalogLabel = catalog;
             flowLabel = flow;
             rewardHudPresenter = rewardHud;
@@ -316,6 +319,7 @@ namespace Leggau.UI
             activitiesLabel?.SetText(BuildActivities(session));
             rewardsLabel?.SetText(BuildRewards(session));
             gauVariantLabel?.SetText(BuildGauVariant(session));
+            lifecycleLabel?.SetText(BuildLifecycle(session));
             catalogLabel?.SetText(BuildCatalog(session));
             rewardHudPresenter?.SetPoints(session?.AvailablePoints ?? 0);
         }
@@ -507,6 +511,72 @@ namespace Leggau.UI
             return builder.ToString();
         }
 
+        private static string BuildLifecycle(LeggauSessionState session)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("Lifecycle monitorado");
+
+            if (session == null)
+            {
+                builder.AppendLine("Aguardando a sala ativa ou o estado recuperado da vm2.");
+                return builder.ToString();
+            }
+
+            builder.AppendLine(session.ResolveLifecycleHeadline());
+
+            var sessionStatus = session.ResolveSessionStatus();
+            if (!string.IsNullOrWhiteSpace(sessionStatus))
+            {
+                builder.AppendLine($"Sessao: {sessionStatus}");
+            }
+
+            var participantStatus = session.ResolveParticipantStatus();
+            if (!string.IsNullOrWhiteSpace(participantStatus))
+            {
+                builder.AppendLine($"Participante: {participantStatus}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(session.HeartbeatTimeoutAt))
+            {
+                builder.AppendLine($"Heartbeat limite: {FormatTimelineStamp(session.HeartbeatTimeoutAt)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(session.EndedAt))
+            {
+                builder.AppendLine($"Encerrada em: {FormatTimelineStamp(session.EndedAt)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(session.EndedBy))
+            {
+                builder.AppendLine($"Encerrada por: {session.EndedBy}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(session.CloseReason))
+            {
+                builder.AppendLine(session.CloseReason);
+            }
+
+            if (!string.IsNullOrWhiteSpace(session.ResolveLifecycleMessage()))
+            {
+                builder.AppendLine(session.ResolveLifecycleMessage());
+            }
+
+            switch (ResolveAgeBand(session))
+            {
+                case "10-12":
+                    builder.AppendLine("A experiencia continua visivel, mais densa e pronta para retomar quando o lock cair.");
+                    break;
+                case "13-17":
+                    builder.AppendLine("O foco fica na clareza do estado e na recuperacao tranquila do fluxo.");
+                    break;
+                default:
+                    builder.AppendLine("Gau continua em destaque enquanto a sala se recupera ou aguarda reconexao.");
+                    break;
+            }
+
+            return builder.ToString();
+        }
+
         private static string BuildCatalog(LeggauSessionState session)
         {
             var builder = new StringBuilder();
@@ -589,6 +659,18 @@ namespace Leggau.UI
             if (!session.RoomsAllowed && session.RoomRequirements != null)
             {
                 builder.AppendLine("O shell continua pronto, mas as salas ficam bloqueadas ate o responsavel liberar o gate em /pais.");
+                if (session.IsRoomSessionClosedByTimeout)
+                {
+                    builder.AppendLine("A sala fechou por timeout e vai tentar recuperar quando o lock expirar.");
+                }
+                else if (session.IsRoomSessionClosedByAdmin)
+                {
+                    builder.AppendLine("A sala foi pausada pela operacao e voltara a obedecer os gates quando o lock terminar.");
+                }
+                else if (session.IsRoomSessionParticipantRemoved)
+                {
+                    builder.AppendLine("A participacao foi encerrada temporariamente para este participante.");
+                }
                 return builder.ToString();
             }
 
@@ -613,6 +695,10 @@ namespace Leggau.UI
             if (session.ActiveRoom != null)
             {
                 builder.AppendLine($"Sala ativa: {session.ActiveRoom.title}");
+                if (!string.IsNullOrWhiteSpace(session.ResolveSessionStatus()))
+                {
+                    builder.AppendLine($"Lifecycle: {session.ResolveSessionStatus()}");
+                }
             }
             else
             {
@@ -624,6 +710,11 @@ namespace Leggau.UI
                 builder.AppendLine(session.ActivePresence != null
                     ? $"Presenca monitorada: {session.ActivePresence.participantCount} participante(s)"
                     : "Presenca monitorada pronta para heartbeat.");
+
+                if (!string.IsNullOrWhiteSpace(session.ResolveParticipantStatus()))
+                {
+                    builder.AppendLine($"Participacao: {session.ResolveParticipantStatus()}");
+                }
 
                 if (session.ActivePresence != null &&
                     !string.IsNullOrWhiteSpace(session.ActivePresence.operationalMessage))
@@ -672,6 +763,21 @@ namespace Leggau.UI
             }
 
             return builder.ToString();
+        }
+
+        private static string FormatTimelineStamp(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            if (System.DateTimeOffset.TryParse(value, out var parsed))
+            {
+                return parsed.LocalDateTime.ToString("dd/MM HH:mm");
+            }
+
+            return value;
         }
 
         private static string ResolveShellName(LeggauSessionState session)

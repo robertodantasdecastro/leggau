@@ -66,6 +66,7 @@ namespace Leggau.Editor
                 views.activities,
                 views.rewards,
                 views.gauVariant,
+                views.lifecycle,
                 views.catalog,
                 views.flow,
                 rewardHud,
@@ -195,7 +196,7 @@ namespace Leggau.Editor
             var actionPanel = CreatePanel("ActionPanel", parent, new Vector2(0.68f, 0.05f), new Vector2(0.96f, 0.95f), new Color(0.99f, 0.98f, 0.94f, 0.92f));
 
             CreateLabel("ActionTitle", actionPanel.transform, new Vector2(0.08f, 0.92f), new Vector2(0.92f, 0.98f), 22, FontStyle.Bold, TextAnchor.MiddleLeft, "Gau e shells");
-            CreateLabel("ActionHint", actionPanel.transform, new Vector2(0.08f, 0.86f), new Vector2(0.92f, 0.92f), 13, FontStyle.Italic, TextAnchor.MiddleLeft, "Acompanhe a policy, troque o Gau e valide os shells infantil e adolescente.");
+            CreateLabel("ActionHint", actionPanel.transform, new Vector2(0.08f, 0.86f), new Vector2(0.92f, 0.92f), 13, FontStyle.Italic, TextAnchor.MiddleLeft, "Acompanhe policy, lifecycle, Gau e o runtime monitorado dos shells infantil e adolescente.");
 
             var authCard = CreatePanel("AuthCard", onboardingPanel.transform, new Vector2(0.06f, 0.56f), new Vector2(0.94f, 0.82f), new Color(1f, 1f, 1f, 0.74f));
             var familyCard = CreatePanel("FamilyCard", onboardingPanel.transform, new Vector2(0.06f, 0.31f), new Vector2(0.94f, 0.54f), new Color(1f, 1f, 1f, 0.74f));
@@ -257,9 +258,12 @@ namespace Leggau.Editor
                 new Color(0.61f, 0.9f, 0.76f, 0.98f),
                 new Color(0.35f, 0.74f, 0.57f, 0.98f));
 
-            var catalogCard = CreatePanel("CatalogCard", actionPanel.transform, new Vector2(0.08f, 0.19f), new Vector2(0.92f, 0.33f), new Color(1f, 1f, 1f, 0.7f));
+            var catalogCard = CreatePanel("CatalogCard", actionPanel.transform, new Vector2(0.08f, 0.07f), new Vector2(0.92f, 0.30f), new Color(1f, 1f, 1f, 0.7f));
             CreateLabel("CatalogCardTitle", catalogCard.transform, new Vector2(0.04f, 0.7f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.MiddleLeft, "Interacoes monitoradas");
-            var catalog = CreateLabel("CatalogCardValue", catalogCard.transform, new Vector2(0.04f, 0.32f), new Vector2(0.96f, 0.76f), 12, FontStyle.Normal, TextAnchor.UpperLeft, "Interacoes");
+            var catalog = CreateLabel("CatalogCardValue", catalogCard.transform, new Vector2(0.04f, 0.24f), new Vector2(0.96f, 0.76f), 11, FontStyle.Normal, TextAnchor.UpperLeft, "Interacoes");
+            var lifecycleCard = CreatePanel("LifecycleCard", actionPanel.transform, new Vector2(0.08f, 0.31f), new Vector2(0.92f, 0.42f), new Color(1f, 1f, 1f, 0.7f));
+            CreateLabel("LifecycleCardTitle", lifecycleCard.transform, new Vector2(0.04f, 0.7f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.MiddleLeft, "Lifecycle da sala");
+            var lifecycle = CreateLabel("LifecycleCardValue", lifecycleCard.transform, new Vector2(0.04f, 0.22f), new Vector2(0.96f, 0.76f), 11, FontStyle.Normal, TextAnchor.UpperLeft, "Lifecycle");
             var refreshRoomsAction = BuildSecondaryButton(
                 catalogCard.transform,
                 "RefreshRoomsButton",
@@ -298,7 +302,7 @@ namespace Leggau.Editor
                 homeRoot = homePanel.transform,
                 heroTitle = CreateLabel("HomeTitle", homePanel.transform, new Vector2(0.05f, 0.93f), new Vector2(0.95f, 0.99f), 25, FontStyle.Bold, TextAnchor.MiddleLeft, "Sua home no Leggau"),
                 heroBody = CreateLabel("HomeSubtitle", homePanel.transform, new Vector2(0.05f, 0.87f), new Vector2(0.95f, 0.93f), 14, FontStyle.Italic, TextAnchor.UpperLeft, "O shell do menor respeita faixa etaria, policy e o mascote Gau."),
-                status = CreateCardLabel("StatusCard", "Status da jornada", actionPanel.transform, new Vector2(0.08f, 0.76f), new Vector2(0.92f, 0.85f), 15, "Status"),
+                status = CreateCardLabel("StatusCard", "Status da jornada", actionPanel.transform, new Vector2(0.08f, 0.80f), new Vector2(0.92f, 0.92f), 15, "Status"),
                 onboardingTitle = CreateLabel("OnboardingTitle", onboardingPanel.transform, new Vector2(0.06f, 0.91f), new Vector2(0.94f, 0.98f), 24, FontStyle.Bold, TextAnchor.MiddleLeft, "Vamos comecar"),
                 onboardingBody = CreateLabel("OnboardingBody", onboardingPanel.transform, new Vector2(0.06f, 0.84f), new Vector2(0.94f, 0.91f), 14, FontStyle.Italic, TextAnchor.UpperLeft, "Ative o responsavel, escolha o menor vinculado e carregue a policy antes do shell."),
                 authStep = authStep,
@@ -312,8 +316,9 @@ namespace Leggau.Editor
                 progress = CreateCardLabel("ProgressCard", "Progresso", homePanel.transform, new Vector2(0.05f, 0.18f), new Vector2(0.95f, 0.32f), 12, "Progresso"),
                 activities = CreateCardLabel("ActivitiesCard", "Atividades do dia", homePanel.transform, new Vector2(0.05f, 0.02f), new Vector2(0.48f, 0.17f), 12, "Atividades"),
                 rewards = CreateCardLabel("RewardsCard", "Recompensas", homePanel.transform, new Vector2(0.52f, 0.02f), new Vector2(0.95f, 0.17f), 12, "Recompensas"),
-                flow = CreateCardLabel("FlowCard", "Checklist da jornada", actionPanel.transform, new Vector2(0.08f, 0.53f), new Vector2(0.92f, 0.74f), 12, "Etapas"),
-                gauVariant = CreateCardLabel("GauVariantCard", "Mascote ativo", actionPanel.transform, new Vector2(0.08f, 0.34f), new Vector2(0.92f, 0.51f), 13, "Mascote"),
+                flow = CreateCardLabel("FlowCard", "Checklist da jornada", actionPanel.transform, new Vector2(0.08f, 0.58f), new Vector2(0.92f, 0.78f), 12, "Etapas"),
+                gauVariant = CreateCardLabel("GauVariantCard", "Mascote ativo", actionPanel.transform, new Vector2(0.08f, 0.44f), new Vector2(0.92f, 0.56f), 13, "Mascote"),
+                lifecycle = lifecycle,
                 catalog = catalog,
                 familySummary = familySummary,
                 minorSummary = minorSummary,
@@ -675,6 +680,7 @@ namespace Leggau.Editor
             public TextValueView activities;
             public TextValueView rewards;
             public TextValueView gauVariant;
+            public TextValueView lifecycle;
             public TextValueView catalog;
             public TextValueView flow;
             public TextValueView familySummary;

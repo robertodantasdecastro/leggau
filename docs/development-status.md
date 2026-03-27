@@ -25,7 +25,8 @@ Date checked: `2026-03-27`
 ## Backend Local Status
 
 - `npm run build` passes in `backend/`
-- The local stack is intended as fallback only; the official dev target is now `http://10.211.55.22:8080/api`
+- The local stack is intended as fallback only; the canonical dev sign-off target is now `DEV_API_ALIAS_URL` over HTTPS on `vm2`
+- The raw VM IP `http://10.211.55.22:8080/api` remains fallback-only for editor/development recovery
 - Backend infrastructure should run in `vm2` under `~/leggau`, not on the MacBook
 - Backend now includes the Phase B multiactor core for:
   - canonical actor roles in `app_users`
@@ -56,7 +57,7 @@ Date checked: `2026-03-27`
 ## vm2 Status
 
 - SSH alias `vm2` resolves to `10.211.55.22`
-- Official dev backend target: `http://10.211.55.22:8080/api`
+- Official dev backend target: `DEV_API_ALIAS_URL` over HTTPS on top of `vm2`
 - After the machine restart on `2026-03-26`, the VM stack had to be brought back up once more from `~/leggau`
 - Automated checks against `vm2` were revalidated after that restart and the VM gateway is healthy again
 - `~/leggau` is now the active backend runtime root on the VM
@@ -77,6 +78,18 @@ Date checked: `2026-03-27`
   - `/api/health`
   - `/api/legal/documents`
   - `/api/assets-catalog`
+- The synchronized Cloudflare aliases on `vm2` now also publish:
+  - `DEV_PORTAL_ALIAS_URL`
+  - `DEV_ADMIN_ALIAS_URL`
+  - `DEV_API_ALIAS_URL`
+- HTTPS smoke now also passes through the Cloudflare edge for:
+  - `/`
+  - `/pais`
+  - `/profissionais`
+  - `/admin`
+  - `/manifest.webmanifest`
+  - `/sw.js`
+  - `/api/health`
 - Full onboarding-related API flow now validates against the VM:
   - `POST /api/auth/register`
   - `POST /api/auth/login`
@@ -179,18 +192,29 @@ Date checked: `2026-03-27`
   - `POST /api/admin/rooms/:roomId/participants/remove`
   - `POST /api/incidents` with aditive `runtimeContext`
   - `POST /api/moderation/cases` with aditive `runtimeContext`
+- The fifth Phase E lifecycle-and-HTTPS slice now also validates against the VM for:
+  - `GET /api/rooms` with aditive lifecycle fields
+  - `GET /api/presence/:roomId` with aditive lifecycle fields
+  - `GET /api/admin/rooms/:roomId/snapshot` with lifecycle snapshot fields
+  - `GET /api/admin/rooms/events` with timeout/admin-close/participant-removal lifecycle events
+  - `scripts/test-runtime-lifecycle.mjs`
+  - HTTPS sign-off through `DEV_API_ALIAS_URL`
 - The monitored interaction validation driver for this slice is:
   - `scripts/test-monitored-interactions.mjs`
 - The monitored room-invite validation driver for this slice is:
   - `scripts/test-room-runtime-invites.mjs`
 - The runtime-escalation validation driver for this slice is:
   - `scripts/test-runtime-escalation.mjs`
+- The runtime-lifecycle validation driver for this slice is:
+  - `scripts/test-runtime-lifecycle.mjs`
 - `scripts/promote-stack-to-vm.sh` was corrected on `2026-03-26` to rsync `backend/`, `web/`, `infra/`, `docs/`, `scripts/` and `.codex/` into their canonical remote directories instead of flattening directory contents into the VM root
 - When stale Docker cache prevented new runtime routes from surfacing after the corrected sync, the authoritative recovery path became:
   - `ssh vm2 'cd ~/leggau && docker compose build --no-cache api portal admin && docker compose up -d --force-recreate api portal admin nginx'`
 - `web/portal/.dockerignore` and `web/admin/.dockerignore` now exist to keep future VM rebuild contexts smaller and faster
 - During the room-invite deploy on `2026-03-27`, Nginx initially served `404` for `/`, `/pais`, `/profissionais`, `manifest.webmanifest` and `sw.js`; the edge proxy config was corrected and the VM gateway now again passes those routes
 - `scripts/deploy-vm.sh` now force-recreates `api`, `portal`, `admin` and `nginx`, so edge-config changes under `infra/` are no longer silently skipped on promotion
+- `scripts/sync-cloudflare-dev-alias.sh` now also provisions and synchronizes the API alias, not only portal/admin
+- `scripts/promote-stack-to-vm.sh` and `scripts/deploy-vm.sh` now auto-start the Cloudflare alias sync on the VM
 - Dependency audit checks now also pass with zero production vulnerabilities in:
   - `backend`
   - `web/admin`
@@ -301,9 +325,32 @@ Date checked: `2026-03-27`
   - `web/admin` now exposes snapshot, terminate and remove-participant actions in the runtime panel
   - `/pais`, `/profissionais` and Unity now reflect paused runtime and temporary participant removal without breaking the child/adolescent shells
   - `scripts/test-runtime-escalation.mjs` now validates termination, participant removal, runtime-context incident/moderation creation and lock expiry against `vm2`
+- Phase E slice 5 is now completed on top of that lifecycle-aware runtime:
+  - monitored runtime now projects explicit session lifecycle states:
+    - `active`
+    - `stale`
+    - `closed_by_timeout`
+    - `closed_by_admin`
+    - `participant_removed`
+  - `GET /api/rooms`, `GET /api/presence/:roomId`, `GET /api/admin/rooms/:roomId/snapshot` and `GET /api/admin/rooms/events` now expose:
+    - `sessionStatus`
+    - `participantStatus`
+    - `heartbeatTimeoutAt`
+    - `endedAt`
+    - `endedBy`
+    - `closeReason`
+  - timeout behavior is now explicit and validated:
+    - heartbeat refresh target `20s`
+    - `stale` after `45s`
+    - `closed_by_timeout` after `90s`
+  - `web/admin` now renders timeout/admin-close/participant-removal lifecycle with clearer runtime cards and timeline detail
+  - `/pais` and `/profissionais` now render lifecycle and close-reason messaging instead of generic runtime failure copy
+  - Unity now consumes lifecycle/timeout messaging while still reaching `state=ready` for both `child` and `adolescent`
+  - Unity transport hardening now prefers HTTPS and restricts insecure HTTP fallback to editor/development flows
+  - chat and E2EE remain intentionally out of scope for this slice; they are the next architecture/security track
 - The next execution step now continues inside Phase E:
-  - deepen moderation/runtime controls beyond the now-live guardian/therapist/admin supervision, explicit room invites and temporary operational locks
-  - expand monitored interaction from structured presence and explicit runtime invites into richer governed runtime behaviors and operator workflows
+  - deepen moderation/runtime controls beyond the now-live guardian/therapist/admin supervision, explicit room invites, lifecycle states and temporary operational locks
+  - prepare the next architecture and implementation cut for governed chat and end-to-end encryption without regressing the new HTTPS/TLS baseline
   - keep the completed Phase C adult web/PWA and admin-governance surfaces as the stable companion layer
   - keep Phase F admin/compliance/billing hardening as a parallel operational thread
 

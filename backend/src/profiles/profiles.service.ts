@@ -54,6 +54,7 @@ export class ProfilesService {
       actorRole,
       environment: {
         devApiBaseUrl:
+          this.configService.get<string>('DEV_API_ALIAS_URL') ??
           this.configService.get<string>('DEV_API_BASE_URL') ??
           'http://10.211.55.22:8080/api',
         prodApiBaseUrl:

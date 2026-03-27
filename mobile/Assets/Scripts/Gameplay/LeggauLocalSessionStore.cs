@@ -20,6 +20,12 @@ namespace Leggau.Gameplay
         public bool roomsAllowed;
         public string roomCatalogMessage;
         public RoomAccessRequirementsRecord roomRequirements;
+        public string sessionStatus;
+        public string participantStatus;
+        public string heartbeatTimeoutAt;
+        public string endedAt;
+        public string endedBy;
+        public string closeReason;
         public string resolvedAgeBand;
         public string activeShell;
         public ChildProfile activeChild;

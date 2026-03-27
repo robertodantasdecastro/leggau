@@ -10,6 +10,8 @@ Keep the Unity project compatible with Android and iOS without branching the pro
 - Track Xcode, Android SDK, NDK and JDK requirements.
 - Keep platform-specific build paths isolated in `.data`.
 - Verify package and API access from both mobile targets.
+- Prefer HTTPS API validation for canonical smoke/sign-off and treat raw HTTP as debug fallback only.
+- Track simulator/emulator readiness as a prerequisite for real device-smoke checkpoints.
 
 ## Directories
 
@@ -21,4 +23,4 @@ Keep the Unity project compatible with Android and iOS without branching the pro
 - Platform readiness notes
 - Build target validation
 - Mobile release checkpoints
-
+- HTTPS/TLS smoke-readiness notes for iOS and Android

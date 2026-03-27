@@ -170,10 +170,36 @@
   - `web/admin` now opens runtime-context incidents/moderation directly from presence rows, timeline rows and room snapshots
   - `/pais`, `/profissionais` and Unity now reflect paused runtime and participant-removal state without breaking the product shells
   - `scripts/test-runtime-escalation.mjs` now validates room snapshot, room termination, participant removal and lock expiry against `vm2`
+- Completed in slice 5:
+  - the canonical development sign-off path now prefers `DEV_API_ALIAS_URL` over HTTPS, while the raw VM IP remains fallback-only for editor/development recovery
+  - Cloudflare dev alias sync now also provisions the API alias, not only portal/admin
+  - monitored runtime now exposes lifecycle states:
+    - `active`
+    - `stale`
+    - `closed_by_timeout`
+    - `closed_by_admin`
+    - `participant_removed`
+  - `GET /api/rooms`, `GET /api/presence/:roomId`, `GET /api/admin/rooms/:roomId/snapshot` and `GET /api/admin/rooms/events` now expose:
+    - `sessionStatus`
+    - `participantStatus`
+    - `heartbeatTimeoutAt`
+    - `endedAt`
+    - `endedBy`
+    - `closeReason`
+  - timeout behavior is now explicit and validated with:
+    - heartbeat refresh target `20s`
+    - `stale` after `45s`
+    - `closed_by_timeout` after `90s`
+  - `web/admin`, `/pais` and `/profissionais` now render lifecycle and close-reason states with clearer operational UI
+  - Unity now consumes lifecycle-aware runtime status while still reaching `state=ready` in both `child` and `adolescent` shells
+  - Unity transport hardening now limits insecure HTTP fallback to editor/development flows instead of leaving cleartext broadly enabled
+  - `scripts/test-runtime-lifecycle.mjs` now validates timeout and recovery against `vm2`
+  - chat and E2EE remain intentionally out of implementation scope for this slice and become the next architecture/security track
 - Remaining:
-  - moderation pipeline deeper than the current supervision, invite and escalation slices
-  - richer governed runtime behaviors beyond monitored presence, explicit room invites and temporary admin locks
+  - moderation pipeline deeper than the current supervision, invite, lifecycle and escalation slices
+  - richer governed runtime behaviors beyond monitored presence, explicit room invites, lifecycle projection and temporary admin locks
   - deeper escalation/supervision flows around runtime history, operator workflows and emergency controls
+  - governed chat and end-to-end encryption architecture/implementation after the new TLS baseline
 
 ### Phase F — Billing, admin and beta readiness
 
@@ -190,10 +216,11 @@
 
 ## Next Execution Step
 
-1. Continue Phase E from the now-live operational-escalation slice on top of rooms, presence, supervision gates and explicit room invites.
-2. Expand moderation and governed-runtime controls beyond the current structured presence, invite and temporary-lock model.
-3. Preserve the completed Phase C portal/admin surfaces and the completed Phase D Unity shells as stable foundations.
-4. Keep Phase F admin/compliance/billing hardening as a parallel operational thread on top of the live governance console.
+1. Continue Phase E from the now-live lifecycle-aware monitored runtime on top of rooms, presence, supervision gates, explicit room invites and temporary operational locks.
+2. Expand moderation and governed-runtime controls beyond the current structured presence/invite/lifecycle model.
+3. Start the next architecture and implementation cut for governed chat and end-to-end encryption without regressing the HTTPS/TLS baseline.
+4. Preserve the completed Phase C portal/admin surfaces and the completed Phase D Unity shells as stable foundations.
+5. Keep Phase F admin/compliance/billing hardening as a parallel operational thread on top of the live governance console.
 
 ## Branch and Delivery Rule
 

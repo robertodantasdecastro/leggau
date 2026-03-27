@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
-const baseUrl = process.env.LEGGAU_BASE_URL ?? 'http://10.211.55.22:8080/api';
+const baseUrl =
+  process.env.LEGGAU_BASE_URL ??
+  process.env.DEV_API_ALIAS_URL ??
+  'http://10.211.55.22:8080/api';
 const adminEmail = process.env.LEGGAU_ADMIN_EMAIL ?? 'admin@leggau.local';
 const adminPassword = process.env.LEGGAU_ADMIN_PASSWORD ?? 'Admin123!';
 const runId = Date.now().toString();

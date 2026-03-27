@@ -255,12 +255,38 @@ namespace Leggau.UI
 
             if (session.HomeReady)
             {
-                return $"Entrada no shell\n{ResolveShellLabel(session.ActiveShell)} pronta para {session.SelectedMinor?.name ?? "o menor"} continuar.";
+                var builder = new StringBuilder();
+                builder.AppendLine("Entrada no shell");
+                builder.AppendLine($"{ResolveShellLabel(session.ActiveShell)} pronta para {session.SelectedMinor?.name ?? "o menor"} continuar.");
+
+                if (!string.IsNullOrWhiteSpace(session.ResolveSessionStatus()))
+                {
+                    builder.AppendLine($"Lifecycle: {session.ResolveSessionStatus()}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(session.ResolveLifecycleHeadline()))
+                {
+                    builder.AppendLine(session.ResolveLifecycleHeadline());
+                }
+
+                if (!string.IsNullOrWhiteSpace(session.ResolveLifecycleMessage()))
+                {
+                    builder.AppendLine(session.ResolveLifecycleMessage());
+                }
+
+                return builder.ToString();
             }
 
             if (session.SelectedMinorPolicy != null)
             {
-                return $"Entrada no shell\nTudo pronto para abrir a experiencia {ResolveShellLabel(session.ActiveShell)}.";
+                var builder = new StringBuilder();
+                builder.AppendLine("Entrada no shell");
+                builder.AppendLine($"Tudo pronto para abrir a experiencia {ResolveShellLabel(session.ActiveShell)}.");
+                if (!string.IsNullOrWhiteSpace(session.ResolveLifecycleHeadline()))
+                {
+                    builder.AppendLine(session.ResolveLifecycleHeadline());
+                }
+                return builder.ToString();
             }
 
             if (session.SelectedMinor != null)
@@ -306,6 +332,16 @@ namespace Leggau.UI
             if (session.HomeReady)
             {
                 return "Shell pronta";
+            }
+
+            if (session.ActiveRoom != null &&
+                (session.IsRoomSessionStale ||
+                 session.IsRoomSessionClosedByTimeout ||
+                 session.IsRoomSessionClosedByAdmin ||
+                 session.IsRoomSessionParticipantRemoved ||
+                 session.IsLockExpired()))
+            {
+                return "Recuperar runtime";
             }
 
             if (session.SelectedMinorPolicy == null)

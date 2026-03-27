@@ -21,15 +21,23 @@ namespace Leggau.Config
     public static class AppEnvironmentLoader
     {
         private const string DefaultEnvironmentRelativePath = "config/dev-api.json";
+        private const string DevApiAliasEnvVar = "DEV_API_ALIAS_URL";
+        private const string DevApiBaseEnvVar = "DEV_API_BASE_URL";
 
         public static AppEnvironment Load(TextAsset asset)
         {
+            AppEnvironment environment;
             if (asset != null)
             {
-                return JsonUtility.FromJson<AppEnvironment>(asset.text);
+                environment = JsonUtility.FromJson<AppEnvironment>(asset.text);
+            }
+            else
+            {
+                environment = LoadFromStreamingAssets(DefaultEnvironmentRelativePath);
             }
 
-            return LoadFromStreamingAssets(DefaultEnvironmentRelativePath);
+            ApplyEnvironmentOverrides(environment);
+            return environment;
         }
 
         public static AppEnvironment LoadFromStreamingAssets(string relativePath)
@@ -41,7 +49,29 @@ namespace Leggau.Config
                 throw new ArgumentNullException(nameof(relativePath), $"Environment file is required at {path}.");
             }
 
-            return JsonUtility.FromJson<AppEnvironment>(File.ReadAllText(path));
+            var environment = JsonUtility.FromJson<AppEnvironment>(File.ReadAllText(path));
+            ApplyEnvironmentOverrides(environment);
+            return environment;
+        }
+
+        private static void ApplyEnvironmentOverrides(AppEnvironment environment)
+        {
+            if (environment == null)
+            {
+                return;
+            }
+
+            var aliasUrl = Environment.GetEnvironmentVariable(DevApiAliasEnvVar);
+            if (!string.IsNullOrWhiteSpace(aliasUrl))
+            {
+                environment.apiBaseUrl = aliasUrl.TrimEnd('/');
+            }
+
+            var fallbackUrl = Environment.GetEnvironmentVariable(DevApiBaseEnvVar);
+            if (!string.IsNullOrWhiteSpace(fallbackUrl))
+            {
+                environment.fallbackApiBaseUrl = fallbackUrl.TrimEnd('/');
+            }
         }
     }
 }

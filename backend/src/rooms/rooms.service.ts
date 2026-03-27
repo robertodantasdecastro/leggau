@@ -37,6 +37,12 @@ type AccessContext = {
   operationalStatus: string;
   operationalMessage: string;
   lockExpiresAt: string;
+  sessionStatus: string;
+  participantStatus: string;
+  heartbeatTimeoutAt: string;
+  endedAt: string;
+  endedBy: string;
+  closeReason: string;
   blockedBy: string[];
 };
 
@@ -105,7 +111,49 @@ type RuntimeOperationalSnapshot = {
   lockExpiresAt: string;
 };
 
-const PresenceTtlMs = 2 * 60 * 1000;
+type RuntimeSessionLifecycle = {
+  roomId: string;
+  minorProfileId: string;
+  minorRole: string;
+  activeShell: string;
+  sessionStatus: 'active' | 'stale' | 'closed_by_timeout' | 'closed_by_admin';
+  lastHeartbeatAt: string;
+  heartbeatTimeoutAt: string;
+  endedAt: string;
+  endedBy: string;
+  closeReason: string;
+  updatedAt: string;
+};
+
+type RuntimeParticipantLifecycle = {
+  roomId: string;
+  minorProfileId: string;
+  minorRole: string;
+  actorRole: string;
+  actorUserId: string;
+  activeShell: string;
+  participantStatus: 'active' | 'stale' | 'closed_by_timeout' | 'closed_by_admin' | 'participant_removed';
+  lastHeartbeatAt: string;
+  heartbeatTimeoutAt: string;
+  endedAt: string;
+  endedBy: string;
+  closeReason: string;
+  updatedAt: string;
+};
+
+type ResolvedRuntimeLifecycle = {
+  sessionStatus: string;
+  participantStatus: string;
+  heartbeatTimeoutAt: string;
+  endedAt: string;
+  endedBy: string;
+  closeReason: string;
+};
+
+const HeartbeatIntervalMs = 20 * 1000;
+const SessionStaleAfterMs = 45 * 1000;
+const SessionCloseAfterMs = 90 * 1000;
+const PresenceTtlMs = SessionCloseAfterMs;
 const OperationalLockDefaultMinutes = 15;
 const RuntimeEventTypes = new Set([
   'room.joined',
@@ -118,7 +166,10 @@ const RuntimeEventTypes = new Set([
   'presence.heartbeat_blocked_invite',
   'presence.heartbeat_blocked_admin_lock',
   'presence.access_blocked_parent_approval',
-  'presence.session_closed_timeout',
+  'presence.session_stale',
+  'room.session_closed_timeout',
+  'room.session_closed_admin',
+  'room.participant_removed_admin',
   'room_invite.created',
   'room_invite.accepted',
   'room_invite.revoked',
@@ -170,6 +221,8 @@ export class RoomsService {
   private readonly presenceByRoom = new Map<string, Map<string, PresenceParticipant>>();
   private readonly roomLocks = new Map<string, RuntimeOperationalLock>();
   private readonly participantLocks = new Map<string, RuntimeOperationalLock>();
+  private readonly sessionLifecycle = new Map<string, RuntimeSessionLifecycle>();
+  private readonly participantLifecycle = new Map<string, RuntimeParticipantLifecycle>();
 
   constructor(
     private readonly auditService: AuditService,
@@ -187,8 +240,9 @@ export class RoomsService {
   ) {}
 
   async list(minorProfileId: string, actor: AppActor) {
-    const access = await this.resolveAccess(minorProfileId, actor);
+    this.reconcileRuntimeState();
     const activeRoomId = this.resolveActiveRoomId(minorProfileId);
+    const access = await this.resolveAccess(minorProfileId, actor, activeRoomId ?? undefined);
     const requirements = this.serializeRequirements(access);
     const operationalOnlyBlocked = this.isOperationallyBlocked(access.blockedBy);
 
@@ -218,7 +272,15 @@ export class RoomsService {
         reason: requirements.blockedReason,
         presenceEnabled: access.policy.presenceEnabled,
         activeRoomId,
-        items: inviteCatalog ? this.buildRoomCatalog(access.policy, inviteCatalog) : [],
+        sessionStatus: access.sessionStatus,
+        participantStatus: access.participantStatus,
+        heartbeatTimeoutAt: access.heartbeatTimeoutAt || null,
+        endedAt: access.endedAt || null,
+        endedBy: access.endedBy || null,
+        closeReason: access.closeReason || requirements.blockedReason,
+        items: inviteCatalog
+          ? this.buildRoomCatalog(access.policy, actor, minorProfileId, inviteCatalog)
+          : [],
         requirements,
         operationalStatus: access.operationalStatus,
         operationalMessage: access.operationalMessage || requirements.blockedReason,
@@ -227,7 +289,7 @@ export class RoomsService {
     }
 
     const inviteCatalog = await this.buildRoomInviteCatalog(actor, minorProfileId, access.policy);
-    const items = this.buildRoomCatalog(access.policy, inviteCatalog);
+    const items = this.buildRoomCatalog(access.policy, actor, minorProfileId, inviteCatalog);
 
     await this.auditService.record('rooms.listed', {
       actorRole: actor.actorRole,
@@ -251,6 +313,12 @@ export class RoomsService {
           : 'Nenhuma sala monitorada foi publicada para este shell.',
       presenceEnabled: access.policy.presenceEnabled,
       activeRoomId,
+      sessionStatus: access.sessionStatus,
+      participantStatus: access.participantStatus,
+      heartbeatTimeoutAt: access.heartbeatTimeoutAt || null,
+      endedAt: access.endedAt || null,
+      endedBy: access.endedBy || null,
+      closeReason: access.closeReason || null,
       items,
       requirements,
       operationalStatus: access.operationalStatus,
@@ -260,6 +328,7 @@ export class RoomsService {
   }
 
   async join(roomId: string, dto: RoomActionDto, actor: AppActor) {
+    this.reconcileRuntimeState();
     const access = await this.resolveAccess(dto.minorProfileId, actor, roomId);
     if (access.blockedBy.length > 0) {
       await this.auditAccessBlocked('room.join_blocked', actor, access, roomId);
@@ -327,6 +396,7 @@ export class RoomsService {
       access.accessSource,
       access.policy.minorRole,
     );
+    const nextAccess = await this.resolveAccess(dto.minorProfileId, actor, room.id);
 
     await this.auditService.record('room.joined', {
       actorRole: actor.actorRole,
@@ -347,16 +417,23 @@ export class RoomsService {
       allowed: true,
       reason: 'Entrada monitorada autorizada.',
       room,
-      presence: this.buildPresenceState(room, dto.minorProfileId, activeShell, access),
+      presence: this.buildPresenceState(room, dto.minorProfileId, activeShell, nextAccess),
       activeRoomId: room.id,
-      requirements: this.serializeRequirements(access),
-      operationalStatus: access.operationalStatus,
-      operationalMessage: access.operationalMessage || null,
-      lockExpiresAt: access.lockExpiresAt || null,
+      requirements: this.serializeRequirements(nextAccess),
+      sessionStatus: nextAccess.sessionStatus,
+      participantStatus: nextAccess.participantStatus,
+      heartbeatTimeoutAt: nextAccess.heartbeatTimeoutAt || null,
+      endedAt: nextAccess.endedAt || null,
+      endedBy: nextAccess.endedBy || null,
+      closeReason: nextAccess.closeReason || null,
+      operationalStatus: nextAccess.operationalStatus,
+      operationalMessage: nextAccess.operationalMessage || null,
+      lockExpiresAt: nextAccess.lockExpiresAt || null,
     };
   }
 
   async leave(roomId: string, dto: RoomActionDto, actor: AppActor) {
+    this.reconcileRuntimeState();
     const access = await this.resolveAccess(dto.minorProfileId, actor, roomId);
     const activeShell = this.resolveShell(dto.activeShell, access.policy);
     const room = access.policy.roomsEnabled
@@ -370,6 +447,10 @@ export class RoomsService {
         this.presenceByRoom.delete(room.id);
       }
     }
+    this.participantLifecycle.delete(
+      this.buildParticipantLifecycleKey(room.id, dto.minorProfileId, actor.actorRole, actor.subjectId),
+    );
+    const nextAccess = await this.resolveAccess(dto.minorProfileId, actor, room.id);
 
     await this.auditService.record('room.left', {
       actorRole: actor.actorRole,
@@ -386,23 +467,30 @@ export class RoomsService {
     return {
       allowed: access.blockedBy.length == 0,
       reason:
-        access.blockedBy.length == 0
+        nextAccess.blockedBy.length == 0
           ? 'Sala monitorada encerrada.'
-          : this.serializeRequirements(access).blockedReason,
+          : this.serializeRequirements(nextAccess).blockedReason,
       room,
       presence:
-        access.blockedBy.length == 0
-          ? this.buildPresenceState(room, dto.minorProfileId, activeShell, access)
-          : this.buildPresenceBlockedState(room, dto.minorProfileId, activeShell, access),
+        nextAccess.blockedBy.length == 0
+          ? this.buildPresenceState(room, dto.minorProfileId, activeShell, nextAccess)
+          : this.buildPresenceBlockedState(room, dto.minorProfileId, activeShell, nextAccess),
       activeRoomId: this.resolveActiveRoomId(dto.minorProfileId),
-      requirements: this.serializeRequirements(access),
-      operationalStatus: access.operationalStatus,
-      operationalMessage: access.operationalMessage || null,
-      lockExpiresAt: access.lockExpiresAt || null,
+      requirements: this.serializeRequirements(nextAccess),
+      sessionStatus: nextAccess.sessionStatus,
+      participantStatus: nextAccess.participantStatus,
+      heartbeatTimeoutAt: nextAccess.heartbeatTimeoutAt || null,
+      endedAt: nextAccess.endedAt || null,
+      endedBy: nextAccess.endedBy || null,
+      closeReason: nextAccess.closeReason || null,
+      operationalStatus: nextAccess.operationalStatus,
+      operationalMessage: nextAccess.operationalMessage || null,
+      lockExpiresAt: nextAccess.lockExpiresAt || null,
     };
   }
 
   async heartbeat(dto: PresenceHeartbeatDto, actor: AppActor) {
+    this.reconcileRuntimeState();
     const access = await this.resolveAccess(dto.minorProfileId, actor, dto.roomId);
     if (access.blockedBy.length > 0) {
       await this.auditAccessBlocked('presence.heartbeat_blocked', actor, access, dto.roomId);
@@ -470,6 +558,7 @@ export class RoomsService {
       access.accessSource,
       access.policy.minorRole,
     );
+    const nextAccess = await this.resolveAccess(dto.minorProfileId, actor, room.id);
 
     await this.auditService.record('presence.heartbeat', {
       actorRole: actor.actorRole,
@@ -486,10 +575,11 @@ export class RoomsService {
       },
     });
 
-    return this.buildPresenceState(room, dto.minorProfileId, activeShell, access);
+    return this.buildPresenceState(room, dto.minorProfileId, activeShell, nextAccess);
   }
 
   async getPresence(roomId: string, minorProfileId: string, actor: AppActor) {
+    this.reconcileRuntimeState();
     const access = await this.resolveAccess(minorProfileId, actor, roomId);
     const activeShell = this.resolveShell(undefined, access.policy);
     const room =
@@ -524,8 +614,7 @@ export class RoomsService {
     actor: { subjectId: string; actorRole: string },
     filters: PresenceFilters = {},
   ) {
-    this.prunePresence();
-    this.pruneOperationalLocks();
+    this.reconcileRuntimeState();
 
     const rows = new Array<{
       roomId: string;
@@ -538,11 +627,25 @@ export class RoomsService {
       activeShell: string;
       joinedAt: string;
       lastHeartbeatAt: string;
+      sessionStatus: string;
+      participantStatus: string;
+      heartbeatTimeoutAt: string | null;
+      endedAt: string | null;
+      endedBy: string | null;
+      closeReason: string | null;
     }>();
 
     for (const [roomId, participants] of this.presenceByRoom.entries()) {
       const roomTitle = this.resolveAdminRoomTitle(roomId);
       for (const participant of participants.values()) {
+        const lifecycle = this.resolveRuntimeLifecycle(
+          participant.minorProfileId,
+          {
+            subjectId: participant.actorUserId,
+            actorRole: participant.actorRole,
+          },
+          roomId,
+        );
         rows.push({
           roomId,
           roomTitle,
@@ -554,6 +657,12 @@ export class RoomsService {
           activeShell: participant.activeShell,
           joinedAt: participant.joinedAt,
           lastHeartbeatAt: participant.lastHeartbeatAt,
+          sessionStatus: lifecycle.sessionStatus,
+          participantStatus: lifecycle.participantStatus,
+          heartbeatTimeoutAt: lifecycle.heartbeatTimeoutAt || null,
+          endedAt: lifecycle.endedAt || null,
+          endedBy: lifecycle.endedBy || null,
+          closeReason: lifecycle.closeReason || null,
         });
       }
     }
@@ -601,6 +710,7 @@ export class RoomsService {
     actor: { subjectId: string; actorRole: string },
     filters: RuntimeEventFilters = {},
   ) {
+    this.reconcileRuntimeState();
     const events = await this.auditEventRepository.find({
       order: { occurredAt: 'DESC' },
       take: 400,
@@ -657,8 +767,7 @@ export class RoomsService {
       throw new NotFoundException('Minor profile is required');
     }
 
-    this.prunePresence();
-    this.pruneOperationalLocks();
+    this.reconcileRuntimeState();
 
     const policy = await this.interactionPolicyRepository.findOne({
       where: { minorProfileId },
@@ -674,18 +783,34 @@ export class RoomsService {
         ? this.ensureRoomAllowed(roomId, policy)
         : this.resolveFallbackRoom(roomId, policy, policy.minorRole === 'adolescent' ? 'adolescent' : 'child');
     const participants = this.resolveParticipantsForRoom(room.id, minorProfileId).map(
-      (participant) => ({
-        roomId: room.id,
-        roomTitle: room.title,
-        minorProfileId: participant.minorProfileId,
-        minorRole: participant.minorRole,
-        actorRole: participant.actorRole,
-        actorUserId: participant.actorUserId,
-        accessSource: participant.accessSource,
-        activeShell: participant.activeShell,
-        joinedAt: participant.joinedAt,
-        lastHeartbeatAt: participant.lastHeartbeatAt,
-      }),
+      (participant) => {
+        const lifecycle = this.resolveRuntimeLifecycle(
+          participant.minorProfileId,
+          {
+            subjectId: participant.actorUserId,
+            actorRole: participant.actorRole,
+          },
+          room.id,
+        );
+        return {
+          roomId: room.id,
+          roomTitle: room.title,
+          minorProfileId: participant.minorProfileId,
+          minorRole: participant.minorRole,
+          actorRole: participant.actorRole,
+          actorUserId: participant.actorUserId,
+          accessSource: participant.accessSource,
+          activeShell: participant.activeShell,
+          joinedAt: participant.joinedAt,
+          lastHeartbeatAt: participant.lastHeartbeatAt,
+          sessionStatus: lifecycle.sessionStatus,
+          participantStatus: lifecycle.participantStatus,
+          heartbeatTimeoutAt: lifecycle.heartbeatTimeoutAt || null,
+          endedAt: lifecycle.endedAt || null,
+          endedBy: lifecycle.endedBy || null,
+          closeReason: lifecycle.closeReason || null,
+        };
+      },
     );
     const invite = await this.resolveLatestRoomInviteStateForAdmin(minorProfileId, room.id);
     const lock = this.resolveOperationalLockSnapshot(minorProfileId, {
@@ -693,12 +818,21 @@ export class RoomsService {
       actorRole: 'parent_guardian',
       email: '',
     }, room.id);
+    const lifecycle = this.resolveRuntimeLifecycle(
+      minorProfileId,
+      {
+        subjectId: '',
+        actorRole: '',
+      },
+      room.id,
+      lock,
+    );
     const lastHeartbeatAt =
       participants.length > 0
         ? participants
             .map((item) => item.lastHeartbeatAt)
             .sort((left, right) => Date.parse(right) - Date.parse(left))[0]
-        : null;
+        : this.sessionLifecycle.get(this.buildSessionKey(room.id, minorProfileId))?.lastHeartbeatAt ?? null;
 
     await this.auditService.record('admin.room_snapshot_viewed', {
       actorRole: actor.actorRole,
@@ -730,6 +864,12 @@ export class RoomsService {
       operationalStatus: lock.status,
       operationalMessage: lock.message || null,
       lockExpiresAt: lock.lockExpiresAt || null,
+      sessionStatus: lifecycle.sessionStatus || null,
+      participantStatus: lifecycle.participantStatus || null,
+      heartbeatTimeoutAt: lifecycle.heartbeatTimeoutAt || null,
+      endedAt: lifecycle.endedAt || null,
+      endedBy: lifecycle.endedBy || null,
+      closeReason: lifecycle.closeReason || null,
       participantCount: participants.length,
       participants,
       lastHeartbeatAt,
@@ -759,6 +899,64 @@ export class RoomsService {
     });
 
     this.removeParticipantsMatching(snapshot.roomId, snapshot.minorProfileId, () => true);
+    this.sessionLifecycle.set(this.buildSessionKey(snapshot.roomId, snapshot.minorProfileId), {
+      roomId: snapshot.roomId,
+      minorProfileId: snapshot.minorProfileId,
+      minorRole: snapshot.minorRole,
+      activeShell: snapshot.participants[0]?.activeShell ?? (snapshot.minorRole === 'adolescent' ? 'adolescent' : 'child'),
+      sessionStatus: 'closed_by_admin',
+      lastHeartbeatAt: snapshot.lastHeartbeatAt ?? new Date().toISOString(),
+      heartbeatTimeoutAt: lock.expiresAt,
+      endedAt: lock.createdAt,
+      endedBy: actor.actorRole,
+      closeReason: lock.message,
+      updatedAt: lock.createdAt,
+    });
+
+    for (const participant of snapshot.participants) {
+      this.participantLifecycle.set(
+        this.buildParticipantLifecycleKey(
+          snapshot.roomId,
+          snapshot.minorProfileId,
+          participant.actorRole,
+          participant.actorUserId,
+        ),
+        {
+          roomId: snapshot.roomId,
+          minorProfileId: snapshot.minorProfileId,
+          minorRole: snapshot.minorRole,
+          actorRole: participant.actorRole,
+          actorUserId: participant.actorUserId,
+          activeShell: participant.activeShell,
+          participantStatus: 'closed_by_admin',
+          lastHeartbeatAt: participant.lastHeartbeatAt,
+          heartbeatTimeoutAt: lock.expiresAt,
+          endedAt: lock.createdAt,
+          endedBy: actor.actorRole,
+          closeReason: lock.message,
+          updatedAt: lock.createdAt,
+        },
+      );
+    }
+
+    await this.auditService.record('room.session_closed_admin', {
+      actorRole: actor.actorRole,
+      actorUserId: actor.subjectId,
+      resourceType: 'room',
+      resourceId: snapshot.roomId,
+      outcome: 'success',
+      severity: 'high',
+      metadata: {
+        minorProfileId: snapshot.minorProfileId,
+        minorRole: snapshot.minorRole,
+        roomTitle: snapshot.roomTitle,
+        sessionStatus: 'closed_by_admin',
+        endedAt: lock.createdAt,
+        endedBy: actor.actorRole,
+        closeReason: lock.message,
+        lockExpiresAt: lock.expiresAt,
+      },
+    });
 
     await this.auditService.record('admin.room_terminated', {
       actorRole: actor.actorRole,
@@ -815,6 +1013,7 @@ export class RoomsService {
         body.message?.trim() ||
         'Participacao encerrada temporariamente pela operacao. Aguarde nova liberacao.',
     });
+    const resolvedActorUserId = actorUserId ?? '';
 
     if (target) {
       this.removeParticipantsMatching(roomId, body.minorProfileId, (participant) => {
@@ -830,6 +1029,50 @@ export class RoomsService {
       });
     }
 
+    this.participantLifecycle.set(
+      this.buildParticipantLifecycleKey(
+        roomId,
+        body.minorProfileId,
+        body.actorRole,
+        resolvedActorUserId,
+      ),
+      {
+        roomId,
+        minorProfileId: body.minorProfileId,
+        minorRole: snapshot.minorRole,
+        actorRole: body.actorRole,
+        actorUserId: resolvedActorUserId,
+        activeShell: target?.activeShell ?? (snapshot.minorRole === 'adolescent' ? 'adolescent' : 'child'),
+        participantStatus: 'participant_removed',
+        lastHeartbeatAt: target?.lastHeartbeatAt ?? lock.createdAt,
+        heartbeatTimeoutAt: lock.expiresAt,
+        endedAt: lock.createdAt,
+        endedBy: actor.actorRole,
+        closeReason: lock.message,
+        updatedAt: lock.createdAt,
+      },
+    );
+
+    await this.auditService.record('room.participant_removed_admin', {
+      actorRole: actor.actorRole,
+      actorUserId: actor.subjectId,
+      resourceType: 'room',
+      resourceId: roomId,
+      outcome: 'success',
+      severity: 'high',
+      metadata: {
+        minorProfileId: body.minorProfileId,
+        minorRole: snapshot.minorRole,
+        targetActorRole: body.actorRole,
+        targetActorUserId: resolvedActorUserId,
+        participantStatus: 'participant_removed',
+        endedAt: lock.createdAt,
+        endedBy: actor.actorRole,
+        closeReason: lock.message,
+        lockExpiresAt: lock.expiresAt,
+      },
+    });
+
     await this.auditService.record('admin.runtime_participant_removed', {
       actorRole: actor.actorRole,
       actorUserId: actor.subjectId,
@@ -840,7 +1083,7 @@ export class RoomsService {
       metadata: {
         minorProfileId: body.minorProfileId,
         targetActorRole: body.actorRole,
-        targetActorUserId: actorUserId ?? '',
+        targetActorUserId: resolvedActorUserId,
         lockExpiresAt: lock.expiresAt,
         operationalMessage: lock.message,
       },
@@ -917,6 +1160,7 @@ export class RoomsService {
       : 'missing';
     const inviteSnapshot = await this.resolveLatestRoomInviteState(actor, minorProfileId, roomId);
     const operationalLock = this.resolveOperationalLockSnapshot(minorProfileId, actor, roomId);
+    const lifecycle = this.resolveRuntimeLifecycle(minorProfileId, actor, roomId, operationalLock);
 
     const blockedBy: string[] = [];
 
@@ -990,6 +1234,12 @@ export class RoomsService {
       operationalStatus: operationalLock.status,
       operationalMessage: operationalLock.message,
       lockExpiresAt: operationalLock.lockExpiresAt,
+      sessionStatus: lifecycle.sessionStatus,
+      participantStatus: lifecycle.participantStatus,
+      heartbeatTimeoutAt: lifecycle.heartbeatTimeoutAt,
+      endedAt: lifecycle.endedAt,
+      endedBy: lifecycle.endedBy,
+      closeReason: lifecycle.closeReason,
       blockedBy,
     };
   }
@@ -1011,15 +1261,29 @@ export class RoomsService {
 
   private buildRoomCatalog(
     policy: InteractionPolicy,
+    actor: AppActor,
+    minorProfileId: string,
     inviteCatalog: Map<string, RoomInviteSnapshot> = new Map<string, RoomInviteSnapshot>(),
   ) {
     return this.buildBaseRoomCatalog(policy).map((room) => {
       const invite = inviteCatalog.get(room.id);
+      const lifecycle = this.resolveRuntimeLifecycle(
+        minorProfileId,
+        actor,
+        room.id,
+        this.resolveOperationalLockSnapshot(minorProfileId, actor, room.id),
+      );
       return {
         ...room,
         inviteStatus: invite?.status ?? 'missing',
         activeInviteId: invite?.inviteId ?? null,
         inviteExpiresAt: invite?.expiresAt ?? null,
+        sessionStatus: lifecycle.sessionStatus,
+        participantStatus: lifecycle.participantStatus,
+        heartbeatTimeoutAt: lifecycle.heartbeatTimeoutAt || null,
+        endedAt: lifecycle.endedAt || null,
+        endedBy: lifecycle.endedBy || null,
+        closeReason: lifecycle.closeReason || null,
       };
     });
   }
@@ -1160,7 +1424,7 @@ export class RoomsService {
     accessSource: AccessContext['accessSource'],
     minorRole: string,
   ) {
-    this.prunePresence();
+    this.reconcileRuntimeState();
     const participantKey = this.resolveParticipantKey(minorProfileId, actor.actorRole);
     const now = new Date().toISOString();
     const roomPresence = this.presenceByRoom.get(roomId) ?? new Map<string, PresenceParticipant>();
@@ -1179,6 +1443,13 @@ export class RoomsService {
     });
 
     this.presenceByRoom.set(roomId, roomPresence);
+    this.touchRuntimeLifecycle(
+      roomId,
+      minorProfileId,
+      actor,
+      activeShell,
+      minorRole,
+    );
     return roomPresence.get(participantKey);
   }
 
@@ -1188,9 +1459,13 @@ export class RoomsService {
     activeShell: string,
     access: AccessContext,
   ) {
-    this.prunePresence();
+    this.reconcileRuntimeState();
     const roomPresence = this.presenceByRoom.get(room.id);
     const participants = roomPresence ? Array.from(roomPresence.values()) : [];
+    const lifecycle = this.resolveRuntimeLifecycle(minorProfileId, {
+      subjectId: '',
+      actorRole: '',
+    }, room.id);
 
     return {
       allowed: true,
@@ -1205,6 +1480,12 @@ export class RoomsService {
       activeShell,
       status: participants.length > 0 ? 'active' : 'idle',
       presenceMode: room.presenceMode,
+      sessionStatus: lifecycle.sessionStatus,
+      participantStatus: access.participantStatus || lifecycle.participantStatus,
+      heartbeatTimeoutAt: lifecycle.heartbeatTimeoutAt || null,
+      endedAt: lifecycle.endedAt || null,
+      endedBy: lifecycle.endedBy || null,
+      closeReason: lifecycle.closeReason || null,
       participantCount: participants.length,
       participants,
       operationalStatus: access.operationalStatus,
@@ -1219,6 +1500,10 @@ export class RoomsService {
     activeShell: string,
     access: AccessContext,
   ) {
+    const lifecycle = this.resolveRuntimeLifecycle(minorProfileId, {
+      subjectId: '',
+      actorRole: '',
+    }, room.id);
     return {
       allowed: false,
       reason: this.serializeRequirements(access).blockedReason,
@@ -1229,6 +1514,12 @@ export class RoomsService {
       activeShell,
       status: 'blocked',
       presenceMode: room.presenceMode,
+      sessionStatus: access.sessionStatus || lifecycle.sessionStatus,
+      participantStatus: access.participantStatus || lifecycle.participantStatus,
+      heartbeatTimeoutAt: access.heartbeatTimeoutAt || lifecycle.heartbeatTimeoutAt || null,
+      endedAt: access.endedAt || lifecycle.endedAt || null,
+      endedBy: access.endedBy || lifecycle.endedBy || null,
+      closeReason: access.closeReason || lifecycle.closeReason || null,
       participantCount: 0,
       participants: [],
       operationalStatus: access.operationalStatus,
@@ -1238,7 +1529,7 @@ export class RoomsService {
   }
 
   private resolveActiveRoomId(minorProfileId: string) {
-    this.prunePresence();
+    this.reconcileRuntimeState();
 
     for (const [roomId, participants] of this.presenceByRoom.entries()) {
       for (const participant of participants.values()) {
@@ -1297,6 +1588,12 @@ export class RoomsService {
       roomInviteStatus: access.roomInviteStatus,
       activeInviteId: access.activeInviteId || null,
       inviteExpiresAt: access.inviteExpiresAt || null,
+      sessionStatus: access.sessionStatus || null,
+      participantStatus: access.participantStatus || null,
+      heartbeatTimeoutAt: access.heartbeatTimeoutAt || null,
+      endedAt: access.endedAt || null,
+      endedBy: access.endedBy || null,
+      closeReason: access.closeReason || null,
       policySnapshot: {
         minorProfileId: access.policy.minorProfileId,
         minorRole: access.policy.minorRole,
@@ -1437,8 +1734,134 @@ export class RoomsService {
         lockExpiresAt: access.lockExpiresAt,
         operationalStatus: access.operationalStatus,
         operationalMessage: access.operationalMessage,
+        sessionStatus: access.sessionStatus,
+        participantStatus: access.participantStatus,
+        heartbeatTimeoutAt: access.heartbeatTimeoutAt,
+        endedAt: access.endedAt,
+        endedBy: access.endedBy,
+        closeReason: access.closeReason,
       },
     });
+  }
+
+  private reconcileRuntimeState() {
+    this.pruneOperationalLocks();
+    this.prunePresence();
+  }
+
+  private touchRuntimeLifecycle(
+    roomId: string,
+    minorProfileId: string,
+    actor: AppActor,
+    activeShell: string,
+    minorRole: string,
+  ) {
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const heartbeatTimeoutAt = new Date(now.getTime() + SessionCloseAfterMs).toISOString();
+    const sessionKey = this.buildSessionKey(roomId, minorProfileId);
+    const participantKey = this.buildParticipantLifecycleKey(
+      roomId,
+      minorProfileId,
+      actor.actorRole,
+      actor.subjectId,
+    );
+
+    this.sessionLifecycle.set(sessionKey, {
+      roomId,
+      minorProfileId,
+      minorRole,
+      activeShell,
+      sessionStatus: 'active',
+      lastHeartbeatAt: nowIso,
+      heartbeatTimeoutAt,
+      endedAt: '',
+      endedBy: '',
+      closeReason: '',
+      updatedAt: nowIso,
+    });
+
+    this.participantLifecycle.set(participantKey, {
+      roomId,
+      minorProfileId,
+      minorRole,
+      actorRole: actor.actorRole,
+      actorUserId: actor.subjectId,
+      activeShell,
+      participantStatus: 'active',
+      lastHeartbeatAt: nowIso,
+      heartbeatTimeoutAt,
+      endedAt: '',
+      endedBy: '',
+      closeReason: '',
+      updatedAt: nowIso,
+    });
+  }
+
+  private resolveRuntimeLifecycle(
+    minorProfileId: string,
+    actor: Pick<AppActor, 'subjectId' | 'actorRole'>,
+    roomId?: string,
+    operationalLock?: RuntimeOperationalSnapshot,
+  ): ResolvedRuntimeLifecycle {
+    const session = roomId
+      ? this.sessionLifecycle.get(this.buildSessionKey(roomId, minorProfileId)) ?? null
+      : this.findLatestSessionLifecycle(minorProfileId);
+    const participant =
+      actor.subjectId && actor.actorRole
+        ? roomId
+          ? this.participantLifecycle.get(
+              this.buildParticipantLifecycleKey(
+                roomId,
+                minorProfileId,
+                actor.actorRole,
+                actor.subjectId,
+              ),
+            ) ?? null
+          : this.findLatestParticipantLifecycle(minorProfileId, actor.actorRole, actor.subjectId)
+        : null;
+    const resolvedLock =
+      operationalLock ?? this.resolveOperationalLockSnapshot(minorProfileId, actor as AppActor, roomId);
+
+    const sessionStatus = resolvedLock.roomLock
+      ? 'closed_by_admin'
+      : session?.sessionStatus ?? '';
+    const participantStatus = resolvedLock.participantLock
+      ? 'participant_removed'
+      : participant?.participantStatus ??
+        (actor.subjectId && actor.actorRole ? 'idle' : '');
+    const heartbeatTimeoutAt = session?.heartbeatTimeoutAt ?? participant?.heartbeatTimeoutAt ?? '';
+
+    if (resolvedLock.participantLock) {
+      return {
+        sessionStatus,
+        participantStatus,
+        heartbeatTimeoutAt,
+        endedAt: resolvedLock.participantLock.createdAt,
+        endedBy: resolvedLock.participantLock.createdByRole,
+        closeReason: resolvedLock.participantLock.message,
+      };
+    }
+
+    if (resolvedLock.roomLock) {
+      return {
+        sessionStatus,
+        participantStatus,
+        heartbeatTimeoutAt,
+        endedAt: resolvedLock.roomLock.createdAt,
+        endedBy: resolvedLock.roomLock.createdByRole,
+        closeReason: resolvedLock.roomLock.message,
+      };
+    }
+
+    return {
+      sessionStatus,
+      participantStatus,
+      heartbeatTimeoutAt,
+      endedAt: participant?.endedAt || session?.endedAt || '',
+      endedBy: participant?.endedBy || session?.endedBy || '',
+      closeReason: participant?.closeReason || session?.closeReason || '',
+    };
   }
 
   private serializeRuntimeEvent(event: AuditEvent) {
@@ -1454,6 +1877,12 @@ export class RoomsService {
     const activeShell = this.resolveMetadataString(event.metadata, 'activeShell');
     const inviteExpiresAt = this.resolveMetadataString(event.metadata, 'inviteExpiresAt');
     const lockExpiresAt = this.resolveMetadataString(event.metadata, 'lockExpiresAt');
+    const sessionStatus = this.resolveMetadataString(event.metadata, 'sessionStatus');
+    const participantStatus = this.resolveMetadataString(event.metadata, 'participantStatus');
+    const heartbeatTimeoutAt = this.resolveMetadataString(event.metadata, 'heartbeatTimeoutAt');
+    const endedAt = this.resolveMetadataString(event.metadata, 'endedAt');
+    const endedBy = this.resolveMetadataString(event.metadata, 'endedBy');
+    const closeReason = this.resolveMetadataString(event.metadata, 'closeReason');
     const roomTitle =
       this.resolveMetadataString(event.metadata, 'roomTitle') ||
       this.resolveAdminRoomTitle(roomId);
@@ -1477,6 +1906,12 @@ export class RoomsService {
       activeInviteId: inviteId || this.resolveMetadataString(event.metadata, 'activeInviteId'),
       inviteExpiresAt: inviteExpiresAt || null,
       lockExpiresAt: lockExpiresAt || null,
+      sessionStatus: sessionStatus || null,
+      participantStatus: participantStatus || null,
+      heartbeatTimeoutAt: heartbeatTimeoutAt || null,
+      endedAt: endedAt || null,
+      endedBy: endedBy || null,
+      closeReason: closeReason || null,
       blockedBy: blockedBy ? blockedBy.split(',').filter(Boolean) : [],
       summary: this.buildRuntimeEventSummary(event.eventType, roomTitle, event.metadata),
     };
@@ -1508,8 +1943,14 @@ export class RoomsService {
         return `Heartbeat bloqueado por convite em ${roomTitle}.`;
       case 'presence.heartbeat_blocked_admin_lock':
         return `Heartbeat bloqueado por lock operacional em ${roomTitle}.`;
-      case 'presence.session_closed_timeout':
-        return `Sessao encerrada por ausencia de heartbeat em ${roomTitle}.`;
+      case 'presence.session_stale':
+        return `Sessao marcada como stale em ${roomTitle}.`;
+      case 'room.session_closed_timeout':
+        return `Sessao encerrada por timeout em ${roomTitle}.`;
+      case 'room.session_closed_admin':
+        return `Sessao encerrada pela operacao em ${roomTitle}.`;
+      case 'room.participant_removed_admin':
+        return `Participante removido pela operacao em ${roomTitle}.`;
       case 'admin.room_terminated':
         return `Sala encerrada operacionalmente em ${roomTitle}.`;
       case 'admin.runtime_participant_removed':
@@ -1534,13 +1975,78 @@ export class RoomsService {
 
   private prunePresence() {
     const now = Date.now();
+    const nowIso = new Date(now).toISOString();
+    const activeSessionKeys = new Set<string>();
+    const activeParticipantKeys = new Set<string>();
 
     for (const [roomId, participants] of this.presenceByRoom.entries()) {
+      const latestByMinor = new Map<string, PresenceParticipant>();
+
       for (const [participantKey, participant] of participants.entries()) {
         const lastHeartbeatAt = Date.parse(participant.lastHeartbeatAt);
+        const participantLifecycleKey = this.buildParticipantLifecycleKey(
+          roomId,
+          participant.minorProfileId,
+          participant.actorRole,
+          participant.actorUserId,
+        );
+
         if (Number.isNaN(lastHeartbeatAt) || now - lastHeartbeatAt > PresenceTtlMs) {
           participants.delete(participantKey);
-          void this.auditService.record('presence.session_closed_timeout', {
+          this.participantLifecycle.set(participantLifecycleKey, {
+            roomId,
+            minorProfileId: participant.minorProfileId,
+            minorRole: participant.minorRole,
+            actorRole: participant.actorRole,
+            actorUserId: participant.actorUserId,
+            activeShell: participant.activeShell,
+            participantStatus: 'closed_by_timeout',
+            lastHeartbeatAt: participant.lastHeartbeatAt,
+            heartbeatTimeoutAt: new Date(lastHeartbeatAt + SessionCloseAfterMs).toISOString(),
+            endedAt: nowIso,
+            endedBy: 'system_timeout',
+            closeReason: 'Participacao encerrada por ausencia de heartbeat.',
+            updatedAt: nowIso,
+          });
+          continue;
+        }
+
+        activeParticipantKeys.add(participantLifecycleKey);
+        const participantStatus = now - lastHeartbeatAt >= SessionStaleAfterMs ? 'stale' : 'active';
+        const heartbeatTimeoutAt = new Date(lastHeartbeatAt + SessionCloseAfterMs).toISOString();
+        const existingParticipantLifecycle = this.participantLifecycle.get(participantLifecycleKey);
+        this.participantLifecycle.set(participantLifecycleKey, {
+          roomId,
+          minorProfileId: participant.minorProfileId,
+          minorRole: participant.minorRole,
+          actorRole: participant.actorRole,
+          actorUserId: participant.actorUserId,
+          activeShell: participant.activeShell,
+          participantStatus,
+          lastHeartbeatAt: participant.lastHeartbeatAt,
+          heartbeatTimeoutAt,
+          endedAt: participantStatus === 'active' ? '' : existingParticipantLifecycle?.endedAt ?? '',
+          endedBy: participantStatus === 'active' ? '' : existingParticipantLifecycle?.endedBy ?? '',
+          closeReason:
+            participantStatus === 'active' ? '' : existingParticipantLifecycle?.closeReason ?? '',
+          updatedAt: nowIso,
+        });
+
+        const latest = latestByMinor.get(participant.minorProfileId);
+        if (!latest || Date.parse(latest.lastHeartbeatAt) < lastHeartbeatAt) {
+          latestByMinor.set(participant.minorProfileId, participant);
+        }
+      }
+
+      for (const participant of latestByMinor.values()) {
+        const lastHeartbeatAt = Date.parse(participant.lastHeartbeatAt);
+        const sessionKey = this.buildSessionKey(roomId, participant.minorProfileId);
+        const existingSession = this.sessionLifecycle.get(sessionKey);
+        const sessionStatus = now - lastHeartbeatAt >= SessionStaleAfterMs ? 'stale' : 'active';
+        const heartbeatTimeoutAt = new Date(lastHeartbeatAt + SessionCloseAfterMs).toISOString();
+
+        if (sessionStatus === 'stale' && existingSession?.sessionStatus !== 'stale') {
+          void this.auditService.record('presence.session_stale', {
             actorRole: participant.actorRole,
             actorUserId: participant.actorUserId,
             resourceType: 'room',
@@ -1553,13 +2059,143 @@ export class RoomsService {
               activeShell: participant.activeShell,
               accessSource: participant.accessSource,
               roomTitle: this.resolveAdminRoomTitle(roomId),
+              sessionStatus,
+              heartbeatTimeoutAt,
             },
           });
         }
+
+        this.sessionLifecycle.set(sessionKey, {
+          roomId,
+          minorProfileId: participant.minorProfileId,
+          minorRole: participant.minorRole,
+          activeShell: participant.activeShell,
+          sessionStatus,
+          lastHeartbeatAt: participant.lastHeartbeatAt,
+          heartbeatTimeoutAt,
+          endedAt: '',
+          endedBy: '',
+          closeReason: '',
+          updatedAt: nowIso,
+        });
+        activeSessionKeys.add(sessionKey);
       }
 
       if (participants.size === 0) {
         this.presenceByRoom.delete(roomId);
+      }
+    }
+
+    for (const [sessionKey, session] of this.sessionLifecycle.entries()) {
+      if (activeSessionKeys.has(sessionKey)) {
+        continue;
+      }
+
+      if (session.sessionStatus === 'closed_by_admin' || session.sessionStatus === 'closed_by_timeout') {
+        continue;
+      }
+
+      const lastHeartbeatAt = Date.parse(session.lastHeartbeatAt);
+      if (Number.isNaN(lastHeartbeatAt)) {
+        continue;
+      }
+
+      if (now - lastHeartbeatAt >= SessionCloseAfterMs) {
+        void this.auditService.record('room.session_closed_timeout', {
+          actorRole: 'system',
+          actorUserId: '',
+          resourceType: 'room',
+          resourceId: session.roomId,
+          outcome: 'success',
+          severity: 'low',
+          metadata: {
+            minorProfileId: session.minorProfileId,
+            minorRole: session.minorRole,
+            activeShell: session.activeShell,
+            roomTitle: this.resolveAdminRoomTitle(session.roomId),
+            sessionStatus: 'closed_by_timeout',
+          },
+        });
+
+        this.sessionLifecycle.set(sessionKey, {
+          ...session,
+          sessionStatus: 'closed_by_timeout',
+          heartbeatTimeoutAt: new Date(lastHeartbeatAt + SessionCloseAfterMs).toISOString(),
+          endedAt: nowIso,
+          endedBy: 'system_timeout',
+          closeReason: 'Sessao encerrada por ausencia de heartbeat.',
+          updatedAt: nowIso,
+        });
+        continue;
+      }
+
+      if (now - lastHeartbeatAt >= SessionStaleAfterMs && session.sessionStatus !== 'stale') {
+        void this.auditService.record('presence.session_stale', {
+          actorRole: 'system',
+          actorUserId: '',
+          resourceType: 'room',
+          resourceId: session.roomId,
+          outcome: 'success',
+          severity: 'low',
+          metadata: {
+            minorProfileId: session.minorProfileId,
+            minorRole: session.minorRole,
+            activeShell: session.activeShell,
+            roomTitle: this.resolveAdminRoomTitle(session.roomId),
+            sessionStatus: 'stale',
+            heartbeatTimeoutAt: new Date(lastHeartbeatAt + SessionCloseAfterMs).toISOString(),
+          },
+        });
+      }
+
+      if (now - lastHeartbeatAt >= SessionStaleAfterMs) {
+        this.sessionLifecycle.set(sessionKey, {
+          ...session,
+          sessionStatus: 'stale',
+          heartbeatTimeoutAt: new Date(lastHeartbeatAt + SessionCloseAfterMs).toISOString(),
+          updatedAt: nowIso,
+        });
+      }
+    }
+
+    for (const [participantKey, participant] of this.participantLifecycle.entries()) {
+      if (activeParticipantKeys.has(participantKey)) {
+        continue;
+      }
+
+      if (
+        participant.participantStatus === 'participant_removed' ||
+        participant.participantStatus === 'closed_by_admin' ||
+        participant.participantStatus === 'closed_by_timeout'
+      ) {
+        continue;
+      }
+
+      const lastHeartbeatAt = Date.parse(participant.lastHeartbeatAt);
+      if (Number.isNaN(lastHeartbeatAt)) {
+        continue;
+      }
+
+      if (now - lastHeartbeatAt >= SessionCloseAfterMs) {
+        this.participantLifecycle.set(participantKey, {
+          ...participant,
+          participantStatus: 'closed_by_timeout',
+          heartbeatTimeoutAt: new Date(lastHeartbeatAt + SessionCloseAfterMs).toISOString(),
+          endedAt: nowIso,
+          endedBy: 'system_timeout',
+          closeReason: 'Participacao encerrada por ausencia de heartbeat.',
+          updatedAt: nowIso,
+        });
+        continue;
+      }
+
+      if (now - lastHeartbeatAt >= SessionStaleAfterMs) {
+        this.participantLifecycle.set(participantKey, {
+          ...participant,
+          participantStatus: 'stale',
+          heartbeatTimeoutAt: new Date(lastHeartbeatAt + SessionCloseAfterMs).toISOString(),
+          updatedAt: nowIso,
+        });
       }
     }
   }
@@ -1571,6 +2207,14 @@ export class RoomsService {
       const expiresAt = Date.parse(lock.expiresAt);
       if (!Number.isNaN(expiresAt) && expiresAt <= now) {
         this.roomLocks.delete(key);
+        const session = this.sessionLifecycle.get(this.buildSessionKey(lock.roomId, lock.minorProfileId));
+        if (
+          session &&
+          session.sessionStatus === 'closed_by_admin' &&
+          session.endedAt === lock.createdAt
+        ) {
+          this.sessionLifecycle.delete(this.buildSessionKey(lock.roomId, lock.minorProfileId));
+        }
       }
     }
 
@@ -1578,6 +2222,28 @@ export class RoomsService {
       const expiresAt = Date.parse(lock.expiresAt);
       if (!Number.isNaN(expiresAt) && expiresAt <= now) {
         this.participantLocks.delete(key);
+        const participant = this.participantLifecycle.get(
+          this.buildParticipantLifecycleKey(
+            lock.roomId,
+            lock.minorProfileId,
+            lock.actorRole ?? '',
+            lock.actorUserId ?? '',
+          ),
+        );
+        if (
+          participant &&
+          participant.participantStatus === 'participant_removed' &&
+          participant.endedAt === lock.createdAt
+        ) {
+          this.participantLifecycle.delete(
+            this.buildParticipantLifecycleKey(
+              lock.roomId,
+              lock.minorProfileId,
+              lock.actorRole ?? '',
+              lock.actorUserId ?? '',
+            ),
+          );
+        }
       }
     }
   }
@@ -1703,6 +2369,10 @@ export class RoomsService {
     return `${roomId}:${minorProfileId}`;
   }
 
+  private buildSessionKey(roomId: string, minorProfileId: string) {
+    return `${roomId}:${minorProfileId}`;
+  }
+
   private buildParticipantLockKey(
     roomId: string,
     minorProfileId: string,
@@ -1710,6 +2380,55 @@ export class RoomsService {
     actorUserId: string,
   ) {
     return `${roomId}:${minorProfileId}:${actorRole}:${actorUserId}`;
+  }
+
+  private buildParticipantLifecycleKey(
+    roomId: string,
+    minorProfileId: string,
+    actorRole: string,
+    actorUserId: string,
+  ) {
+    return `${roomId}:${minorProfileId}:${actorRole}:${actorUserId}`;
+  }
+
+  private findLatestSessionLifecycle(minorProfileId: string) {
+    let selected: RuntimeSessionLifecycle | null = null;
+
+    for (const session of this.sessionLifecycle.values()) {
+      if (session.minorProfileId !== minorProfileId) {
+        continue;
+      }
+
+      if (!selected || Date.parse(session.updatedAt) > Date.parse(selected.updatedAt)) {
+        selected = session;
+      }
+    }
+
+    return selected;
+  }
+
+  private findLatestParticipantLifecycle(
+    minorProfileId: string,
+    actorRole: string,
+    actorUserId: string,
+  ) {
+    let selected: RuntimeParticipantLifecycle | null = null;
+
+    for (const participant of this.participantLifecycle.values()) {
+      if (
+        participant.minorProfileId !== minorProfileId ||
+        participant.actorRole !== actorRole ||
+        participant.actorUserId !== actorUserId
+      ) {
+        continue;
+      }
+
+      if (!selected || Date.parse(participant.updatedAt) > Date.parse(selected.updatedAt)) {
+        selected = participant;
+      }
+    }
+
+    return selected;
   }
 
   private findLatestRoomLock(minorProfileId: string) {
@@ -1753,7 +2472,7 @@ export class RoomsService {
   }
 
   private resolveParticipantsForRoom(roomId: string, minorProfileId: string) {
-    this.prunePresence();
+    this.reconcileRuntimeState();
     const roomPresence = this.presenceByRoom.get(roomId);
     if (!roomPresence) {
       return [];

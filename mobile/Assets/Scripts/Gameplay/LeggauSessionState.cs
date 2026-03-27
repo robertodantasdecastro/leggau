@@ -1,3 +1,5 @@
+using System;
+using System.Globalization;
 using Leggau.Models;
 
 namespace Leggau.Gameplay
@@ -20,6 +22,12 @@ namespace Leggau.Gameplay
         public bool RoomsAllowed { get; private set; }
         public string RoomCatalogMessage { get; private set; }
         public RoomAccessRequirementsRecord RoomRequirements { get; private set; }
+        public string SessionStatus { get; private set; }
+        public string ParticipantStatus { get; private set; }
+        public string HeartbeatTimeoutAt { get; private set; }
+        public string EndedAt { get; private set; }
+        public string EndedBy { get; private set; }
+        public string CloseReason { get; private set; }
         public string ResolvedAgeBand { get; private set; }
         public string ActiveShell { get; private set; }
         public ChildProfile ActiveChild { get; private set; }
@@ -47,6 +55,34 @@ namespace Leggau.Gameplay
         public bool HasMultipleLinkedMinors => LinkedMinors != null && LinkedMinors.Length > 1;
         public bool HasAvailableRooms => AvailableRooms != null && AvailableRooms.Length > 0;
         public bool HasActiveRoom => ActiveRoom != null && !string.IsNullOrWhiteSpace(ActiveRoom.id);
+        public bool HasActivePresence => ActivePresence != null && !string.IsNullOrWhiteSpace(ActivePresence.roomId);
+        public bool IsRoomSessionActive => ResolveSessionStatus() == "active";
+        public bool IsRoomSessionStale => ResolveSessionStatus() == "stale";
+        public bool IsRoomSessionClosedByTimeout => ResolveSessionStatus() == "closed_by_timeout";
+        public bool IsRoomSessionClosedByAdmin => ResolveSessionStatus() == "closed_by_admin";
+        public bool IsRoomSessionParticipantRemoved => ResolveSessionStatus() == "participant_removed";
+        public bool IsRoomSessionClosed => IsRoomSessionClosedByTimeout || IsRoomSessionClosedByAdmin || IsRoomSessionParticipantRemoved;
+        public bool HasRuntimeLifecycle =>
+            !string.IsNullOrWhiteSpace(SessionStatus) ||
+            !string.IsNullOrWhiteSpace(ParticipantStatus) ||
+            !string.IsNullOrWhiteSpace(HeartbeatTimeoutAt) ||
+            !string.IsNullOrWhiteSpace(EndedAt) ||
+            !string.IsNullOrWhiteSpace(EndedBy) ||
+            !string.IsNullOrWhiteSpace(CloseReason);
+        public bool CanAutoHeartbeat =>
+            HomeReady &&
+            IsAuthenticated &&
+            SelectedMinor != null &&
+            ActiveRoom != null &&
+            SelectedMinorPolicy != null &&
+            SelectedMinorPolicy.presenceEnabled &&
+            RoomsAllowed &&
+            !IsRoomSessionClosed;
+        public bool CanAutoRefreshRoomState =>
+            HomeReady &&
+            IsAuthenticated &&
+            SelectedMinor != null &&
+            ActiveRoom != null;
         public bool HasPersistableState =>
             IsAuthenticated ||
             HomeReady ||
@@ -122,6 +158,12 @@ namespace Leggau.Gameplay
             RoomsAllowed = false;
             RoomCatalogMessage = string.Empty;
             RoomRequirements = null;
+            SessionStatus = string.Empty;
+            ParticipantStatus = string.Empty;
+            HeartbeatTimeoutAt = string.Empty;
+            EndedAt = string.Empty;
+            EndedBy = string.Empty;
+            CloseReason = string.Empty;
             ActiveChild = null;
             Activities = null;
             Rewards = null;
@@ -235,6 +277,12 @@ namespace Leggau.Gameplay
                 RoomsAllowed = false;
                 RoomCatalogMessage = string.Empty;
                 RoomRequirements = null;
+                SessionStatus = string.Empty;
+                ParticipantStatus = string.Empty;
+                HeartbeatTimeoutAt = string.Empty;
+                EndedAt = string.Empty;
+                EndedBy = string.Empty;
+                CloseReason = string.Empty;
                 return;
             }
 
@@ -242,14 +290,13 @@ namespace Leggau.Gameplay
             RoomsAllowed = response.allowed;
             RoomCatalogMessage = response.reason?.Trim() ?? string.Empty;
             RoomRequirements = response.requirements;
+            ApplyRuntimeLifecycle(response.sessionStatus, response.participantStatus, response.heartbeatTimeoutAt, response.endedAt, response.endedBy, response.closeReason);
+            ApplyRuntimeLifecycleFromRequirements(RoomRequirements);
 
             var nextRoom = ResolveRoomById(response.activeRoomId);
             if (nextRoom == null && ActiveRoom != null)
             {
-                if (response.allowed)
-                {
-                    nextRoom = ResolveRoomById(ActiveRoom.id);
-                }
+                nextRoom = ResolveRoomById(ActiveRoom.id) ?? ActiveRoom;
             }
 
             ActiveRoom = nextRoom;
@@ -262,6 +309,7 @@ namespace Leggau.Gameplay
         public void SetActiveRoom(MonitoredRoomRecord room)
         {
             ActiveRoom = NormalizeRoom(room);
+            ApplyRuntimeLifecycle(ActiveRoom?.sessionStatus, ActiveRoom?.participantStatus, ActiveRoom?.heartbeatTimeoutAt, ActiveRoom?.endedAt, ActiveRoom?.endedBy, ActiveRoom?.closeReason);
             if (ActiveRoom == null)
             {
                 ActivePresence = null;
@@ -272,11 +320,21 @@ namespace Leggau.Gameplay
         {
             ActiveRoom = null;
             ActivePresence = null;
+            RoomRequirements = null;
+            RoomCatalogMessage = string.Empty;
+            SessionStatus = string.Empty;
+            ParticipantStatus = string.Empty;
+            HeartbeatTimeoutAt = string.Empty;
+            EndedAt = string.Empty;
+            EndedBy = string.Empty;
+            CloseReason = string.Empty;
         }
 
         public void SetPresenceState(PresenceStateRecord presence)
         {
             ActivePresence = NormalizePresence(presence);
+            ApplyRuntimeLifecycle(ActivePresence?.sessionStatus, ActivePresence?.participantStatus, ActivePresence?.heartbeatTimeoutAt, ActivePresence?.endedAt, ActivePresence?.endedBy, ActivePresence?.closeReason);
+            ApplyRuntimeLifecycleFromRequirements(ActivePresence?.requirements);
             if (ActivePresence == null)
             {
                 return;
@@ -402,6 +460,12 @@ namespace Leggau.Gameplay
             RoomsAllowed = false;
             RoomCatalogMessage = string.Empty;
             RoomRequirements = null;
+            SessionStatus = string.Empty;
+            ParticipantStatus = string.Empty;
+            HeartbeatTimeoutAt = string.Empty;
+            EndedAt = string.Empty;
+            EndedBy = string.Empty;
+            CloseReason = string.Empty;
             ResolvedAgeBand = string.Empty;
             ActiveShell = string.Empty;
             ActiveChild = null;
@@ -499,6 +563,12 @@ namespace Leggau.Gameplay
             RoomsAllowed = snapshot.roomsAllowed;
             RoomCatalogMessage = snapshot.roomCatalogMessage ?? string.Empty;
             RoomRequirements = snapshot.roomRequirements;
+            SessionStatus = snapshot.sessionStatus ?? string.Empty;
+            ParticipantStatus = snapshot.participantStatus ?? string.Empty;
+            HeartbeatTimeoutAt = snapshot.heartbeatTimeoutAt ?? string.Empty;
+            EndedAt = snapshot.endedAt ?? string.Empty;
+            EndedBy = snapshot.endedBy ?? string.Empty;
+            CloseReason = snapshot.closeReason ?? string.Empty;
             ResolvedAgeBand = snapshot.resolvedAgeBand ?? string.Empty;
             ActiveShell = snapshot.activeShell ?? string.Empty;
             ActiveChild = snapshot.activeChild ?? ConvertToChild(SelectedMinor, Parent?.id);
@@ -550,6 +620,12 @@ namespace Leggau.Gameplay
                 roomsAllowed = RoomsAllowed,
                 roomCatalogMessage = RoomCatalogMessage,
                 roomRequirements = RoomRequirements,
+                sessionStatus = SessionStatus,
+                participantStatus = ParticipantStatus,
+                heartbeatTimeoutAt = HeartbeatTimeoutAt,
+                endedAt = EndedAt,
+                endedBy = EndedBy,
+                closeReason = CloseReason,
                 resolvedAgeBand = ResolvedAgeBand,
                 activeShell = ActiveShell,
                 activeChild = ActiveChild,
@@ -650,6 +726,12 @@ namespace Leggau.Gameplay
                 RoomsAllowed = false;
                 RoomCatalogMessage = string.Empty;
                 RoomRequirements = null;
+                SessionStatus = string.Empty;
+                ParticipantStatus = string.Empty;
+                HeartbeatTimeoutAt = string.Empty;
+                EndedAt = string.Empty;
+                EndedBy = string.Empty;
+                CloseReason = string.Empty;
                 HomeReady = false;
                 Activities = null;
                 Rewards = null;
@@ -922,7 +1004,205 @@ namespace Leggau.Gameplay
                 presence.participants = new PresenceParticipantRecord[0];
             }
 
+            if (string.IsNullOrWhiteSpace(presence.status))
+            {
+                presence.status = !string.IsNullOrWhiteSpace(presence.sessionStatus)
+                    ? presence.sessionStatus
+                    : presence.participantStatus;
+            }
+
             return presence;
+        }
+
+        public string ResolveSessionStatus()
+        {
+            if (!string.IsNullOrWhiteSpace(SessionStatus))
+            {
+                return SessionStatus.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(ActivePresence?.sessionStatus))
+            {
+                return ActivePresence.sessionStatus.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(ActiveRoom?.sessionStatus))
+            {
+                return ActiveRoom.sessionStatus.Trim();
+            }
+
+            return string.Empty;
+        }
+
+        public string ResolveParticipantStatus()
+        {
+            if (!string.IsNullOrWhiteSpace(ParticipantStatus))
+            {
+                return ParticipantStatus.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(ActivePresence?.participantStatus))
+            {
+                return ActivePresence.participantStatus.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(ActiveRoom?.participantStatus))
+            {
+                return ActiveRoom.participantStatus.Trim();
+            }
+
+            return string.Empty;
+        }
+
+        public string ResolveLifecycleMessage()
+        {
+            if (!string.IsNullOrWhiteSpace(RoomRequirements?.operationalMessage))
+            {
+                return RoomRequirements.operationalMessage.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(CloseReason))
+            {
+                return CloseReason.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(ActivePresence?.reason))
+            {
+                return ActivePresence.reason.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(RoomCatalogMessage))
+            {
+                return RoomCatalogMessage.Trim();
+            }
+
+            return string.Empty;
+        }
+
+        public string ResolveLifecycleHeadline()
+        {
+            var sessionStatus = ResolveSessionStatus();
+            if (sessionStatus == "closed_by_timeout")
+            {
+                return "Sessao encerrada por timeout";
+            }
+
+            if (sessionStatus == "closed_by_admin")
+            {
+                return "Sessao pausada pela operacao";
+            }
+
+            if (sessionStatus == "participant_removed")
+            {
+                return "Participacao encerrada temporariamente";
+            }
+
+            if (sessionStatus == "stale")
+            {
+                return "Sessao em atraso";
+            }
+
+            if (ActivePresence != null && ActivePresence.allowed)
+            {
+                return "Sessao ativa";
+            }
+
+            if (HasActiveRoom)
+            {
+                return "Sala monitorada pronta";
+            }
+
+            return string.IsNullOrWhiteSpace(RoomCatalogMessage)
+                ? "Monitoramento indisponivel"
+                : RoomCatalogMessage;
+        }
+
+        public bool IsRecoveryBlockedByLock()
+        {
+            if (HasLockExpired(HeartbeatTimeoutAt))
+            {
+                return false;
+            }
+
+            if (HasLockExpired(RoomRequirements?.lockExpiresAt))
+            {
+                return false;
+            }
+
+            var sessionStatus = ResolveSessionStatus();
+            return sessionStatus == "closed_by_timeout" ||
+                   sessionStatus == "closed_by_admin" ||
+                   sessionStatus == "participant_removed" ||
+                   sessionStatus == "stale";
+        }
+
+        public bool IsLockExpired()
+        {
+            return HasLockExpired(HeartbeatTimeoutAt) || HasLockExpired(RoomRequirements?.lockExpiresAt);
+        }
+
+        private static bool HasLockExpired(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            if (!DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed))
+            {
+                return false;
+            }
+
+            return parsed.ToUniversalTime() <= DateTime.UtcNow;
+        }
+
+        private void ApplyRuntimeLifecycle(string sessionStatus, string participantStatus, string heartbeatTimeoutAt, string endedAt, string endedBy, string closeReason)
+        {
+            if (!string.IsNullOrWhiteSpace(sessionStatus))
+            {
+                SessionStatus = sessionStatus.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(participantStatus))
+            {
+                ParticipantStatus = participantStatus.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(heartbeatTimeoutAt))
+            {
+                HeartbeatTimeoutAt = heartbeatTimeoutAt.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(endedAt))
+            {
+                EndedAt = endedAt.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(endedBy))
+            {
+                EndedBy = endedBy.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(closeReason))
+            {
+                CloseReason = closeReason.Trim();
+            }
+        }
+
+        private void ApplyRuntimeLifecycleFromRequirements(RoomAccessRequirementsRecord requirements)
+        {
+            if (requirements == null)
+            {
+                return;
+            }
+
+            ApplyRuntimeLifecycle(
+                requirements.sessionStatus,
+                requirements.participantStatus,
+                requirements.heartbeatTimeoutAt,
+                requirements.endedAt,
+                requirements.endedBy,
+                requirements.closeReason);
         }
 
         private static string ResolveMinorRole(ChildProfile child)

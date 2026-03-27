@@ -11,7 +11,7 @@ fi
 chmod +x ./scripts/bootstrap-ssd-storage.sh
 ./scripts/bootstrap-ssd-storage.sh
 if [[ -x ./scripts/sync-cloudflare-dev-alias.sh ]]; then
-  ./scripts/sync-cloudflare-dev-alias.sh || true
+  LEGGAU_CLOUDFLARE_AUTOSTART="${LEGGAU_CLOUDFLARE_AUTOSTART:-1}" ./scripts/sync-cloudflare-dev-alias.sh || true
 fi
 docker compose up -d --build --force-recreate api portal admin nginx
 docker compose ps

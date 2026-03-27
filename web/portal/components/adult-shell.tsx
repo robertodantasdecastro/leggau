@@ -220,6 +220,12 @@ type RoomAccessRequirements = {
   roomInviteStatus?: string | null;
   activeInviteId?: string | null;
   inviteExpiresAt?: string | null;
+  sessionStatus?: string | null;
+  participantStatus?: string | null;
+  heartbeatTimeoutAt?: string | null;
+  endedAt?: string | null;
+  endedBy?: string | null;
+  closeReason?: string | null;
   policySnapshot?: PolicySnapshot | null;
   accessSource?: string | null;
   operationalStatus?: string | null;
@@ -252,6 +258,12 @@ type MonitoredRoom = {
   inviteStatus?: string | null;
   activeInviteId?: string | null;
   inviteExpiresAt?: string | null;
+  sessionStatus?: string | null;
+  participantStatus?: string | null;
+  heartbeatTimeoutAt?: string | null;
+  endedAt?: string | null;
+  endedBy?: string | null;
+  closeReason?: string | null;
 };
 
 type PresenceParticipant = {
@@ -259,6 +271,7 @@ type PresenceParticipant = {
   minorProfileId: string;
   minorRole?: string;
   actorRole: string;
+  actorUserId?: string;
   activeShell: string;
   accessSource: string;
   joinedAt: string;
@@ -275,6 +288,12 @@ type PresenceState = {
   activeShell: string;
   status: string;
   presenceMode: string;
+  sessionStatus?: string | null;
+  participantStatus?: string | null;
+  heartbeatTimeoutAt?: string | null;
+  endedAt?: string | null;
+  endedBy?: string | null;
+  closeReason?: string | null;
   participantCount: number;
   participants: PresenceParticipant[];
   operationalStatus?: string | null;
@@ -287,6 +306,12 @@ type MonitoredRoomsPayload = {
   reason: string;
   presenceEnabled: boolean;
   activeRoomId?: string | null;
+  sessionStatus?: string | null;
+  participantStatus?: string | null;
+  heartbeatTimeoutAt?: string | null;
+  endedAt?: string | null;
+  endedBy?: string | null;
+  closeReason?: string | null;
   items: MonitoredRoom[];
   requirements?: RoomAccessRequirements | null;
   operationalStatus?: string | null;
@@ -302,7 +327,11 @@ function resolveApiBase() {
   }
 
   const host = window.location.hostname;
-  if (host === '10.211.55.22' || host.endsWith('leggau.com')) {
+  if (
+    host === '10.211.55.22' ||
+    host.endsWith('leggau.com') ||
+    host.endsWith('trycloudflare.com')
+  ) {
     return `${window.location.origin}/api`;
   }
 
@@ -362,6 +391,41 @@ function slugToLabel(value: string) {
   return value
     .replace(/[_-]/g, ' ')
     .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function resolveRuntimeStateLabel(
+  sessionStatus?: string | null,
+  participantStatus?: string | null,
+  closeReason?: string | null,
+) {
+  if (participantStatus === 'participant_removed') {
+    return closeReason || 'Participacao encerrada temporariamente pela operacao.';
+  }
+
+  switch (sessionStatus) {
+    case 'active':
+      return 'Sessao monitorada ativa.';
+    case 'stale':
+      return 'Sessao monitorada sem heartbeat recente.';
+    case 'closed_by_timeout':
+      return closeReason || 'Sessao encerrada por timeout de heartbeat.';
+    case 'closed_by_admin':
+      return closeReason || 'Sessao pausada pela operacao.';
+    default:
+      return closeReason || 'Runtime aguardando nova atividade.';
+  }
+}
+
+function resolveRuntimeSupervisionLabel(roomInviteStatus?: string | null) {
+  if (roomInviteStatus === 'accepted') {
+    return 'Terapeuta autorizado';
+  }
+
+  if (roomInviteStatus === 'pending') {
+    return 'Convite enviado';
+  }
+
+  return 'Somente responsavel';
 }
 
 export function AdultShell({ actor }: { actor: ActorRole }) {
@@ -2262,6 +2326,30 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                       <span>{selectedRuntime?.reason ?? 'Atualize para carregar o estado monitorado.'}</span>
                     </div>
                     <div className="miniCard">
+                      <span className="microLabel">Lifecycle da sessao</span>
+                      <strong>
+                        {slugToLabel(
+                          selectedPresence?.sessionStatus ??
+                            selectedRuntime?.sessionStatus ??
+                            parentRuntimeRequirements?.sessionStatus ??
+                            'idle',
+                        )}
+                      </strong>
+                      <span>
+                        {resolveRuntimeStateLabel(
+                          selectedPresence?.sessionStatus ??
+                            selectedRuntime?.sessionStatus ??
+                            parentRuntimeRequirements?.sessionStatus,
+                          selectedPresence?.participantStatus ??
+                            selectedRuntime?.participantStatus ??
+                            parentRuntimeRequirements?.participantStatus,
+                          selectedPresence?.closeReason ??
+                            selectedRuntime?.closeReason ??
+                            parentRuntimeRequirements?.closeReason,
+                        )}
+                      </span>
+                    </div>
+                    <div className="miniCard">
                       <span className="microLabel">Estado operacional</span>
                       <strong>{slugToLabel(selectedRuntime?.operationalStatus ?? parentRuntimeRequirements?.operationalStatus ?? 'open')}</strong>
                       <span>
@@ -2291,13 +2379,7 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                     </div>
                     <div className="miniCard">
                       <span className="microLabel">Estado adulto</span>
-                      <strong>
-                        {selectedRuntimeInvite?.status === 'accepted'
-                          ? 'Terapeuta autorizado'
-                          : selectedRuntimeInvite?.status === 'pending'
-                            ? 'Convite enviado'
-                            : 'Somente responsavel'}
-                      </strong>
+                      <strong>{resolveRuntimeSupervisionLabel(selectedRuntimeInvite?.status)}</strong>
                       <span>O terapeuta so entra depois do aceite e com todos os gates aprovados.</span>
                     </div>
                     <div className="miniCard">
@@ -2333,6 +2415,10 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                                 Convite: {slugToLabel(room.inviteStatus ?? 'missing')}
                                 {room.inviteExpiresAt ? ` · expira ${formatDate(room.inviteExpiresAt)}` : ''}
                               </span>
+                              <span>
+                                Sessao {slugToLabel(room.sessionStatus ?? 'idle')}
+                                {room.closeReason ? ` · ${room.closeReason}` : ''}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -2352,8 +2438,19 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                             ? `${selectedPresence.participantCount} participante(s) · ${slugToLabel(selectedPresence.status)}`
                             : selectedRuntime?.reason ?? 'Atualize o runtime para ler a presenca.'}
                         </span>
+                        {selectedPresence?.sessionStatus ? (
+                          <span>
+                            Sessao {slugToLabel(selectedPresence.sessionStatus)}
+                            {selectedPresence.heartbeatTimeoutAt
+                              ? ` · timeout em ${formatDate(selectedPresence.heartbeatTimeoutAt)}`
+                              : ''}
+                          </span>
+                        ) : null}
                         {selectedPresence?.operationalMessage ? (
                           <span>{selectedPresence.operationalMessage}</span>
+                        ) : null}
+                        {selectedPresence?.closeReason ? (
+                          <span>{selectedPresence.closeReason}</span>
                         ) : null}
                       </div>
                       {selectedPresence?.participants?.length ? (
@@ -2739,6 +2836,30 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                 <span>{lookupRuntime?.reason ?? 'Carregue uma familia e um perfil para ler o runtime monitorado.'}</span>
               </div>
               <div className="miniCard">
+                <span className="microLabel">Lifecycle da sessao</span>
+                <strong>
+                  {slugToLabel(
+                    lookupPresence?.sessionStatus ??
+                      lookupRuntime?.sessionStatus ??
+                      therapistRuntimeRequirements?.sessionStatus ??
+                      'idle',
+                  )}
+                </strong>
+                <span>
+                  {resolveRuntimeStateLabel(
+                    lookupPresence?.sessionStatus ??
+                      lookupRuntime?.sessionStatus ??
+                      therapistRuntimeRequirements?.sessionStatus,
+                    lookupPresence?.participantStatus ??
+                      lookupRuntime?.participantStatus ??
+                      therapistRuntimeRequirements?.participantStatus,
+                    lookupPresence?.closeReason ??
+                      lookupRuntime?.closeReason ??
+                      therapistRuntimeRequirements?.closeReason,
+                  )}
+                </span>
+              </div>
+              <div className="miniCard">
                 <span className="microLabel">Estado operacional</span>
                 <strong>{slugToLabel(lookupRuntime?.operationalStatus ?? therapistRuntimeRequirements?.operationalStatus ?? 'open')}</strong>
                 <span>
@@ -2772,6 +2893,10 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                             Convite: {slugToLabel(room.inviteStatus ?? 'missing')}
                             {room.inviteExpiresAt ? ` · expira ${formatDate(room.inviteExpiresAt)}` : ''}
                           </span>
+                          <span>
+                            Sessao {slugToLabel(room.sessionStatus ?? 'idle')}
+                            {room.closeReason ? ` · ${room.closeReason}` : ''}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -2789,7 +2914,16 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                         <span className="microLabel">{lookupPresence.roomTitle}</span>
                         <strong>{slugToLabel(lookupPresence.status)}</strong>
                         <span>{lookupPresence.participantCount} participante(s) observados</span>
+                        {lookupPresence.sessionStatus ? (
+                          <span>
+                            Sessao {slugToLabel(lookupPresence.sessionStatus)}
+                            {lookupPresence.heartbeatTimeoutAt
+                              ? ` · timeout em ${formatDate(lookupPresence.heartbeatTimeoutAt)}`
+                              : ''}
+                          </span>
+                        ) : null}
                         {lookupPresence.operationalMessage ? <span>{lookupPresence.operationalMessage}</span> : null}
+                        {lookupPresence.closeReason ? <span>{lookupPresence.closeReason}</span> : null}
                       </div>
                       {lookupPresence.participants.map((participant) => (
                         <div key={participant.participantKey} className="miniCard">

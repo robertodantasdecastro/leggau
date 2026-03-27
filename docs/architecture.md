@@ -70,8 +70,9 @@
 
 ## Convencoes
 
-- `DEV_API_BASE_URL` aponta para `http://10.211.55.22:8080/api`.
-- `DEV_PORTAL_ALIAS_URL` e `DEV_ADMIN_ALIAS_URL` representam aliases temporarios `trycloudflare.com` para a `vm2`.
+- `DEV_API_ALIAS_URL` agora e o endpoint canonico de sign-off em desenvolvimento, publicado por alias HTTPS `trycloudflare.com` sobre a `vm2`.
+- `DEV_API_BASE_URL` aponta para `http://10.211.55.22:8080/api` e permanece apenas como fallback explicito de editor/desenvolvimento.
+- `DEV_PORTAL_ALIAS_URL`, `DEV_ADMIN_ALIAS_URL` e `DEV_API_ALIAS_URL` representam aliases temporarios `trycloudflare.com` para a `vm2`.
 - O backend de desenvolvimento continua centralizado na `vm2`.
 - As superfícies adultas seguem direção `web/PWA-first`.
 - O portal local responde em `/` e o admin local responde em `/admin/` via Nginx.
@@ -81,6 +82,7 @@
 - O runtime de aliases Cloudflare dev deve persistir em `./.data/runtime/cloudflare/`.
 - Builds mobile, cache local do Unity e artefatos do Blender devem usar diretorios dentro de `./.data/`.
 - Processamento deve priorizar execução no dispositivo quando seguro e viável.
+- Criptografia em transito no caminho canonico do slice agora depende do alias HTTPS da API; cleartext fica restrito ao fallback de depuracao.
 - A EC2 de producao deve replicar essa topologia antes de endurecer a operacao.
 
 ## Estado runtime atual
@@ -128,3 +130,24 @@
   - `POST /api/incidents` e `POST /api/moderation/cases` agora aceitam `runtimeContext` aditivo para abrir casos a partir da presenca, timeline ou snapshot da sala
   - `/pais`, `/profissionais` e Unity apenas refletem o lock operacional; o operador continua sendo o `admin`
   - o Unity continua chegando a `state=ready` quando a sala esta pausada ou quando o participante foi removido, mantendo Gau, check-in, progresso e recompensas fora do lock operacional
+- A quinta fatia da Fase E agora tambem esta ativa:
+  - o runtime monitorado agora projeta lifecycle explicito por sessao:
+    - `active`
+    - `stale`
+    - `closed_by_timeout`
+    - `closed_by_admin`
+    - `participant_removed`
+  - `GET /api/rooms`, `GET /api/presence/:roomId`, `GET /api/admin/rooms/:roomId/snapshot` e `GET /api/admin/rooms/events` agora carregam:
+    - `sessionStatus`
+    - `participantStatus`
+    - `heartbeatTimeoutAt`
+    - `endedAt`
+    - `endedBy`
+    - `closeReason`
+  - o timeout canonico desta fase e:
+    - heartbeat desejado a cada `20s`
+    - `stale` apos `45s`
+    - `closed_by_timeout` apos `90s`
+  - o portal adulto, o admin e o Unity agora consomem o mesmo motivo operacional para timeout, encerramento admin e remocao de participante
+  - o Unity agora prefere `DEV_API_ALIAS_URL` no sign-off e limita fallback HTTP a editor/development flows
+  - chat e E2EE continuam fora deste slice; `messagingMode` segue sem habilitar mensageria livre, e a proxima trilha sera a arquitetura governada de chat com criptografia ponta a ponta

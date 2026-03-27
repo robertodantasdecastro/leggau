@@ -21,7 +21,10 @@ type Realtime = {
       mountpoint: string;
     };
   };
-  services: Record<string, string>;
+  services: Record<
+    string,
+    string | { portal: string; admin: string; api: string }
+  >;
 };
 
 type BillingOverview = {
@@ -148,6 +151,12 @@ type AdminPresenceRecord = {
   activeShell: string;
   joinedAt: string;
   lastHeartbeatAt: string;
+  sessionStatus?: string | null;
+  participantStatus?: string | null;
+  heartbeatTimeoutAt?: string | null;
+  endedAt?: string | null;
+  endedBy?: string | null;
+  closeReason?: string | null;
 };
 
 type RoomRuntimeEvent = {
@@ -169,6 +178,12 @@ type RoomRuntimeEvent = {
   activeInviteId?: string | null;
   inviteExpiresAt?: string | null;
   lockExpiresAt?: string | null;
+  sessionStatus?: string | null;
+  participantStatus?: string | null;
+  heartbeatTimeoutAt?: string | null;
+  endedAt?: string | null;
+  endedBy?: string | null;
+  closeReason?: string | null;
   blockedBy?: string[];
   summary: string;
 };
@@ -198,6 +213,12 @@ type RoomRuntimeSnapshot = {
   operationalStatus: string;
   operationalMessage?: string | null;
   lockExpiresAt?: string | null;
+  sessionStatus?: string | null;
+  participantStatus?: string | null;
+  heartbeatTimeoutAt?: string | null;
+  endedAt?: string | null;
+  endedBy?: string | null;
+  closeReason?: string | null;
   participantCount: number;
   participants: AdminPresenceRecord[];
   lastHeartbeatAt?: string | null;
@@ -333,6 +354,29 @@ function slugToLabel(value: string) {
   return value
     .replace(/[_-]/g, ' ')
     .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function resolveLifecycleSummary(
+  sessionStatus?: string | null,
+  participantStatus?: string | null,
+  closeReason?: string | null,
+) {
+  if (participantStatus === 'participant_removed') {
+    return closeReason || 'Participacao removida pela operacao.';
+  }
+
+  switch (sessionStatus) {
+    case 'active':
+      return 'Sessao viva com heartbeats recentes.';
+    case 'stale':
+      return 'Sessao sem heartbeat recente e sob observacao.';
+    case 'closed_by_timeout':
+      return closeReason || 'Sessao encerrada automaticamente por timeout.';
+    case 'closed_by_admin':
+      return closeReason || 'Sessao encerrada pela operacao.';
+    default:
+      return closeReason || 'Runtime aguardando nova atividade.';
+  }
 }
 
 function compactId(value?: string | null) {
@@ -1773,12 +1817,19 @@ export function AdminDashboard() {
                         <span>Menor {compactId(record.minorProfileId)} · {slugToLabel(record.minorRole)}</span>
                         <span>Ator {slugToLabel(record.actorRole)} · shell {slugToLabel(record.activeShell)}</span>
                         <span>Origem {slugToLabel(record.accessSource)}</span>
+                        <span>
+                          Sessao {slugToLabel(record.sessionStatus ?? 'idle')} · participante {slugToLabel(record.participantStatus ?? 'idle')}
+                        </span>
+                        {record.closeReason ? <span>{record.closeReason}</span> : null}
                       </div>
                     </td>
                     <td>
                       <div className="stackCompact">
                         <span>Entrou {formatDate(record.joinedAt)}</span>
                         <span>Ultimo heartbeat {formatDate(record.lastHeartbeatAt)}</span>
+                        {record.heartbeatTimeoutAt ? (
+                          <span>Timeout em {formatDate(record.heartbeatTimeoutAt)}</span>
+                        ) : null}
                       </div>
                     </td>
                     <td>
@@ -1905,6 +1956,17 @@ export function AdminDashboard() {
                       : 'Sem lock operacional ativo.')}
                 </span>
               </div>
+              <div className="miniCard">
+                <span className="microLabel">Lifecycle</span>
+                <strong>{slugToLabel(runtimeSnapshot.sessionStatus || 'idle')}</strong>
+                <span>
+                  {resolveLifecycleSummary(
+                    runtimeSnapshot.sessionStatus,
+                    runtimeSnapshot.participantStatus,
+                    runtimeSnapshot.closeReason,
+                  )}
+                </span>
+              </div>
             </div>
             <div className="grid3 responsive">
               <div className="miniCard">
@@ -1924,7 +1986,13 @@ export function AdminDashboard() {
               <div className="miniCard">
                 <span className="microLabel">Ultimo heartbeat</span>
                 <strong>{formatDate(runtimeSnapshot.lastHeartbeatAt)}</strong>
-                <span>{runtimeSnapshot.lockExpiresAt ? `Lock expira ${formatDate(runtimeSnapshot.lockExpiresAt)}` : 'Sem lock programado'}</span>
+                <span>
+                  {runtimeSnapshot.heartbeatTimeoutAt
+                    ? `Timeout em ${formatDate(runtimeSnapshot.heartbeatTimeoutAt)}`
+                    : runtimeSnapshot.lockExpiresAt
+                      ? `Lock expira ${formatDate(runtimeSnapshot.lockExpiresAt)}`
+                      : 'Sem lock programado'}
+                </span>
               </div>
             </div>
             <div className="actionRow">
@@ -1976,12 +2044,19 @@ export function AdminDashboard() {
                           <div className="stackCompact">
                             <span>Origem {slugToLabel(participant.accessSource)}</span>
                             <span>Shell {slugToLabel(participant.activeShell)}</span>
+                            <span>
+                              Sessao {slugToLabel(participant.sessionStatus ?? 'idle')} · participante {slugToLabel(participant.participantStatus ?? 'idle')}
+                            </span>
+                            {participant.closeReason ? <span>{participant.closeReason}</span> : null}
                           </div>
                         </td>
                         <td>
                           <div className="stackCompact">
                             <span>Entrou {formatDate(participant.joinedAt)}</span>
                             <span>Heartbeat {formatDate(participant.lastHeartbeatAt)}</span>
+                            {participant.heartbeatTimeoutAt ? (
+                              <span>Timeout em {formatDate(participant.heartbeatTimeoutAt)}</span>
+                            ) : null}
                           </div>
                         </td>
                         <td>
@@ -2123,6 +2198,12 @@ export function AdminDashboard() {
                         <span>Menor {compactId(event.minorProfileId ?? '')} · {slugToLabel(event.minorRole ?? 'child')}</span>
                         <span>Ator {slugToLabel(event.actorRole)} · origem {slugToLabel(event.accessSource ?? 'n/a')}</span>
                         <span>{event.summary}</span>
+                        {event.sessionStatus || event.participantStatus ? (
+                          <span>
+                            Sessao {slugToLabel(event.sessionStatus ?? 'idle')} · participante {slugToLabel(event.participantStatus ?? 'idle')}
+                          </span>
+                        ) : null}
+                        {event.closeReason ? <span>{event.closeReason}</span> : null}
                       </div>
                     </td>
                     <td>
@@ -2130,6 +2211,7 @@ export function AdminDashboard() {
                         <span>{formatDate(event.occurredAt)}</span>
                         {event.inviteExpiresAt ? <span>invite expira {formatDate(event.inviteExpiresAt)}</span> : null}
                         {event.lockExpiresAt ? <span>lock ate {formatDate(event.lockExpiresAt)}</span> : null}
+                        {event.heartbeatTimeoutAt ? <span>timeout em {formatDate(event.heartbeatTimeoutAt)}</span> : null}
                       </div>
                     </td>
                     <td>

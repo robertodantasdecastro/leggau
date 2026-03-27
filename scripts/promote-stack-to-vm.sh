@@ -87,7 +87,8 @@ ssh "${SSH_OPTS[@]}" "${REMOTE}" "
   ./scripts/bootstrap-vm.sh '${REPO_URL}' '${VM_IP}' && \
   [ -f .env ] || cp .env.example .env && \
   perl -0pi -e 's#^DEV_API_BASE_URL=.*#DEV_API_BASE_URL=http://${VM_IP}:8080/api#m' .env && \
-  LEGGAU_SKIP_REMOTE_GIT_PULL=1 ./scripts/deploy-vm.sh
+  (grep -q '^DEV_API_ALIAS_URL=' .env || printf '\nDEV_API_ALIAS_URL=https://api-dev.trycloudflare.com\n' >> .env) && \
+  LEGGAU_SKIP_REMOTE_GIT_PULL=1 LEGGAU_CLOUDFLARE_AUTOSTART=1 ./scripts/deploy-vm.sh
 "
 
 echo "[leggau] Remote promotion finished for ${REMOTE}:${REMOTE_ROOT_RESOLVED}"

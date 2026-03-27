@@ -241,6 +241,11 @@
   - admin runtime escalation now also includes `/api/admin/rooms/:roomId/snapshot`, `/api/admin/rooms/:roomId/terminate` and `/api/admin/rooms/:roomId/participants/remove`
   - runtime escalation is now validated through `scripts/test-runtime-escalation.mjs`
   - incident and moderation creation now accept runtime-context payloads from the admin runtime console
+  - the canonical development sign-off path now prefers `DEV_API_ALIAS_URL` over HTTPS, with `DEV_API_BASE_URL` kept only as explicit fallback
+  - Cloudflare dev alias sync now also provisions the API alias, not only portal/admin
+  - monitored runtime now projects lifecycle states `active`, `stale`, `closed_by_timeout`, `closed_by_admin` and `participant_removed`
+  - lifecycle projection is now validated through `scripts/test-runtime-lifecycle.mjs`
+  - chat and E2EE remain out of implementation scope for this slice
   - continued admin/compliance/billing hardening remains the companion track around the live governance stack
 - The VM edge proxy was corrected on `2026-03-27` so the public gateway again validates:
   - `/`
@@ -253,9 +258,13 @@
   - `./scripts/promote-stack-to-vm.sh`
 - `scripts/deploy-vm.sh` now force-recreates `api`, `portal`, `admin` and `nginx`, so changes under `infra/` apply on the VM without a separate manual restart step
 - Canonical validation for the current supervision slice now includes:
+- Canonical validation for the current lifecycle-aware slice now includes:
   - `node scripts/test-social-auth-security.mjs`
   - `node scripts/test-monitored-interactions.mjs`
   - `node scripts/test-monitored-supervision.mjs`
+  - `node scripts/test-room-runtime-invites.mjs`
+  - `node scripts/test-runtime-escalation.mjs`
+  - `node scripts/test-runtime-lifecycle.mjs`
 - `scripts/deploy-vm.sh` now supports `LEGGAU_SKIP_REMOTE_GIT_PULL=1` so rsync-driven VM promotion can avoid remote worktree conflicts.
 - `scripts/promote-stack-to-vm.sh` now syncs `backend/`, `web/`, `infra/`, `docs/`, `scripts/` and `.codex/` into their canonical remote directories instead of flattening directory contents into the VM root.
 - If freshly synced code still appears stale in runtime, the authoritative cache-recovery command is:

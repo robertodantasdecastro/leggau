@@ -122,7 +122,10 @@ namespace Leggau.Networking
                 yield return apiBaseUrl;
             }
 
-            if (!string.IsNullOrWhiteSpace(fallbackApiBaseUrl) && fallbackApiBaseUrl != apiBaseUrl)
+            // Keep cleartext fallback limited to editor/development flows.
+            if ((Application.isEditor || Debug.isDebugBuild)
+                && !string.IsNullOrWhiteSpace(fallbackApiBaseUrl)
+                && fallbackApiBaseUrl != apiBaseUrl)
             {
                 yield return fallbackApiBaseUrl;
             }

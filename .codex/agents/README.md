@@ -48,6 +48,8 @@ This directory defines the local agent architecture for Leggau.
     - `scripts/test-monitored-supervision.mjs`
     - `scripts/test-room-runtime-invites.mjs`
     - `scripts/test-runtime-escalation.mjs`
+    - `scripts/test-runtime-lifecycle.mjs`
   - `vm-backend.md` owns VM deployment and health of the `rooms/presence`, runtime-invite and admin-runtime endpoints
   - `adult-web.md` now owns room-invite issuance in `/pais` and room-invite inbox/acceptance in `/profissionais`
   - `web-admin.md` now owns runtime-event timeline review, room snapshot, room termination, participant removal and runtime-context incident/moderation opening in the governance console
+  - `frontend-mobile.md` and `android-ios.md` now also own the HTTPS-first mobile sign-off path, with raw HTTP restricted to editor/development fallback

@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
-const baseUrl = process.env.LEGGAU_BASE_URL ?? 'http://10.211.55.22:8080/api';
+const baseUrl =
+  process.env.LEGGAU_BASE_URL ??
+  process.env.DEV_API_ALIAS_URL ??
+  'http://10.211.55.22:8080/api';
 const parentEmail = process.env.LEGGAU_PARENT_EMAIL ?? 'parent@leggau.local';
 const parentName = process.env.LEGGAU_PARENT_NAME ?? 'Responsavel Demo';
 

@@ -55,6 +55,7 @@ export class AdminService {
       app: {
         name: 'Leggau',
         apiBaseUrl:
+          this.configService.get<string>('DEV_API_ALIAS_URL') ??
           this.configService.get<string>('DEV_API_BASE_URL') ??
           'http://10.211.55.22:8080/api',
       },
@@ -209,8 +210,11 @@ export class AdminService {
       redis: health.dependencies.redis,
       portal: 'planned',
       admin: 'planned',
-      cloudflareDevAlias:
-        this.configService.get<string>('DEV_PORTAL_ALIAS_URL') ?? 'pending',
+      cloudflareDevAlias: {
+        portal: this.configService.get<string>('DEV_PORTAL_ALIAS_URL') ?? 'pending',
+        admin: this.configService.get<string>('DEV_ADMIN_ALIAS_URL') ?? 'pending',
+        api: this.configService.get<string>('DEV_API_ALIAS_URL') ?? 'pending',
+      },
     };
   }
 
@@ -224,6 +228,9 @@ export class AdminService {
       adminAlias:
         this.configService.get<string>('DEV_ADMIN_ALIAS_URL') ??
         'https://admin-dev.trycloudflare.com',
+      apiAlias:
+        this.configService.get<string>('DEV_API_ALIAS_URL') ??
+        'https://api-dev.trycloudflare.com',
       note: 'Sandbox alias state refreshed from configuration/runtime placeholders.',
     };
   }

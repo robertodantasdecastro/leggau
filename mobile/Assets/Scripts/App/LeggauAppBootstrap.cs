@@ -14,6 +14,9 @@ namespace Leggau.App
         private const string AutomatedDevelopmentModeKey = "leggau.bootstrap.automatedDevRunMode";
         private const string ChildShellMode = "child";
         private const string AdolescentShellMode = "adolescent";
+        private const float AutoRoomRefreshIntervalSeconds = 25f;
+        private const float AutoRoomRecoveryRefreshIntervalSeconds = 8f;
+        private const float AutoPresenceHeartbeatIntervalSeconds = 20f;
         private static bool automatedDevelopmentRunRequested;
         private static string automatedDevelopmentMode = ChildShellMode;
 
@@ -27,6 +30,10 @@ namespace Leggau.App
         private AppEnvironment currentEnvironment;
         private bool isBusy;
         private bool environmentReady;
+        private bool autoRoomRefreshInFlight;
+        private bool autoPresenceHeartbeatInFlight;
+        private float nextAutoRoomRefreshAt = -1f;
+        private float nextAutoPresenceHeartbeatAt = -1f;
 
         public static void RequestAutomatedDevelopmentRun(string mode = ChildShellMode)
         {
@@ -49,6 +56,32 @@ namespace Leggau.App
         private void Start()
         {
             StartCoroutine(PrepareBootstrap());
+        }
+
+        private void Update()
+        {
+            if (!ShouldRunRuntimeMonitoring())
+            {
+                return;
+            }
+
+            var now = Time.realtimeSinceStartup;
+            PrimeRuntimeMonitoringTimers(now);
+
+            if (!autoRoomRefreshInFlight && now >= nextAutoRoomRefreshAt)
+            {
+                autoRoomRefreshInFlight = true;
+                nextAutoRoomRefreshAt = now + ResolveRoomRefreshDelay();
+                StartCoroutine(AutoRefreshMonitoredInteractionsRoutine());
+                return;
+            }
+
+            if (sessionState.CanAutoHeartbeat && !autoPresenceHeartbeatInFlight && now >= nextAutoPresenceHeartbeatAt)
+            {
+                autoPresenceHeartbeatInFlight = true;
+                nextAutoPresenceHeartbeatAt = now + AutoPresenceHeartbeatIntervalSeconds;
+                StartCoroutine(AutoPresenceHeartbeatRoutine());
+            }
         }
 
         public void SubmitResponsibleStep()
@@ -152,7 +185,7 @@ namespace Leggau.App
                 return;
             }
 
-            StartCoroutine(SendPresenceHeartbeatRoutine());
+            StartCoroutine(SendPresenceHeartbeatRoutine(true));
         }
 
         public void RunDevelopmentOnboarding()
@@ -186,6 +219,7 @@ namespace Leggau.App
             LeggauLocalSessionStore.Clear();
             apiClient?.ClearAccessToken();
             sessionState.ResetForBootstrap();
+            ResetRuntimeMonitoringTimers();
             dashboardPresenter?.SetStatus("Jornada local limpa. Reiniciando a ativacao do shell...");
             StartCoroutine(PrepareBootstrap());
         }
@@ -247,6 +281,7 @@ namespace Leggau.App
             environmentReady = false;
             apiClient?.ClearAccessToken();
             sessionState.ResetForBootstrap();
+            ResetRuntimeMonitoringTimers();
             dashboardPresenter?.ResetFlow();
             dashboardPresenter?.SetHero("Ativando a experiencia do menor", "O shell do menor abre por sessao do responsavel, escolha do perfil e leitura da policy.");
             dashboardPresenter?.RenderLoadingState(sessionState, "Carregando ambiente...");
@@ -266,6 +301,7 @@ namespace Leggau.App
                 LeggauLocalSessionStore.Clear();
                 sessionState.ResetForBootstrap();
                 apiClient?.ClearAccessToken();
+                ResetRuntimeMonitoringTimers();
                 ApplyDevelopmentDefaults(currentEnvironment, automatedMode);
             }
             else
@@ -611,6 +647,7 @@ namespace Leggau.App
             yield return RefreshMonitoredInteractionsRoutine(false, true);
 
             sessionState.SetHomeReady(true);
+            PrimeRuntimeMonitoringTimers(Time.realtimeSinceStartup);
             dashboardPresenter?.MarkFlowDone("Progresso", "shell pronta");
             dashboardPresenter?.SetHero(
                 sessionState.ActiveShell == AdolescentShellMode ? "Shell adolescente carregada" : "Shell infantil carregada",
@@ -1120,10 +1157,19 @@ namespace Leggau.App
                 yield return LoadPresenceState(sessionState.ActiveRoom.id, true, nonBlocking);
             }
 
+            PrimeRuntimeMonitoringTimers(Time.realtimeSinceStartup);
             PersistLocalSession();
             if (sessionState.HomeReady)
             {
                 dashboardPresenter?.Render(sessionState);
+                if (nonBlocking)
+                {
+                    var lifecycleStatus = sessionState.ResolveLifecycleHeadline();
+                    var lifecycleMessage = sessionState.ResolveLifecycleMessage();
+                    dashboardPresenter?.SetStatus(string.IsNullOrWhiteSpace(lifecycleMessage)
+                        ? lifecycleStatus
+                        : $"{lifecycleStatus} - {lifecycleMessage}");
+                }
             }
             else if (!nonBlocking)
             {
@@ -1215,6 +1261,7 @@ namespace Leggau.App
 
             if (!requestFailed)
             {
+                PrimeRuntimeMonitoringTimers(Time.realtimeSinceStartup);
                 dashboardPresenter?.Render(sessionState);
                 dashboardPresenter?.SetStatus($"Sala ativa: {sessionState.ActiveRoom?.title ?? targetRoom.title}.");
             }
@@ -1251,6 +1298,7 @@ namespace Leggau.App
                     var payload = JsonUtility.FromJson<RoomActionResponse>(response);
                     sessionState.SetPresenceState(payload.presence);
                     sessionState.ClearActiveRoom();
+                    ResetRuntimeMonitoringTimers();
                     PersistLocalSession();
                 },
                 error =>
@@ -1269,7 +1317,7 @@ namespace Leggau.App
             dashboardPresenter?.SyncOnboardingControls(sessionState, false);
         }
 
-        private IEnumerator SendPresenceHeartbeatRoutine()
+        private IEnumerator SendPresenceHeartbeatRoutine(bool manualTrigger)
         {
             if (sessionState.ActiveRoom == null || sessionState.SelectedMinor == null)
             {
@@ -1291,7 +1339,9 @@ namespace Leggau.App
 
             isBusy = true;
             dashboardPresenter?.SyncOnboardingControls(sessionState, true);
-            dashboardPresenter?.SetStatus($"Atualizando presenca em {sessionState.ActiveRoom.title}...");
+            dashboardPresenter?.SetStatus(manualTrigger
+                ? $"Atualizando presenca em {sessionState.ActiveRoom.title}..."
+                : $"Heartbeat automatico em {sessionState.ActiveRoom.title}...");
 
             var requestFailed = false;
             var request = new PresenceHeartbeatRequest
@@ -1318,8 +1368,11 @@ namespace Leggau.App
 
             if (!requestFailed)
             {
+                PrimeRuntimeMonitoringTimers(Time.realtimeSinceStartup);
                 dashboardPresenter?.Render(sessionState);
-                dashboardPresenter?.SetStatus($"Heartbeat enviado. Participantes vistos: {sessionState.ActivePresence?.participantCount ?? 0}.");
+                dashboardPresenter?.SetStatus(manualTrigger
+                    ? $"Heartbeat enviado. Participantes vistos: {sessionState.ActivePresence?.participantCount ?? 0}."
+                    : $"Heartbeat automatico enviado. Participantes vistos: {sessionState.ActivePresence?.participantCount ?? 0}.");
             }
 
             isBusy = false;
@@ -1387,6 +1440,34 @@ namespace Leggau.App
 
         private string ResolveRuntimeBlockedMessage()
         {
+            if (sessionState.IsRoomSessionClosedByTimeout)
+            {
+                return string.IsNullOrWhiteSpace(sessionState.ResolveLifecycleMessage())
+                    ? "Sessao encerrada por timeout. Aguarde o lock expirar para recuperar o runtime."
+                    : sessionState.ResolveLifecycleMessage();
+            }
+
+            if (sessionState.IsRoomSessionClosedByAdmin)
+            {
+                return string.IsNullOrWhiteSpace(sessionState.ResolveLifecycleMessage())
+                    ? "Sala pausada pela operacao. O admin aplicou um lock temporario."
+                    : sessionState.ResolveLifecycleMessage();
+            }
+
+            if (sessionState.IsRoomSessionParticipantRemoved)
+            {
+                return string.IsNullOrWhiteSpace(sessionState.ResolveLifecycleMessage())
+                    ? "Participacao encerrada temporariamente. O participante foi removido da sessao."
+                    : sessionState.ResolveLifecycleMessage();
+            }
+
+            if (sessionState.IsRoomSessionStale)
+            {
+                return string.IsNullOrWhiteSpace(sessionState.ResolveLifecycleMessage())
+                    ? "Sessao em atraso. O heartbeat automatico vai tentar recuperar o runtime."
+                    : sessionState.ResolveLifecycleMessage();
+            }
+
             if (!string.IsNullOrWhiteSpace(sessionState.RoomCatalogMessage))
             {
                 return sessionState.RoomCatalogMessage;
@@ -1409,12 +1490,90 @@ namespace Leggau.App
 
         private string ResolvePresenceBlockedMessage()
         {
+            if (sessionState.IsRoomSessionClosedByTimeout ||
+                sessionState.IsRoomSessionClosedByAdmin ||
+                sessionState.IsRoomSessionParticipantRemoved ||
+                sessionState.IsRoomSessionStale)
+            {
+                return sessionState.ResolveLifecycleHeadline() +
+                       (string.IsNullOrWhiteSpace(sessionState.ResolveLifecycleMessage())
+                           ? string.Empty
+                           : $" - {sessionState.ResolveLifecycleMessage()}");
+            }
+
             if (sessionState.ActivePresence != null && !string.IsNullOrWhiteSpace(sessionState.ActivePresence.reason))
             {
                 return sessionState.ActivePresence.reason;
             }
 
             return ResolveRuntimeBlockedMessage();
+        }
+
+        private bool ShouldRunRuntimeMonitoring()
+        {
+            return environmentReady &&
+                   !isBusy &&
+                   sessionState != null &&
+                   sessionState.HomeReady &&
+                   sessionState.IsAuthenticated &&
+                   sessionState.SelectedMinor != null &&
+                   sessionState.ActiveRoom != null;
+        }
+
+        private void PrimeRuntimeMonitoringTimers(float now)
+        {
+            var roomRefreshDelay = ResolveRoomRefreshDelay();
+            if (nextAutoRoomRefreshAt < 0f || nextAutoRoomRefreshAt > now + roomRefreshDelay)
+            {
+                nextAutoRoomRefreshAt = now + roomRefreshDelay;
+            }
+
+            if (sessionState.CanAutoHeartbeat)
+            {
+                if (nextAutoPresenceHeartbeatAt < 0f || nextAutoPresenceHeartbeatAt > now + AutoPresenceHeartbeatIntervalSeconds)
+                {
+                    nextAutoPresenceHeartbeatAt = now + AutoPresenceHeartbeatIntervalSeconds;
+                }
+            }
+            else
+            {
+                nextAutoPresenceHeartbeatAt = -1f;
+            }
+        }
+
+        private void ResetRuntimeMonitoringTimers()
+        {
+            nextAutoRoomRefreshAt = -1f;
+            nextAutoPresenceHeartbeatAt = -1f;
+            autoRoomRefreshInFlight = false;
+            autoPresenceHeartbeatInFlight = false;
+        }
+
+        private float ResolveRoomRefreshDelay()
+        {
+            if (!sessionState.CanAutoRefreshRoomState)
+            {
+                return AutoRoomRecoveryRefreshIntervalSeconds;
+            }
+
+            if (sessionState.IsRoomSessionStale || sessionState.IsRoomSessionClosed || sessionState.IsLockExpired())
+            {
+                return AutoRoomRecoveryRefreshIntervalSeconds;
+            }
+
+            return AutoRoomRefreshIntervalSeconds;
+        }
+
+        private IEnumerator AutoRefreshMonitoredInteractionsRoutine()
+        {
+            yield return RefreshMonitoredInteractionsRoutine(false, true);
+            autoRoomRefreshInFlight = false;
+        }
+
+        private IEnumerator AutoPresenceHeartbeatRoutine()
+        {
+            yield return SendPresenceHeartbeatRoutine(false);
+            autoPresenceHeartbeatInFlight = false;
         }
 
         private void ApplyDevelopmentDefaults(AppEnvironment environment, string targetShell)
@@ -1569,6 +1728,26 @@ namespace Leggau.App
 
         private string BuildResumeStatus()
         {
+            if (sessionState.IsRoomSessionClosedByTimeout)
+            {
+                return "A sala salvo foi encerrada por timeout. O shell continua pronto enquanto o runtime tenta recuperar o estado.";
+            }
+
+            if (sessionState.IsRoomSessionClosedByAdmin)
+            {
+                return "A sala salvo foi pausada pela operacao. Aguarde o lock expirar ou abra outra sala.";
+            }
+
+            if (sessionState.IsRoomSessionParticipantRemoved)
+            {
+                return "A participacao foi encerrada temporariamente. O runtime continua pronto para recuperar o contexto.";
+            }
+
+            if (sessionState.IsRoomSessionStale)
+            {
+                return "A sessao ficou em atraso. O heartbeat automatico vai tentar recuperar o runtime.";
+            }
+
             return sessionState.ResolveResumeStep() switch
             {
                 "Home" => "Voltamos direto para o shell salvo. Atualizando a home do menor...",
@@ -1753,6 +1932,7 @@ namespace Leggau.App
 
             apiClient.ClearAccessToken();
             sessionState.InvalidateAuthentication();
+            ResetRuntimeMonitoringTimers();
             sessionState.SetDraftResponsible(email, name, password);
             dashboardPresenter?.ResetFlow();
             SyncFlowFromSession();

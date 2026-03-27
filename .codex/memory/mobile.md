@@ -190,7 +190,7 @@
   - age-profile presentation system on top of the already-compatible Phase B backend
   - policy-aware shell gating driven by `interaction-policies`
   - persisted minor selection and shell restoration
-- Phase E is now in progress for mobile through the first four monitored-interaction slices:
+- Phase E is now in progress for mobile through the first five monitored-interaction slices:
   - monitored room surfaces now live inside `Bootstrap.unity`
   - policy-governed presence and room affordances now resolve after shell selection
   - `presence_enabled` now acts as a hard runtime gate while `therapist_linking` now gates therapist participation
@@ -205,6 +205,14 @@
     - participacao encerrada temporariamente
     - lock temporario ate `lockExpiresAt`
   - compatibility remains intact with the adult web/admin governance layer
+  - runtime lifecycle now also surfaces:
+    - sessao ativa
+    - sessao em stale
+    - sessao encerrada por timeout
+    - sessao encerrada pela operacao
+    - participante removido temporariamente
+  - Unity now prefers `DEV_API_ALIAS_URL` for sign-off and restricts insecure HTTP fallback to editor/development flows
+  - `scripts/test-runtime-lifecycle.mjs` now validates timeout and recovery against the live VM runtime while Unity still reaches `state=ready`
 - The Unity workspace had to be reopened on `2026-03-26` through the canonical `-projectPath` flow after a temporary nested project folder appeared under `mobile/`; that stray folder was removed
 - The Phase D runtime now:
   - restores the responsible session first
@@ -242,6 +250,10 @@
   - room pause and participant-removal states now render explicitly without breaking shell restore, Gau, check-in, rewards or progress
   - stale `ActiveRoom` state is now dropped when runtime becomes unavailable through admin operational lock
   - runtime lock messaging now prefers `operationalMessage` over generic blocked text
+- The fifth monitored-interaction slice now also validates:
+  - `child` shell reaches `state=ready` while exposing `sessionStatus=closed_by_timeout` and the timeout close reason
+  - `adolescent` shell reaches `state=ready` while exposing the same lifecycle/timeout projection
+  - the shell now refreshes against the HTTPS API alias during canonical sign-off instead of depending on the raw VM IP
 - Unity batch validation for `child` and `adolescent` shells must run sequentially on the same project path; concurrent batch jobs can collide on `Library/Bee`
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination

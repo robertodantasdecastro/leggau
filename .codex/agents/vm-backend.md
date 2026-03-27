@@ -16,7 +16,8 @@ Own backend, reverse proxy, persistence and operational scripts on `vm2`.
 ## Directories
 
 - Remote root: `~/leggau`
-- Remote API target: `http://10.211.55.22:8080/api`
+- Canonical remote API target: `DEV_API_ALIAS_URL` over HTTPS
+- Raw remote API fallback: `http://10.211.55.22:8080/api`
 
 ## Required Checks
 
@@ -71,7 +72,9 @@ Own backend, reverse proxy, persistence and operational scripts on `vm2`.
 - The second Phase E supervision slice is also authoritative only on `vm2`, because hard approval gates, admin policy override and live presence rows only make sense against the deployed runtime.
 - The third Phase E runtime-invite slice is also authoritative only on `vm2`, because room-invite acceptance, expiry, revoke and runtime-event projection depend on the deployed API plus Nginx edge routing.
 - The fourth Phase E runtime-escalation slice is also authoritative only on `vm2`, because room snapshot, room termination, participant removal and their temporary operational locks depend on the live API runtime state.
+- The fifth Phase E lifecycle-and-HTTPS slice is also authoritative only on `vm2`, because timeout/stale transitions, Cloudflare API alias sync and lifecycle-aware runtime projections depend on the deployed API plus the live edge alias.
 - VM promotion must use the corrected `scripts/promote-stack-to-vm.sh`, which syncs project surfaces into canonical remote directories.
 - `scripts/deploy-vm.sh` now force-recreates `api`, `portal`, `admin` and `nginx`, so edge config changes inside `infra/` are applied during normal promotion.
+- `scripts/sync-cloudflare-dev-alias.sh` now also provisions the API alias and should be treated as part of the normal VM promotion path.
 - If the VM appears to serve stale routes after a sync, the recovery path is:
   - `docker compose build --no-cache api portal admin && docker compose up -d --force-recreate api portal admin nginx`

@@ -122,7 +122,7 @@
   - the runtime now persists `SelectedMinor`, `ResolvedAgeBand`, `ActiveShell` and the resolved policy snapshot
   - explicit `child` and `adolescent` shells now exist in the same scene with age-profile presentation for `6-9`, `10-12` and `13-17`
   - both a `child` shell and an `adolescent` shell now validate against `vm2` with `state=ready`
-- Phase E is now in progress through its first four runtime slices:
+- Phase E is now in progress through its first five runtime slices:
   - backend now exposes monitored `rooms` and `presence` routes on top of the policy-aware Unity shells
   - `scripts/test-monitored-interactions.mjs` now validates child and adolescent room/presence flow against `vm2`
   - `scripts/test-monitored-supervision.mjs` now validates guardian, therapist and admin supervision gates against `vm2`
@@ -133,6 +133,11 @@
   - admin runtime escalation now also includes live room snapshot, room termination and per-participant removal
   - incidents and moderation cases can now be opened from runtime context with room, actor, invite and presence metadata attached
   - `scripts/test-runtime-escalation.mjs` now validates operational locks, incident/moderation runtime context and lock expiry against `vm2`
+  - the canonical development sign-off path now prefers `DEV_API_ALIAS_URL` over HTTPS; the raw VM IP is fallback-only for editor/development recovery
+  - monitored runtime now also projects lifecycle states `active`, `stale`, `closed_by_timeout`, `closed_by_admin` and `participant_removed`
+  - `scripts/test-runtime-lifecycle.mjs` now validates timeout, stale transition and recovery against `vm2`
+  - `/pais`, `/profissionais`, `web/admin` and Unity now render timeout and close-reason state without falling back to generic runtime errors
+  - chat and E2EE remain intentionally out of implementation scope for this slice and become the next architecture/security track
   - the completed Phase C adult web/PWA and admin-governance surfaces remain the stable companion layers around this monitored runtime
 - After the machine reboot later on `2026-03-26`, `vm2` had to be started again from `~/leggau`, and the refreshed batch validation still reached:
   - `state=ready`
@@ -221,6 +226,27 @@
     - `activeShell=adolescent`
     - `availableRoomCount=2`
     - `presenceCount=0`
+- After the Phase E lifecycle-and-HTTPS slice later on `2026-03-27`, the canonical VM-backed Unity validations again reached:
+  - child shell:
+    - `state=ready`
+    - `status=Shell carregada.`
+    - `childName=Gau`
+    - `minorRole=child`
+    - `ageBand=6-9`
+    - `activeShell=child`
+    - `availableRoomCount=1`
+    - `sessionStatus=closed_by_timeout`
+    - `closeReason=Sessao encerrada por ausencia de heartbeat.`
+  - adolescent shell:
+    - `state=ready`
+    - `status=Shell carregada.`
+    - `childName=Gau Teen`
+    - `minorRole=adolescent`
+    - `ageBand=13-17`
+    - `activeShell=adolescent`
+    - `availableRoomCount=2`
+    - `sessionStatus=closed_by_timeout`
+    - `closeReason=Sessao encerrada por ausencia de heartbeat.`
 - Unity batch validation for `child` and `adolescent` shells must run sequentially on the same project path; concurrent runs can collide on `Library/Bee`.
 
 ## Delivery Workflow

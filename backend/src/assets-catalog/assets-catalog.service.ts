@@ -20,6 +20,7 @@ export class AssetsCatalogService {
       },
       api: {
         devBaseUrl:
+          this.configService.get<string>('DEV_API_ALIAS_URL') ??
           this.configService.get<string>('DEV_API_BASE_URL') ??
           'http://localhost:8080/api',
         prodBaseUrl:

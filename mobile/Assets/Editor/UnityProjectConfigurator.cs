@@ -33,7 +33,7 @@ namespace Leggau.Editor
             PlayerSettings.allowedAutorotateToLandscapeLeft = false;
             PlayerSettings.allowedAutorotateToLandscapeRight = false;
             PlayerSettings.colorSpace = ColorSpace.Linear;
-            PlayerSettings.insecureHttpOption = InsecureHttpOption.AlwaysAllowed;
+            PlayerSettings.insecureHttpOption = InsecureHttpOption.DevelopmentOnly;
             PlayerSettings.stripEngineCode = true;
             PlayerSettings.SetApiCompatibilityLevel(NamedBuildTarget.Android, ApiCompatibilityLevel.NET_Unity_4_8);
             PlayerSettings.SetApiCompatibilityLevel(NamedBuildTarget.iOS, ApiCompatibilityLevel.NET_Unity_4_8);

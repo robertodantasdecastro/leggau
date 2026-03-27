@@ -110,6 +110,12 @@ namespace Leggau.Models
         public string roomInviteStatus;
         public string activeInviteId;
         public string inviteExpiresAt;
+        public string sessionStatus;
+        public string participantStatus;
+        public string heartbeatTimeoutAt;
+        public string endedAt;
+        public string endedBy;
+        public string closeReason;
         public PolicySnapshotRecord policySnapshot;
         public string accessSource;
         public string operationalStatus;
@@ -132,6 +138,12 @@ namespace Leggau.Models
         public string inviteStatus;
         public string activeInviteId;
         public string inviteExpiresAt;
+        public string sessionStatus;
+        public string participantStatus;
+        public string heartbeatTimeoutAt;
+        public string endedAt;
+        public string endedBy;
+        public string closeReason;
     }
 
     [Serializable]
@@ -159,6 +171,12 @@ namespace Leggau.Models
         public string activeShell;
         public string status;
         public string presenceMode;
+        public string sessionStatus;
+        public string participantStatus;
+        public string heartbeatTimeoutAt;
+        public string endedAt;
+        public string endedBy;
+        public string closeReason;
         public int participantCount;
         public PresenceParticipantRecord[] participants;
         public string operationalStatus;
@@ -173,6 +191,12 @@ namespace Leggau.Models
         public string reason;
         public bool presenceEnabled;
         public string activeRoomId;
+        public string sessionStatus;
+        public string participantStatus;
+        public string heartbeatTimeoutAt;
+        public string endedAt;
+        public string endedBy;
+        public string closeReason;
         public MonitoredRoomRecord[] items;
         public RoomAccessRequirementsRecord requirements;
         public string operationalStatus;

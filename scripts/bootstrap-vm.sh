@@ -33,6 +33,12 @@ if grep -q '^DEV_API_BASE_URL=' .env; then
   perl -0pi -e "s#^DEV_API_BASE_URL=.*#DEV_API_BASE_URL=http://${VM_IP}:8080/api#m" .env
 fi
 
+if grep -q '^DEV_API_ALIAS_URL=' .env; then
+  perl -0pi -e "s#^DEV_API_ALIAS_URL=.*#DEV_API_ALIAS_URL=https://api-dev.trycloudflare.com#m" .env
+else
+  printf '\nDEV_API_ALIAS_URL=https://api-dev.trycloudflare.com\n' >> .env
+fi
+
 echo "[leggau] Bootstrap complete."
 echo "Next steps:"
 echo "  1. Review ${APP_ROOT}/.env"
