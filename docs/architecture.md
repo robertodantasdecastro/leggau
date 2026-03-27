@@ -103,3 +103,7 @@
 - O Unity agora resolve e persiste `SelectedMinor`, `ResolvedAgeBand` e `ActiveShell`, mantendo `ActiveChild` apenas como projecao de compatibilidade.
 - A apresentacao do Unity agora diferencia `6-9`, `10-12` e `13-17`, separando shells explicitos de `child` e `adolescent` dentro da mesma `Bootstrap.unity`.
 - `InteractionPolicy` agora governa visibilidade e bloqueio de salas, presenca, mensageria e participacao clinica diretamente no shell do menor.
+- A primeira fatia da Fase E agora esta ativa:
+  - `GET /api/rooms`, `POST /api/rooms/:id/join`, `POST /api/rooms/:id/leave`, `POST /api/presence/heartbeat` e `GET /api/presence/:roomId`
+  - acesso a `rooms/presence` depende de `GuardianLink` ativo ou `CareTeamMembership` ativo e aprovado
+  - no runtime atual, presenca monitorada continua efemera em memoria do processo da API, adequada para validacao e evolucao do produto nesta fase

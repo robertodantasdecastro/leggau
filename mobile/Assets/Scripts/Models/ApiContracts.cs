@@ -87,6 +87,77 @@ namespace Leggau.Models
     }
 
     [Serializable]
+    public class MonitoredRoomRecord
+    {
+        public string id;
+        public string title;
+        public string description;
+        public string audience;
+        public string ageBand;
+        public string shell;
+        public string presenceMode;
+    }
+
+    [Serializable]
+    public class PresenceParticipantRecord
+    {
+        public string participantKey;
+        public string minorProfileId;
+        public string actorRole;
+        public string activeShell;
+        public string accessSource;
+        public string joinedAt;
+        public string lastHeartbeatAt;
+    }
+
+    [Serializable]
+    public class PresenceStateRecord
+    {
+        public string roomId;
+        public string roomTitle;
+        public string minorProfileId;
+        public string activeShell;
+        public string status;
+        public string presenceMode;
+        public int participantCount;
+        public PresenceParticipantRecord[] participants;
+    }
+
+    [Serializable]
+    public class MonitoredRoomsEnvelope
+    {
+        public bool allowed;
+        public string reason;
+        public bool presenceEnabled;
+        public string activeRoomId;
+        public MonitoredRoomRecord[] items;
+    }
+
+    [Serializable]
+    public class RoomActionRequest
+    {
+        public string minorProfileId;
+        public string activeShell;
+    }
+
+    [Serializable]
+    public class RoomActionResponse
+    {
+        public bool allowed;
+        public string activeRoomId;
+        public MonitoredRoomRecord room;
+        public PresenceStateRecord presence;
+    }
+
+    [Serializable]
+    public class PresenceHeartbeatRequest
+    {
+        public string roomId;
+        public string minorProfileId;
+        public string activeShell;
+    }
+
+    [Serializable]
     public class DailyMission
     {
         public string id;

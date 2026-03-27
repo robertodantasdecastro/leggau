@@ -41,7 +41,8 @@ This directory defines the local agent architecture for Leggau.
 - Phase D is now completed:
   - `frontend-mobile.md` delivered the responsible-activation flow, linked-minor selector and explicit `child`/`adolescent` shells with age-profile presentation
   - `adult-web.md` and `web-admin.md` remain the maintenance and product-polish companions around the now-completed adult layer
-- The next critical-path baton now shifts to Phase E:
-  - `frontend-mobile.md` leads the monitored interaction and policy-aware room/presence affordances on Unity
-  - `api-integration.md` keeps ownership of the policy/runtime compatibility required by those Unity affordances
+- Phase E is now in progress:
+  - `frontend-mobile.md` owns the live monitored-room and monitored-presence affordances on Unity
+  - `api-integration.md` owns the contract validation and `scripts/test-monitored-interactions.mjs`
+  - `vm-backend.md` owns VM deployment and health of the new `rooms/presence` endpoints
   - `adult-web.md` and `web-admin.md` continue as companion tracks for governance and caregiver/professional workflows

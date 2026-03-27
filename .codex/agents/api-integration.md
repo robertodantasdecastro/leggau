@@ -56,3 +56,9 @@ Keep the frontend and backend contract aligned and stable across local, VM and p
   - `/api/audit/events`
   - `/api/incidents`
   - `/api/moderation/cases`
+- Phase E monitored interaction must also stay aligned with:
+  - `/api/rooms`
+  - `/api/rooms/:id/join`
+  - `/api/rooms/:id/leave`
+  - `/api/presence/heartbeat`
+  - `/api/presence/:roomId`

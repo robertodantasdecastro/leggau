@@ -58,6 +58,7 @@ import { ProfilesModule } from './profiles/profiles.module';
 import { ProgressModule } from './progress/progress.module';
 import { RedisModule } from './redis/redis.module';
 import { RewardsModule } from './rewards/rewards.module';
+import { RoomsModule } from './rooms/rooms.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { ModerationModule } from './moderation/moderation.module';
 
@@ -140,6 +141,7 @@ import { ModerationModule } from './moderation/moderation.module';
     ActivitiesModule,
     RewardsModule,
     ProgressModule,
+    RoomsModule,
     AssetsCatalogModule,
     SessionsModule,
     DevicesModule,

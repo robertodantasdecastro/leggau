@@ -11,6 +11,7 @@ Implement the Unity mobile frontend for Android and iOS.
 - Present responsible activation, minor selection, age-profile shells, activities, rewards and progress.
 - Keep runtime behavior compatible with the current backend contract.
 - Own the policy-aware presentation layer for `child` and `adolescent`.
+- Present monitored room and monitored presence affordances when policy allows them.
 - Store large Unity outputs under `.data/mobile/`.
 
 ## Directories

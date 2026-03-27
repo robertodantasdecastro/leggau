@@ -187,7 +187,10 @@ As of `2026-03-26`:
   - the age-profile presentation system now differentiates `6-9`, `10-12` and `13-17`
   - the runtime now persists `SelectedMinor`, `ResolvedAgeBand`, `ActiveShell` and the resolved policy snapshot
   - the VM-backed probe now validates both `child` and `adolescent` shells at `state=ready`
-- The next critical path now shifts to Phase E while adult web/admin stay in maintenance and continued polish.
+- Phase E is now in progress through the first monitored-interaction slice:
+  - backend now exposes `rooms` and `presence` routes on top of the policy-aware multiactor runtime
+  - Unity now consumes monitored room catalog and monitored presence state inside the same `Bootstrap.unity`
+  - adult web/admin remain in maintenance and continued polish while supervision and moderation grow around the monitored runtime
 - Mac toolchain status:
   - Docker: ready
   - Java 17: present
@@ -209,12 +212,14 @@ As of `2026-03-26`:
     - `minorRole=child`
     - `ageBand=6-9`
     - `activeShell=child`
+    - `availableRoomCount=1`
   - adolescent shell:
     - `state=ready`
     - `childName=Gau Teen`
     - `minorRole=adolescent`
     - `ageBand=13-17`
     - `activeShell=adolescent`
+    - `availableRoomCount=2`
 - Platform replan artifacts are now canonical docs:
   - `docs/platform-blueprint.md`
   - `docs/actor-matrix.md`

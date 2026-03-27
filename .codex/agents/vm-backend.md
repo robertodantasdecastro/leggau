@@ -39,6 +39,11 @@ Own backend, reverse proxy, persistence and operational scripts on `vm2`.
 - `/api/admin/auth/providers`
 - `/api/admin/media-verification/jobs`
 - `/api/media-verification`
+- `/api/rooms`
+- `/api/rooms/:id/join`
+- `/api/rooms/:id/leave`
+- `/api/presence/heartbeat`
+- `/api/presence/:roomId`
 - `/api/activities`
 - `/api/progress/summary`
 - `/api/progress/checkins`
@@ -51,6 +56,7 @@ Own backend, reverse proxy, persistence and operational scripts on `vm2`.
 - The local `sqljs` fallback may still be useful for limited debugging, but it is not a release gate for the multiactor schema.
 - The social-auth and verification checkpoint is also authoritative only on `vm2`, because provider config, masked admin responses and audited verification jobs must be exercised against the real Postgres-backed runtime.
 - The completed Phase C portal/admin checkpoint is also authoritative only on `vm2`, because invite ownership, guardian approval visibility, adolescent progress compatibility, admin governance filters and the installable adult PWA now depend on the deployed VM runtime.
+- The first Phase E monitored-room slice is also authoritative only on `vm2`, because `rooms/presence` gating depends on the live Postgres-backed multiactor runtime and VM deployment state.
 - VM promotion must use the corrected `scripts/promote-stack-to-vm.sh`, which syncs project surfaces into canonical remote directories.
 - If the VM appears to serve stale routes after a sync, the recovery path is:
   - `docker compose build --no-cache api portal admin && docker compose up -d --force-recreate api portal admin nginx`

@@ -115,6 +115,46 @@ namespace Leggau.App
             StartCoroutine(CompleteHomeStepRoutine());
         }
 
+        public void RefreshMonitoredInteractions()
+        {
+            if (isBusy || !environmentReady)
+            {
+                return;
+            }
+
+            StartCoroutine(RefreshMonitoredInteractionsRoutine(true, false));
+        }
+
+        public void JoinFirstAvailableRoom()
+        {
+            if (isBusy || !environmentReady)
+            {
+                return;
+            }
+
+            StartCoroutine(JoinFirstAvailableRoomRoutine());
+        }
+
+        public void LeaveActiveRoom()
+        {
+            if (isBusy || !environmentReady)
+            {
+                return;
+            }
+
+            StartCoroutine(LeaveActiveRoomRoutine());
+        }
+
+        public void SendPresenceHeartbeat()
+        {
+            if (isBusy || !environmentReady)
+            {
+                return;
+            }
+
+            StartCoroutine(SendPresenceHeartbeatRoutine());
+        }
+
         public void RunDevelopmentOnboarding()
         {
             if (isBusy || !environmentReady)
@@ -568,6 +608,8 @@ namespace Leggau.App
                 yield break;
             }
 
+            yield return RefreshMonitoredInteractionsRoutine(false, true);
+
             sessionState.SetHomeReady(true);
             dashboardPresenter?.MarkFlowDone("Progresso", "shell pronta");
             dashboardPresenter?.SetHero(
@@ -1003,6 +1045,272 @@ namespace Leggau.App
             isBusy = false;
         }
 
+        private IEnumerator RefreshMonitoredInteractionsRoutine(bool manageBusyState, bool nonBlocking)
+        {
+            if (sessionState.SelectedMinor == null || sessionState.SelectedMinorPolicy == null)
+            {
+                if (!nonBlocking)
+                {
+                    dashboardPresenter?.SetStatus("Carregue o menor e a policy antes de atualizar salas monitoradas.");
+                }
+                yield break;
+            }
+
+            if (!sessionState.SelectedMinorPolicy.roomsEnabled)
+            {
+                sessionState.SetMonitoredRooms(new MonitoredRoomsEnvelope
+                {
+                    allowed = false,
+                    reason = "Salas estruturadas bloqueadas pela policy deste menor.",
+                    presenceEnabled = sessionState.SelectedMinorPolicy.presenceEnabled,
+                    activeRoomId = null,
+                    items = new MonitoredRoomRecord[0],
+                });
+                sessionState.ClearActiveRoom();
+                PersistLocalSession();
+                if (sessionState.HomeReady)
+                {
+                    dashboardPresenter?.Render(sessionState);
+                }
+                else
+                {
+                    dashboardPresenter?.RenderLoadingState(sessionState, "A policy atual bloqueia salas estruturadas.");
+                }
+                yield break;
+            }
+
+            if (manageBusyState)
+            {
+                isBusy = true;
+                dashboardPresenter?.SyncOnboardingControls(sessionState, true);
+                dashboardPresenter?.SetStatus("Atualizando salas monitoradas...");
+            }
+
+            var requestFailed = false;
+            yield return apiClient.GetJson(
+                $"rooms?minorProfileId={sessionState.SelectedMinor.id}",
+                response =>
+                {
+                    var rooms = JsonUtility.FromJson<MonitoredRoomsEnvelope>(response);
+                    sessionState.SetMonitoredRooms(rooms);
+                    PersistLocalSession();
+                },
+                error =>
+                {
+                    requestFailed = true;
+                    sessionState.SetMonitoredRooms(new MonitoredRoomsEnvelope
+                    {
+                        allowed = false,
+                        reason = "Nao foi possivel atualizar as salas monitoradas agora.",
+                        presenceEnabled = sessionState.SelectedMinorPolicy?.presenceEnabled ?? false,
+                        activeRoomId = null,
+                        items = new MonitoredRoomRecord[0],
+                    });
+                    if (!nonBlocking)
+                    {
+                        dashboardPresenter?.SetStatus($"Falha ao atualizar salas: {error}");
+                    }
+                });
+
+            if (!requestFailed &&
+                sessionState.ActiveRoom != null &&
+                sessionState.SelectedMinorPolicy != null &&
+                sessionState.SelectedMinorPolicy.presenceEnabled)
+            {
+                yield return LoadPresenceState(sessionState.ActiveRoom.id, true, nonBlocking);
+            }
+
+            PersistLocalSession();
+            if (sessionState.HomeReady)
+            {
+                dashboardPresenter?.Render(sessionState);
+            }
+            else if (!nonBlocking)
+            {
+                dashboardPresenter?.RenderLoadingState(sessionState, sessionState.RoomCatalogMessage);
+            }
+
+            if (!requestFailed && !nonBlocking)
+            {
+                dashboardPresenter?.SetStatus($"Salas monitoradas atualizadas via {apiClient.ActiveBaseUrl}.");
+            }
+
+            if (manageBusyState)
+            {
+                isBusy = false;
+                dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+            }
+        }
+
+        private IEnumerator JoinFirstAvailableRoomRoutine()
+        {
+            if (sessionState.SelectedMinor == null || sessionState.SelectedMinorPolicy == null)
+            {
+                dashboardPresenter?.SetStatus("Selecione o menor e carregue a policy antes de entrar em uma sala.");
+                yield break;
+            }
+
+            if (!sessionState.SelectedMinorPolicy.roomsEnabled)
+            {
+                dashboardPresenter?.SetStatus("A policy atual bloqueia salas estruturadas para este menor.");
+                yield break;
+            }
+
+            if (!sessionState.HasAvailableRooms)
+            {
+                yield return RefreshMonitoredInteractionsRoutine(true, false);
+                if (!sessionState.HasAvailableRooms)
+                {
+                    yield break;
+                }
+            }
+
+            var targetRoom = sessionState.ActiveRoom ?? sessionState.AvailableRooms[0];
+            if (targetRoom == null)
+            {
+                dashboardPresenter?.SetStatus("Nenhuma sala monitorada esta disponivel neste shell.");
+                yield break;
+            }
+
+            isBusy = true;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, true);
+            dashboardPresenter?.SetStatus($"Entrando em {targetRoom.title}...");
+
+            var requestFailed = false;
+            var request = new RoomActionRequest
+            {
+                minorProfileId = sessionState.SelectedMinor.id,
+                activeShell = sessionState.ActiveShell,
+            };
+
+            yield return apiClient.PostJson(
+                $"rooms/{targetRoom.id}/join",
+                JsonUtility.ToJson(request),
+                response =>
+                {
+                    var payload = JsonUtility.FromJson<RoomActionResponse>(response);
+                    sessionState.SetActiveRoom(payload.room);
+                    sessionState.SetPresenceState(payload.presence);
+                    PersistLocalSession();
+                },
+                error =>
+                {
+                    requestFailed = true;
+                    dashboardPresenter?.SetStatus($"Falha ao entrar na sala: {error}");
+                });
+
+            if (!requestFailed && sessionState.SelectedMinorPolicy.presenceEnabled && sessionState.ActiveRoom != null)
+            {
+                yield return LoadPresenceState(sessionState.ActiveRoom.id, false, false);
+            }
+
+            if (!requestFailed)
+            {
+                dashboardPresenter?.Render(sessionState);
+                dashboardPresenter?.SetStatus($"Sala ativa: {sessionState.ActiveRoom?.title ?? targetRoom.title}.");
+            }
+
+            isBusy = false;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+        }
+
+        private IEnumerator LeaveActiveRoomRoutine()
+        {
+            if (sessionState.ActiveRoom == null || sessionState.SelectedMinor == null)
+            {
+                dashboardPresenter?.SetStatus("Nenhuma sala ativa para encerrar agora.");
+                yield break;
+            }
+
+            isBusy = true;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, true);
+            dashboardPresenter?.SetStatus($"Saindo de {sessionState.ActiveRoom.title}...");
+
+            var requestFailed = false;
+            var request = new RoomActionRequest
+            {
+                minorProfileId = sessionState.SelectedMinor.id,
+                activeShell = sessionState.ActiveShell,
+            };
+
+            var activeRoomId = sessionState.ActiveRoom.id;
+            yield return apiClient.PostJson(
+                $"rooms/{activeRoomId}/leave",
+                JsonUtility.ToJson(request),
+                response =>
+                {
+                    var payload = JsonUtility.FromJson<RoomActionResponse>(response);
+                    sessionState.SetPresenceState(payload.presence);
+                    sessionState.ClearActiveRoom();
+                    PersistLocalSession();
+                },
+                error =>
+                {
+                    requestFailed = true;
+                    dashboardPresenter?.SetStatus($"Falha ao sair da sala: {error}");
+                });
+
+            if (!requestFailed)
+            {
+                dashboardPresenter?.Render(sessionState);
+                dashboardPresenter?.SetStatus("Sala monitorada encerrada.");
+            }
+
+            isBusy = false;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+        }
+
+        private IEnumerator SendPresenceHeartbeatRoutine()
+        {
+            if (sessionState.ActiveRoom == null || sessionState.SelectedMinor == null)
+            {
+                dashboardPresenter?.SetStatus("Entre em uma sala antes de enviar heartbeat.");
+                yield break;
+            }
+
+            if (sessionState.SelectedMinorPolicy == null || !sessionState.SelectedMinorPolicy.presenceEnabled)
+            {
+                dashboardPresenter?.SetStatus("A policy atual nao permite presenca monitorada para este menor.");
+                yield break;
+            }
+
+            isBusy = true;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, true);
+            dashboardPresenter?.SetStatus($"Atualizando presenca em {sessionState.ActiveRoom.title}...");
+
+            var requestFailed = false;
+            var request = new PresenceHeartbeatRequest
+            {
+                roomId = sessionState.ActiveRoom.id,
+                minorProfileId = sessionState.SelectedMinor.id,
+                activeShell = sessionState.ActiveShell,
+            };
+
+            yield return apiClient.PostJson(
+                "presence/heartbeat",
+                JsonUtility.ToJson(request),
+                response =>
+                {
+                    var state = JsonUtility.FromJson<PresenceStateRecord>(response);
+                    sessionState.SetPresenceState(state);
+                    PersistLocalSession();
+                },
+                error =>
+                {
+                    requestFailed = true;
+                    dashboardPresenter?.SetStatus($"Falha ao atualizar presenca: {error}");
+                });
+
+            if (!requestFailed)
+            {
+                dashboardPresenter?.Render(sessionState);
+                dashboardPresenter?.SetStatus($"Heartbeat enviado. Participantes vistos: {sessionState.ActivePresence?.participantCount ?? 0}.");
+            }
+
+            isBusy = false;
+            dashboardPresenter?.SyncOnboardingControls(sessionState, false);
+        }
+
         private IEnumerator LoadProgressSummary()
         {
             var requestFailed = false;
@@ -1026,6 +1334,37 @@ namespace Leggau.App
             if (requestFailed)
             {
                 isBusy = false;
+            }
+        }
+
+        private IEnumerator LoadPresenceState(string roomId, bool updateStatus, bool nonBlocking)
+        {
+            if (sessionState.SelectedMinor == null || string.IsNullOrWhiteSpace(roomId))
+            {
+                yield break;
+            }
+
+            var requestFailed = false;
+            yield return apiClient.GetJson(
+                $"presence/{roomId}?minorProfileId={sessionState.SelectedMinor.id}",
+                response =>
+                {
+                    var state = JsonUtility.FromJson<PresenceStateRecord>(response);
+                    sessionState.SetPresenceState(state);
+                    PersistLocalSession();
+                },
+                error =>
+                {
+                    requestFailed = true;
+                    if (!nonBlocking)
+                    {
+                        dashboardPresenter?.SetStatus($"Falha ao ler presenca monitorada: {error}");
+                    }
+                });
+
+            if (!requestFailed && updateStatus)
+            {
+                dashboardPresenter?.SetStatus($"Presenca monitorada atualizada para {sessionState.ActiveRoom?.title ?? roomId}.");
             }
         }
 

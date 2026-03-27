@@ -65,6 +65,11 @@
 - `POST /api/moderation/cases`
 - `PATCH /api/moderation/cases/:id`
 - `POST /api/media-verification`
+- `GET /api/rooms`
+- `POST /api/rooms/:id/join`
+- `POST /api/rooms/:id/leave`
+- `POST /api/presence/heartbeat`
+- `GET /api/presence/:roomId`
 - `GET /manifest.webmanifest`
 - `GET /sw.js`
 
@@ -203,10 +208,10 @@
   - `backend`
   - `web/admin`
   - `web/portal`
-- The next backend/platform expansion wave is now Phase E consumer work on top of this runtime:
-  - monitored interaction surfaces for Unity
-  - policy-governed presence and room affordances
-  - continued admin/compliance/billing hardening on the live governance stack
+- Phase E is now in progress on top of this runtime:
+  - monitored interaction surfaces for Unity are now live against `vm2`
+  - policy-governed presence and room affordances are now validated through `scripts/test-monitored-interactions.mjs`
+  - continued admin/compliance/billing hardening remains the companion track around the live governance stack
 - VM memory and docs sync should continue through `./scripts/sync-codex-to-vm.sh`
 - Full Phase 0 promotion should use:
   - `./scripts/promote-stack-to-vm.sh`

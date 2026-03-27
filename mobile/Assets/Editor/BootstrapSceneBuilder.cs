@@ -257,6 +257,41 @@ namespace Leggau.Editor
                 new Color(0.61f, 0.9f, 0.76f, 0.98f),
                 new Color(0.35f, 0.74f, 0.57f, 0.98f));
 
+            var catalogCard = CreatePanel("CatalogCard", actionPanel.transform, new Vector2(0.08f, 0.19f), new Vector2(0.92f, 0.33f), new Color(1f, 1f, 1f, 0.7f));
+            CreateLabel("CatalogCardTitle", catalogCard.transform, new Vector2(0.04f, 0.7f), new Vector2(0.96f, 0.96f), 13, FontStyle.Bold, TextAnchor.MiddleLeft, "Interacoes monitoradas");
+            var catalog = CreateLabel("CatalogCardValue", catalogCard.transform, new Vector2(0.04f, 0.32f), new Vector2(0.96f, 0.76f), 12, FontStyle.Normal, TextAnchor.UpperLeft, "Interacoes");
+            var refreshRoomsAction = BuildSecondaryButton(
+                catalogCard.transform,
+                "RefreshRoomsButton",
+                new Vector2(0.04f, 0.15f),
+                new Vector2(0.48f, 0.29f),
+                "Atualizar salas",
+                null);
+            var joinRoomAction = BuildSecondaryButton(
+                catalogCard.transform,
+                "JoinRoomButton",
+                new Vector2(0.52f, 0.15f),
+                new Vector2(0.96f, 0.29f),
+                "Entrar na sala",
+                null);
+            var leaveRoomAction = BuildSecondaryButton(
+                catalogCard.transform,
+                "LeaveRoomButton",
+                new Vector2(0.04f, 0.02f),
+                new Vector2(0.48f, 0.12f),
+                "Sair da sala",
+                null);
+            var heartbeatAction = BuildSecondaryButton(
+                catalogCard.transform,
+                "PresenceHeartbeatButton",
+                new Vector2(0.52f, 0.02f),
+                new Vector2(0.96f, 0.12f),
+                "Enviar heartbeat",
+                null,
+                new Color(0.48f, 0.84f, 0.67f, 0.94f),
+                new Color(0.61f, 0.9f, 0.76f, 0.98f),
+                new Color(0.35f, 0.74f, 0.57f, 0.98f));
+
             return new HudViews
             {
                 onboardingRoot = onboardingPanel.transform,
@@ -279,7 +314,7 @@ namespace Leggau.Editor
                 rewards = CreateCardLabel("RewardsCard", "Recompensas", homePanel.transform, new Vector2(0.52f, 0.02f), new Vector2(0.95f, 0.17f), 12, "Recompensas"),
                 flow = CreateCardLabel("FlowCard", "Checklist da jornada", actionPanel.transform, new Vector2(0.08f, 0.53f), new Vector2(0.92f, 0.74f), 12, "Etapas"),
                 gauVariant = CreateCardLabel("GauVariantCard", "Mascote ativo", actionPanel.transform, new Vector2(0.08f, 0.34f), new Vector2(0.92f, 0.51f), 13, "Mascote"),
-                catalog = CreateCardLabel("CatalogCard", "Proximos passos", actionPanel.transform, new Vector2(0.08f, 0.19f), new Vector2(0.92f, 0.33f), 12, "Proximos passos"),
+                catalog = catalog,
                 familySummary = familySummary,
                 minorSummary = minorSummary,
                 policySummary = policySummary,
@@ -296,6 +331,10 @@ namespace Leggau.Editor
                 minorAction = minorAction,
                 homeAction = homeAction,
                 devAction = devAction,
+                refreshRoomsAction = refreshRoomsAction,
+                joinRoomAction = joinRoomAction,
+                leaveRoomAction = leaveRoomAction,
+                heartbeatAction = heartbeatAction,
                 actionsRoot = actionPanel.transform,
             };
         }
@@ -304,8 +343,8 @@ namespace Leggau.Editor
         {
             var buttonObject = CreateUiObject("CheckinButton", parent);
             var rectTransform = buttonObject.AddComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0.08f, 0.11f);
-            rectTransform.anchorMax = new Vector2(0.92f, 0.17f);
+            rectTransform.anchorMin = new Vector2(0.08f, 0.12f);
+            rectTransform.anchorMax = new Vector2(0.92f, 0.18f);
             rectTransform.offsetMin = Vector2.zero;
             rectTransform.offsetMax = Vector2.zero;
 
@@ -332,6 +371,10 @@ namespace Leggau.Editor
             UnityEventTools.AddPersistentListener(views.minorAction.onClick, bootstrap.SubmitChildStep);
             UnityEventTools.AddPersistentListener(views.homeAction.onClick, bootstrap.CompleteHomeStep);
             UnityEventTools.AddPersistentListener(views.devAction.onClick, bootstrap.RunDevelopmentOnboarding);
+            UnityEventTools.AddPersistentListener(views.refreshRoomsAction.onClick, bootstrap.RefreshMonitoredInteractions);
+            UnityEventTools.AddPersistentListener(views.joinRoomAction.onClick, bootstrap.JoinFirstAvailableRoom);
+            UnityEventTools.AddPersistentListener(views.leaveRoomAction.onClick, bootstrap.LeaveActiveRoom);
+            UnityEventTools.AddPersistentListener(views.heartbeatAction.onClick, bootstrap.SendPresenceHeartbeat);
         }
 
         private static Button BuildPrimaryButton(
@@ -374,8 +417,8 @@ namespace Leggau.Editor
             BuildSecondaryButton(
                 parent,
                 "RetryBootstrapButton",
-                new Vector2(0.08f, 0.08f),
-                new Vector2(0.92f, 0.14f),
+                new Vector2(0.08f, 0.06f),
+                new Vector2(0.47f, 0.11f),
                 "Atualizar jornada",
                 bootstrap.RetryBootstrap,
                 new Color(0.48f, 0.84f, 0.67f, 0.94f),
@@ -385,8 +428,8 @@ namespace Leggau.Editor
             BuildSecondaryButton(
                 parent,
                 "ResetJourneyButton",
-                new Vector2(0.08f, 0.01f),
-                new Vector2(0.92f, 0.07f),
+                new Vector2(0.53f, 0.06f),
+                new Vector2(0.92f, 0.11f),
                 "Reiniciar jornada local",
                 bootstrap.ResetLocalJourney,
                 new Color(0.95f, 0.67f, 0.48f, 0.94f),
@@ -650,6 +693,10 @@ namespace Leggau.Editor
             public Button minorAction;
             public Button homeAction;
             public Button devAction;
+            public Button refreshRoomsAction;
+            public Button joinRoomAction;
+            public Button leaveRoomAction;
+            public Button heartbeatAction;
             public Transform actionsRoot;
         }
 

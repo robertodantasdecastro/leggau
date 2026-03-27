@@ -122,9 +122,10 @@
   - the runtime now persists `SelectedMinor`, `ResolvedAgeBand`, `ActiveShell` and the resolved policy snapshot
   - explicit `child` and `adolescent` shells now exist in the same scene with age-profile presentation for `6-9`, `10-12` and `13-17`
   - both a `child` shell and an `adolescent` shell now validate against `vm2` with `state=ready`
-- The next execution phase is now Phase E:
-  - add monitored interaction, presence and room affordances on top of the policy-aware Unity shells
-  - preserve the completed Phase C adult web/PWA and admin-governance surfaces as stable companion layers
+- Phase E is now in progress through its first runtime slice:
+  - backend now exposes monitored `rooms` and `presence` routes on top of the policy-aware Unity shells
+  - `scripts/test-monitored-interactions.mjs` now validates child and adolescent room/presence flow against `vm2`
+  - the completed Phase C adult web/PWA and admin-governance surfaces remain the stable companion layers around this monitored runtime
 - After the machine reboot later on `2026-03-26`, `vm2` had to be started again from `~/leggau`, and the refreshed batch validation still reached:
   - `state=ready`
   - `parentName=Responsavel Demo`
@@ -161,6 +162,7 @@
     - `minorRole=child`
     - `ageBand=6-9`
     - `activeShell=child`
+    - `availableRoomCount=1`
   - adolescent shell:
     - `state=ready`
     - `childName=Gau Teen`
@@ -168,6 +170,7 @@
     - `minorRole=adolescent`
     - `ageBand=13-17`
     - `activeShell=adolescent`
+    - `availableRoomCount=2`
 
 ## Delivery Workflow
 

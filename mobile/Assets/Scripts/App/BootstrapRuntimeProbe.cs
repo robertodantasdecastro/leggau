@@ -20,6 +20,9 @@ namespace Leggau.App
             public string minorRole;
             public string ageBand;
             public string activeShell;
+            public string activeRoomId;
+            public int availableRoomCount;
+            public int presenceCount;
             public string activeGauVariant;
             public int availablePoints;
             public int totalPoints;
@@ -75,6 +78,9 @@ namespace Leggau.App
             snapshot.minorRole = session.SelectedMinorRole ?? string.Empty;
             snapshot.ageBand = session.ResolvedAgeBand ?? string.Empty;
             snapshot.activeShell = session.ActiveShell ?? string.Empty;
+            snapshot.activeRoomId = session.ActiveRoom?.id ?? string.Empty;
+            snapshot.availableRoomCount = session.AvailableRooms?.Length ?? 0;
+            snapshot.presenceCount = session.ActivePresence?.participantCount ?? 0;
             snapshot.activeGauVariant = session.ActiveGauVariant?.id ?? string.Empty;
             snapshot.availablePoints = session.AvailablePoints;
             snapshot.totalPoints = session.TotalPoints;

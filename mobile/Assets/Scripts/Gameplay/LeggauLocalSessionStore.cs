@@ -14,6 +14,11 @@ namespace Leggau.Gameplay
         public MinorProfileRecord[] linkedMinors;
         public MinorProfileRecord selectedMinor;
         public InteractionPolicyRecord selectedMinorPolicy;
+        public MonitoredRoomRecord[] availableRooms;
+        public MonitoredRoomRecord activeRoom;
+        public PresenceStateRecord activePresence;
+        public bool roomsAllowed;
+        public string roomCatalogMessage;
         public string resolvedAgeBand;
         public string activeShell;
         public ChildProfile activeChild;

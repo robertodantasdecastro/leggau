@@ -118,13 +118,23 @@
 
 ### Phase E — Monitored interaction and moderation
 
-- Status: `planned`
-- Scope:
-  - rooms
-  - presence
-  - invites
-  - moderation pipeline
-  - parent and therapist controls
+- Status: `in_progress`
+- Completed in slice 1:
+  - backend now exposes the first monitored interaction routes:
+    - `GET /api/rooms`
+    - `POST /api/rooms/:id/join`
+    - `POST /api/rooms/:id/leave`
+    - `POST /api/presence/heartbeat`
+    - `GET /api/presence/:roomId`
+  - monitored room access now respects active `GuardianLink` and, when applicable, active admin-approved `CareTeamMembership`
+  - `InteractionPolicy` now governs runtime room listing, room join and presence heartbeat behavior, not only UI visibility
+  - Unity now persists and renders available rooms, active room, presence state and room availability messaging in the one-scene runtime
+  - `scripts/test-monitored-interactions.mjs` now validates child and adolescent room/presence flow against `vm2`
+- Remaining:
+  - parent and therapist controls around monitored interaction
+  - invite-driven room entry refinement
+  - moderation pipeline deeper than the current audit-first monitored surface
+  - richer room/presence UX and supervision affordances
 
 ### Phase F — Billing, admin and beta readiness
 
@@ -141,8 +151,8 @@
 
 ## Next Execution Step
 
-1. Start Phase E on top of the now-policy-aware Unity runtime and the already-completed adult web/admin surfaces.
-2. Add monitored interaction, presence and room affordances only where `InteractionPolicy` explicitly allows them.
+1. Continue Phase E from the now-live rooms/presence slice.
+2. Add caregiver and therapist supervision controls on top of the audited monitored-room runtime.
 3. Preserve the completed Phase C portal/admin surfaces and the completed Phase D Unity shells as stable foundations.
 4. Keep Phase F admin/compliance/billing hardening as a parallel operational thread on top of the live governance console.
 

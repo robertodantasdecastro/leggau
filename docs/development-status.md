@@ -160,6 +160,14 @@ Date checked: `2026-03-26`
   - incident creation, filtering and triage
   - moderation-case creation, filtering and triage
   - audit filtering by `eventType`, `actorRole` and `resourceType`
+- The first Phase E monitored-interaction slice now also validates against the VM for:
+  - `GET /api/rooms`
+  - `POST /api/rooms/:id/join`
+  - `POST /api/rooms/:id/leave`
+  - `POST /api/presence/heartbeat`
+  - `GET /api/presence/:roomId`
+- The monitored interaction validation driver for this slice is:
+  - `scripts/test-monitored-interactions.mjs`
 - `scripts/promote-stack-to-vm.sh` was corrected on `2026-03-26` to rsync `backend/`, `web/`, `infra/`, `docs/`, `scripts/` and `.codex/` into their canonical remote directories instead of flattening directory contents into the VM root
 - When stale Docker cache prevented new runtime routes from surfacing after the corrected sync, the authoritative recovery path became:
   - `ssh vm2 'cd ~/leggau && docker compose build --no-cache api portal admin && docker compose up -d --force-recreate api portal admin nginx'`
@@ -221,8 +229,14 @@ Date checked: `2026-03-26`
   - `InteractionPolicy` now directly gates rooms, presence, messaging affordances and therapist participation affordances in the Unity UI
   - the Unity probe now records `selectedMinorId`, `minorRole`, `ageBand` and `activeShell`
   - batch validation now reaches `state=ready` for both a `child` shell and an `adolescent` shell against the canonical `vm2`
-- The next execution step now shifts to Phase E:
-  - build monitored interaction surfaces on top of the now-policy-aware Unity runtime
+- Phase E is now started through the first monitored-interaction slice:
+  - the backend now exposes `rooms` and `presence` routes guarded by app session and multiactor link validation
+  - monitored room access now depends on active `GuardianLink` or active admin-approved `CareTeamMembership`
+  - Unity now consumes monitored room catalog and presence state inside the same `Bootstrap.unity` runtime
+  - the first monitored interaction actions now exist in the Unity shell: refresh, join, leave and heartbeat
+- The next execution step now continues inside Phase E:
+  - deepen caregiver/professional supervision around monitored interaction
+  - expand moderation/runtime controls beyond the current audit-first slice
   - keep the completed Phase C adult web/PWA and admin-governance surfaces as the stable companion layer
   - keep Phase F admin/compliance/billing hardening as a parallel operational thread
 
@@ -261,19 +275,21 @@ Date checked: `2026-03-26`
 
 ## Unity Runtime Status
 
-- `./scripts/build-unity-bootstrap.sh` passes with the Phase D runtime layout
+- `./scripts/build-unity-bootstrap.sh` passes with the current Phase E slice layered on top of the Phase D runtime
 - The Unity runtime now opens by:
   - activating the responsible session
   - loading `families/overview`
   - selecting the linked minor
   - loading `interaction-policies/:minorProfileId`
-  - entering the resolved shell before refreshing activities, rewards and progress
+  - entering the resolved shell before refreshing activities, rewards, progress and monitored rooms
 - Local persistence now keeps:
   - linked minors
   - selected minor
   - resolved age band
   - active shell
   - selected policy snapshot
+  - available monitored rooms
+  - active room and presence snapshot
 - The runtime now blocks the product home when no linked minor exists and redirects the responsible actor to `/pais`, while preserving a dev-only quick-create path
 - Latest validated child-shell probe against `vm2` reached:
   - `state=ready`
@@ -282,6 +298,7 @@ Date checked: `2026-03-26`
   - `minorRole=child`
   - `ageBand=6-9`
   - `activeShell=child`
+  - `availableRoomCount=1`
   - `activityCount=3`
   - `rewardCount=2`
 - Latest validated adolescent-shell probe against `vm2` reached:
@@ -291,8 +308,14 @@ Date checked: `2026-03-26`
   - `minorRole=adolescent`
   - `ageBand=13-17`
   - `activeShell=adolescent`
+  - `availableRoomCount=2`
   - `activityCount=3`
   - `rewardCount=2`
+- The home-side action layer now also supports:
+  - refresh monitored rooms
+  - join first available monitored room
+  - leave active room
+  - send presence heartbeat
 
 ## Web Admin Status
 

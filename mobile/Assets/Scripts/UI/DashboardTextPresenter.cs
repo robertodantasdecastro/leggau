@@ -510,7 +510,7 @@ namespace Leggau.UI
         private static string BuildCatalog(LeggauSessionState session)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("Proximos passos");
+            builder.AppendLine("Interacoes monitoradas");
 
             if (session == null)
             {
@@ -531,23 +531,56 @@ namespace Leggau.UI
                 return builder.ToString();
             }
 
-            if (session.Activities != null && session.Activities.Length > 0)
+            if (!string.IsNullOrWhiteSpace(session.RoomCatalogMessage))
             {
-                builder.AppendLine($"Comece por {session.Activities[0].title} para ganhar {session.Activities[0].points} pts.");
+                builder.AppendLine(session.RoomCatalogMessage);
             }
 
-            if (session.SelectedMinorPolicy != null)
+            if (session.SelectedMinorPolicy == null)
             {
-                builder.AppendLine(session.SelectedMinorPolicy.roomsEnabled
-                    ? "Salas estruturadas aparecem como caminho futuro monitorado."
-                    : "Salas estruturadas permanecem escondidas pela policy.");
-                builder.AppendLine(session.SelectedMinorPolicy.presenceEnabled
-                    ? "Presenca monitorada habilitada para a fase futura."
-                    : "Presenca monitorada escondida neste perfil.");
+                return builder.ToString();
             }
 
-            builder.AppendLine($"Shell ativa: {ResolveShellName(session)}.");
-            builder.AppendLine($"Mascote atual: {session.ActiveGauVariant?.displayName ?? "Gau"}.");
+            if (!session.SelectedMinorPolicy.roomsEnabled)
+            {
+                builder.AppendLine("A policy atual esconde qualquer entrada em salas estruturadas.");
+                return builder.ToString();
+            }
+
+            if (!session.HasAvailableRooms)
+            {
+                builder.AppendLine("Nenhuma sala monitorada foi carregada para este shell ainda.");
+                builder.AppendLine("Use Atualizar salas para consultar a vm2.");
+                return builder.ToString();
+            }
+
+            var limit = Mathf.Min(2, session.AvailableRooms.Length);
+            for (var index = 0; index < limit; index += 1)
+            {
+                var room = session.AvailableRooms[index];
+                builder.AppendLine($"• {room.title} · {room.presenceMode}");
+            }
+
+            if (session.ActiveRoom != null)
+            {
+                builder.AppendLine($"Sala ativa: {session.ActiveRoom.title}");
+            }
+            else
+            {
+                builder.AppendLine("Nenhuma sala ativa no momento.");
+            }
+
+            if (session.SelectedMinorPolicy.presenceEnabled)
+            {
+                builder.AppendLine(session.ActivePresence != null
+                    ? $"Presenca monitorada: {session.ActivePresence.participantCount} participante(s)"
+                    : "Presenca monitorada pronta para heartbeat.");
+            }
+            else
+            {
+                builder.AppendLine("Presenca monitorada permanece oculta pela policy.");
+            }
+
             return builder.ToString();
         }
 

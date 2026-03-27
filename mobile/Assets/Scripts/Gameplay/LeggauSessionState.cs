@@ -14,6 +14,11 @@ namespace Leggau.Gameplay
         public MinorProfileRecord[] LinkedMinors { get; private set; }
         public MinorProfileRecord SelectedMinor { get; private set; }
         public InteractionPolicyRecord SelectedMinorPolicy { get; private set; }
+        public MonitoredRoomRecord[] AvailableRooms { get; private set; }
+        public MonitoredRoomRecord ActiveRoom { get; private set; }
+        public PresenceStateRecord ActivePresence { get; private set; }
+        public bool RoomsAllowed { get; private set; }
+        public string RoomCatalogMessage { get; private set; }
         public string ResolvedAgeBand { get; private set; }
         public string ActiveShell { get; private set; }
         public ChildProfile ActiveChild { get; private set; }
@@ -39,6 +44,8 @@ namespace Leggau.Gameplay
         public bool IsAuthenticated => !string.IsNullOrWhiteSpace(AccessToken);
         public bool HasLinkedMinors => LinkedMinors != null && LinkedMinors.Length > 0;
         public bool HasMultipleLinkedMinors => LinkedMinors != null && LinkedMinors.Length > 1;
+        public bool HasAvailableRooms => AvailableRooms != null && AvailableRooms.Length > 0;
+        public bool HasActiveRoom => ActiveRoom != null && !string.IsNullOrWhiteSpace(ActiveRoom.id);
         public bool HasPersistableState =>
             IsAuthenticated ||
             HomeReady ||
@@ -108,6 +115,11 @@ namespace Leggau.Gameplay
             LinkedMinors = null;
             SelectedMinor = null;
             SelectedMinorPolicy = null;
+            AvailableRooms = null;
+            ActiveRoom = null;
+            ActivePresence = null;
+            RoomsAllowed = false;
+            RoomCatalogMessage = string.Empty;
             ActiveChild = null;
             Activities = null;
             Rewards = null;
@@ -209,6 +221,64 @@ namespace Leggau.Gameplay
         {
             SelectedMinorPolicy = policy;
             RefreshShellMetadata();
+        }
+
+        public void SetMonitoredRooms(MonitoredRoomsEnvelope response)
+        {
+            if (response == null)
+            {
+                AvailableRooms = new MonitoredRoomRecord[0];
+                ActiveRoom = null;
+                ActivePresence = null;
+                RoomsAllowed = false;
+                RoomCatalogMessage = string.Empty;
+                return;
+            }
+
+            AvailableRooms = NormalizeRoomList(response.items);
+            RoomsAllowed = response.allowed;
+            RoomCatalogMessage = response.reason?.Trim() ?? string.Empty;
+
+            var nextRoom = ResolveRoomById(response.activeRoomId);
+            if (nextRoom == null && ActiveRoom != null)
+            {
+                nextRoom = ResolveRoomById(ActiveRoom.id);
+            }
+
+            ActiveRoom = nextRoom;
+            if (ActiveRoom == null)
+            {
+                ActivePresence = null;
+            }
+        }
+
+        public void SetActiveRoom(MonitoredRoomRecord room)
+        {
+            ActiveRoom = NormalizeRoom(room);
+            if (ActiveRoom == null)
+            {
+                ActivePresence = null;
+            }
+        }
+
+        public void ClearActiveRoom()
+        {
+            ActiveRoom = null;
+            ActivePresence = null;
+        }
+
+        public void SetPresenceState(PresenceStateRecord presence)
+        {
+            ActivePresence = NormalizePresence(presence);
+            if (ActivePresence == null)
+            {
+                return;
+            }
+
+            if (ActiveRoom == null || ActiveRoom.id != ActivePresence.roomId)
+            {
+                ActiveRoom = ResolveRoomById(ActivePresence.roomId) ?? ActiveRoom;
+            }
         }
 
         public void SetActiveChild(ChildProfile child)
@@ -319,6 +389,11 @@ namespace Leggau.Gameplay
             LinkedMinors = null;
             SelectedMinor = null;
             SelectedMinorPolicy = null;
+            AvailableRooms = null;
+            ActiveRoom = null;
+            ActivePresence = null;
+            RoomsAllowed = false;
+            RoomCatalogMessage = string.Empty;
             ResolvedAgeBand = string.Empty;
             ActiveShell = string.Empty;
             ActiveChild = null;
@@ -410,6 +485,11 @@ namespace Leggau.Gameplay
             LinkedMinors = NormalizeMinorList(snapshot.linkedMinors);
             SelectedMinor = NormalizeMinor(snapshot.selectedMinor) ?? ConvertToMinor(snapshot.activeChild);
             SelectedMinorPolicy = NormalizePolicy(snapshot.selectedMinorPolicy);
+            AvailableRooms = NormalizeRoomList(snapshot.availableRooms);
+            ActiveRoom = NormalizeRoom(snapshot.activeRoom);
+            ActivePresence = NormalizePresence(snapshot.activePresence);
+            RoomsAllowed = snapshot.roomsAllowed;
+            RoomCatalogMessage = snapshot.roomCatalogMessage ?? string.Empty;
             ResolvedAgeBand = snapshot.resolvedAgeBand ?? string.Empty;
             ActiveShell = snapshot.activeShell ?? string.Empty;
             ActiveChild = snapshot.activeChild ?? ConvertToChild(SelectedMinor, Parent?.id);
@@ -455,6 +535,11 @@ namespace Leggau.Gameplay
                 linkedMinors = LinkedMinors,
                 selectedMinor = SelectedMinor,
                 selectedMinorPolicy = SelectedMinorPolicy,
+                availableRooms = AvailableRooms,
+                activeRoom = ActiveRoom,
+                activePresence = ActivePresence,
+                roomsAllowed = RoomsAllowed,
+                roomCatalogMessage = RoomCatalogMessage,
                 resolvedAgeBand = ResolvedAgeBand,
                 activeShell = ActiveShell,
                 activeChild = ActiveChild,
@@ -549,6 +634,11 @@ namespace Leggau.Gameplay
             if (selectionChanged || !preservePolicyIfSame)
             {
                 SelectedMinorPolicy = null;
+                AvailableRooms = null;
+                ActiveRoom = null;
+                ActivePresence = null;
+                RoomsAllowed = false;
+                RoomCatalogMessage = string.Empty;
                 HomeReady = false;
                 Activities = null;
                 Rewards = null;
@@ -743,6 +833,85 @@ namespace Leggau.Gameplay
             }
 
             return policy;
+        }
+
+        private MonitoredRoomRecord ResolveRoomById(string roomId)
+        {
+            if (AvailableRooms == null || AvailableRooms.Length == 0 || string.IsNullOrWhiteSpace(roomId))
+            {
+                return null;
+            }
+
+            for (var index = 0; index < AvailableRooms.Length; index += 1)
+            {
+                var room = NormalizeRoom(AvailableRooms[index]);
+                if (room != null && room.id == roomId)
+                {
+                    return room;
+                }
+            }
+
+            return null;
+        }
+
+        private static MonitoredRoomRecord[] NormalizeRoomList(MonitoredRoomRecord[] items)
+        {
+            if (items == null || items.Length == 0)
+            {
+                return new MonitoredRoomRecord[0];
+            }
+
+            var normalized = new MonitoredRoomRecord[items.Length];
+            var count = 0;
+            for (var index = 0; index < items.Length; index += 1)
+            {
+                var room = NormalizeRoom(items[index]);
+                if (room == null)
+                {
+                    continue;
+                }
+
+                normalized[count] = room;
+                count += 1;
+            }
+
+            if (count == normalized.Length)
+            {
+                return normalized;
+            }
+
+            var trimmed = new MonitoredRoomRecord[count];
+            for (var index = 0; index < count; index += 1)
+            {
+                trimmed[index] = normalized[index];
+            }
+
+            return trimmed;
+        }
+
+        private static MonitoredRoomRecord NormalizeRoom(MonitoredRoomRecord room)
+        {
+            if (room == null || string.IsNullOrWhiteSpace(room.id))
+            {
+                return null;
+            }
+
+            return room;
+        }
+
+        private static PresenceStateRecord NormalizePresence(PresenceStateRecord presence)
+        {
+            if (presence == null || string.IsNullOrWhiteSpace(presence.roomId))
+            {
+                return null;
+            }
+
+            if (presence.participants == null)
+            {
+                presence.participants = new PresenceParticipantRecord[0];
+            }
+
+            return presence;
         }
 
         private static string ResolveMinorRole(ChildProfile child)
