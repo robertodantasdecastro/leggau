@@ -34,6 +34,9 @@ type AccessContext = {
   roomInviteStatus: string;
   activeInviteId: string;
   inviteExpiresAt: string;
+  operationalStatus: string;
+  operationalMessage: string;
+  lockExpiresAt: string;
   blockedBy: string[];
 };
 
@@ -81,21 +84,47 @@ type RoomInviteSnapshot = {
   expiresAt: string;
 };
 
+type RuntimeOperationalLock = {
+  roomId: string;
+  minorProfileId: string;
+  actorRole?: string;
+  actorUserId?: string;
+  operationalStatus: 'room_closed_admin' | 'participant_removed_admin';
+  message: string;
+  expiresAt: string;
+  createdAt: string;
+  createdByRole: string;
+  createdByUserId: string;
+};
+
+type RuntimeOperationalSnapshot = {
+  roomLock: RuntimeOperationalLock | null;
+  participantLock: RuntimeOperationalLock | null;
+  status: string;
+  message: string;
+  lockExpiresAt: string;
+};
+
 const PresenceTtlMs = 2 * 60 * 1000;
+const OperationalLockDefaultMinutes = 15;
 const RuntimeEventTypes = new Set([
   'room.joined',
   'room.left',
   'room.join_blocked',
   'room.join_blocked_invite',
+  'room.join_blocked_admin_lock',
   'presence.heartbeat',
   'presence.heartbeat_blocked',
   'presence.heartbeat_blocked_invite',
+  'presence.heartbeat_blocked_admin_lock',
   'presence.access_blocked_parent_approval',
   'presence.session_closed_timeout',
   'room_invite.created',
   'room_invite.accepted',
   'room_invite.revoked',
   'room_invite.expired',
+  'admin.room_terminated',
+  'admin.runtime_participant_removed',
 ]);
 const RoomCatalog: RoomDefinition[] = [
   {
@@ -139,6 +168,8 @@ const RoomCatalog: RoomDefinition[] = [
 @Injectable()
 export class RoomsService {
   private readonly presenceByRoom = new Map<string, Map<string, PresenceParticipant>>();
+  private readonly roomLocks = new Map<string, RuntimeOperationalLock>();
+  private readonly participantLocks = new Map<string, RuntimeOperationalLock>();
 
   constructor(
     private readonly auditService: AuditService,
@@ -159,6 +190,7 @@ export class RoomsService {
     const access = await this.resolveAccess(minorProfileId, actor);
     const activeRoomId = this.resolveActiveRoomId(minorProfileId);
     const requirements = this.serializeRequirements(access);
+    const operationalOnlyBlocked = this.isOperationallyBlocked(access.blockedBy);
 
     if (access.blockedBy.length > 0) {
       await this.auditAccessBlocked('rooms.list_blocked', actor, access, activeRoomId);
@@ -177,13 +209,20 @@ export class RoomsService {
         });
       }
 
+      const inviteCatalog = operationalOnlyBlocked
+        ? await this.buildRoomInviteCatalog(actor, minorProfileId, access.policy)
+        : null;
+
       return {
         allowed: false,
         reason: requirements.blockedReason,
         presenceEnabled: access.policy.presenceEnabled,
         activeRoomId,
-        items: [],
+        items: inviteCatalog ? this.buildRoomCatalog(access.policy, inviteCatalog) : [],
         requirements,
+        operationalStatus: access.operationalStatus,
+        operationalMessage: access.operationalMessage || requirements.blockedReason,
+        lockExpiresAt: access.lockExpiresAt || null,
       };
     }
 
@@ -214,6 +253,9 @@ export class RoomsService {
       activeRoomId,
       items,
       requirements,
+      operationalStatus: access.operationalStatus,
+      operationalMessage: access.operationalMessage || null,
+      lockExpiresAt: access.lockExpiresAt || null,
     };
   }
 
@@ -250,6 +292,23 @@ export class RoomsService {
             activeInviteId: access.activeInviteId,
             inviteExpiresAt: access.inviteExpiresAt,
             blockedBy: access.blockedBy.join(','),
+          },
+        });
+      }
+      if (this.isAdminOperationalBlocked(access.blockedBy)) {
+        await this.auditService.record('room.join_blocked_admin_lock', {
+          actorRole: actor.actorRole,
+          actorUserId: actor.subjectId,
+          resourceType: 'room',
+          resourceId: roomId,
+          outcome: 'blocked',
+          severity: 'medium',
+          metadata: {
+            minorProfileId: dto.minorProfileId,
+            blockedBy: access.blockedBy.join(','),
+            lockExpiresAt: access.lockExpiresAt,
+            operationalStatus: access.operationalStatus,
+            operationalMessage: access.operationalMessage,
           },
         });
       }
@@ -291,6 +350,9 @@ export class RoomsService {
       presence: this.buildPresenceState(room, dto.minorProfileId, activeShell, access),
       activeRoomId: room.id,
       requirements: this.serializeRequirements(access),
+      operationalStatus: access.operationalStatus,
+      operationalMessage: access.operationalMessage || null,
+      lockExpiresAt: access.lockExpiresAt || null,
     };
   }
 
@@ -334,6 +396,9 @@ export class RoomsService {
           : this.buildPresenceBlockedState(room, dto.minorProfileId, activeShell, access),
       activeRoomId: this.resolveActiveRoomId(dto.minorProfileId),
       requirements: this.serializeRequirements(access),
+      operationalStatus: access.operationalStatus,
+      operationalMessage: access.operationalMessage || null,
+      lockExpiresAt: access.lockExpiresAt || null,
     };
   }
 
@@ -370,6 +435,23 @@ export class RoomsService {
             activeInviteId: access.activeInviteId,
             inviteExpiresAt: access.inviteExpiresAt,
             blockedBy: access.blockedBy.join(','),
+          },
+        });
+      }
+      if (this.isAdminOperationalBlocked(access.blockedBy)) {
+        await this.auditService.record('presence.heartbeat_blocked_admin_lock', {
+          actorRole: actor.actorRole,
+          actorUserId: actor.subjectId,
+          resourceType: 'room',
+          resourceId: dto.roomId,
+          outcome: 'blocked',
+          severity: 'medium',
+          metadata: {
+            minorProfileId: dto.minorProfileId,
+            blockedBy: access.blockedBy.join(','),
+            lockExpiresAt: access.lockExpiresAt,
+            operationalStatus: access.operationalStatus,
+            operationalMessage: access.operationalMessage,
           },
         });
       }
@@ -443,6 +525,7 @@ export class RoomsService {
     filters: PresenceFilters = {},
   ) {
     this.prunePresence();
+    this.pruneOperationalLocks();
 
     const rows = new Array<{
       roomId: string;
@@ -450,6 +533,7 @@ export class RoomsService {
       minorProfileId: string;
       minorRole: string;
       actorRole: string;
+      actorUserId: string;
       accessSource: string;
       activeShell: string;
       joinedAt: string;
@@ -465,6 +549,7 @@ export class RoomsService {
           minorProfileId: participant.minorProfileId,
           minorRole: participant.minorRole,
           actorRole: participant.actorRole,
+          actorUserId: participant.actorUserId,
           accessSource: participant.accessSource,
           activeShell: participant.activeShell,
           joinedAt: participant.joinedAt,
@@ -563,6 +648,207 @@ export class RoomsService {
     return rows;
   }
 
+  async getRoomSnapshotForAdmin(
+    roomId: string,
+    minorProfileId: string,
+    actor: { subjectId: string; actorRole: string },
+  ) {
+    if (!minorProfileId) {
+      throw new NotFoundException('Minor profile is required');
+    }
+
+    this.prunePresence();
+    this.pruneOperationalLocks();
+
+    const policy = await this.interactionPolicyRepository.findOne({
+      where: { minorProfileId },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (!policy) {
+      throw new NotFoundException('Interaction policy not found');
+    }
+
+    const room =
+      policy.roomsEnabled
+        ? this.ensureRoomAllowed(roomId, policy)
+        : this.resolveFallbackRoom(roomId, policy, policy.minorRole === 'adolescent' ? 'adolescent' : 'child');
+    const participants = this.resolveParticipantsForRoom(room.id, minorProfileId).map(
+      (participant) => ({
+        roomId: room.id,
+        roomTitle: room.title,
+        minorProfileId: participant.minorProfileId,
+        minorRole: participant.minorRole,
+        actorRole: participant.actorRole,
+        actorUserId: participant.actorUserId,
+        accessSource: participant.accessSource,
+        activeShell: participant.activeShell,
+        joinedAt: participant.joinedAt,
+        lastHeartbeatAt: participant.lastHeartbeatAt,
+      }),
+    );
+    const invite = await this.resolveLatestRoomInviteStateForAdmin(minorProfileId, room.id);
+    const lock = this.resolveOperationalLockSnapshot(minorProfileId, {
+      subjectId: '',
+      actorRole: 'parent_guardian',
+      email: '',
+    }, room.id);
+    const lastHeartbeatAt =
+      participants.length > 0
+        ? participants
+            .map((item) => item.lastHeartbeatAt)
+            .sort((left, right) => Date.parse(right) - Date.parse(left))[0]
+        : null;
+
+    await this.auditService.record('admin.room_snapshot_viewed', {
+      actorRole: actor.actorRole,
+      actorUserId: actor.subjectId,
+      resourceType: 'room',
+      resourceId: room.id,
+      outcome: 'success',
+      severity: 'low',
+      metadata: {
+        minorProfileId,
+        participantCount: participants.length,
+        activeInviteId: invite.inviteId,
+        roomInviteStatus: invite.status,
+        operationalStatus: lock.status,
+      },
+    });
+
+    return {
+      roomId: room.id,
+      roomTitle: room.title,
+      roomDescription: room.description,
+      presenceMode: room.presenceMode,
+      minorProfileId,
+      minorRole: policy.minorRole,
+      ageBand: policy.ageBand,
+      activeInviteId: invite.inviteId || null,
+      roomInviteStatus: invite.status,
+      inviteExpiresAt: invite.expiresAt || null,
+      operationalStatus: lock.status,
+      operationalMessage: lock.message || null,
+      lockExpiresAt: lock.lockExpiresAt || null,
+      participantCount: participants.length,
+      participants,
+      lastHeartbeatAt,
+      policySnapshot: {
+        minorProfileId: policy.minorProfileId,
+        minorRole: policy.minorRole,
+        ageBand: policy.ageBand,
+        roomsEnabled: policy.roomsEnabled,
+        presenceEnabled: policy.presenceEnabled,
+        messagingMode: policy.messagingMode,
+        therapistParticipationAllowed: policy.therapistParticipationAllowed,
+      },
+    };
+  }
+
+  async terminateRoomForAdmin(
+    roomId: string,
+    body: { minorProfileId: string; lockMinutes?: number; message?: string },
+    actor: { subjectId: string; actorRole: string },
+  ) {
+    const snapshot = await this.getRoomSnapshotForAdmin(roomId, body.minorProfileId, actor);
+    const lock = this.createRoomLock(snapshot.roomId, snapshot.minorProfileId, actor, {
+      lockMinutes: body.lockMinutes,
+      message:
+        body.message?.trim() ||
+        'Sala pausada temporariamente pela operacao. Aguarde a liberacao administrativa.',
+    });
+
+    this.removeParticipantsMatching(snapshot.roomId, snapshot.minorProfileId, () => true);
+
+    await this.auditService.record('admin.room_terminated', {
+      actorRole: actor.actorRole,
+      actorUserId: actor.subjectId,
+      resourceType: 'room',
+      resourceId: snapshot.roomId,
+      outcome: 'success',
+      severity: 'high',
+      metadata: {
+        minorProfileId: snapshot.minorProfileId,
+        minorRole: snapshot.minorRole,
+        roomTitle: snapshot.roomTitle,
+        lockExpiresAt: lock.expiresAt,
+        removedParticipants: snapshot.participantCount,
+        operationalMessage: lock.message,
+      },
+    });
+
+    return this.getRoomSnapshotForAdmin(roomId, body.minorProfileId, actor);
+  }
+
+  async removeParticipantForAdmin(
+    roomId: string,
+    body: {
+      minorProfileId: string;
+      actorRole: string;
+      actorUserId?: string;
+      lockMinutes?: number;
+      message?: string;
+    },
+    actor: { subjectId: string; actorRole: string },
+  ) {
+    const snapshot = await this.getRoomSnapshotForAdmin(roomId, body.minorProfileId, actor);
+    const target = snapshot.participants.find((participant) => {
+      if (participant.actorRole !== body.actorRole) {
+        return false;
+      }
+
+      if (body.actorUserId && participant.actorUserId !== body.actorUserId) {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (!target && !body.actorUserId) {
+      throw new NotFoundException('Runtime participant not found');
+    }
+
+    const actorUserId = body.actorUserId || target?.actorUserId;
+    const lock = this.createParticipantLock(roomId, body.minorProfileId, body.actorRole, actorUserId, actor, {
+      lockMinutes: body.lockMinutes,
+      message:
+        body.message?.trim() ||
+        'Participacao encerrada temporariamente pela operacao. Aguarde nova liberacao.',
+    });
+
+    if (target) {
+      this.removeParticipantsMatching(roomId, body.minorProfileId, (participant) => {
+        if (participant.actorRole !== body.actorRole) {
+          return false;
+        }
+
+        if (actorUserId && participant.actorUserId !== actorUserId) {
+          return false;
+        }
+
+        return true;
+      });
+    }
+
+    await this.auditService.record('admin.runtime_participant_removed', {
+      actorRole: actor.actorRole,
+      actorUserId: actor.subjectId,
+      resourceType: 'room',
+      resourceId: roomId,
+      outcome: 'success',
+      severity: 'high',
+      metadata: {
+        minorProfileId: body.minorProfileId,
+        targetActorRole: body.actorRole,
+        targetActorUserId: actorUserId ?? '',
+        lockExpiresAt: lock.expiresAt,
+        operationalMessage: lock.message,
+      },
+    });
+
+    return this.getRoomSnapshotForAdmin(roomId, body.minorProfileId, actor);
+  }
+
   private async resolveAccess(
     minorProfileId: string,
     actor: AppActor,
@@ -630,8 +916,17 @@ export class RoomsService {
       ? await this.resolveApprovalStatus(parentUserId, minorProfileId, 'therapist_linking')
       : 'missing';
     const inviteSnapshot = await this.resolveLatestRoomInviteState(actor, minorProfileId, roomId);
+    const operationalLock = this.resolveOperationalLockSnapshot(minorProfileId, actor, roomId);
 
     const blockedBy: string[] = [];
+
+    if (operationalLock.roomLock) {
+      blockedBy.push('room_closed_admin');
+    }
+
+    if (operationalLock.participantLock) {
+      blockedBy.push('participant_removed_admin');
+    }
 
     if (actor.actorRole === 'parent_guardian' && guardianLinkStatus !== 'active') {
       blockedBy.push('guardian_link_required');
@@ -692,6 +987,9 @@ export class RoomsService {
       roomInviteStatus: inviteSnapshot.status,
       activeInviteId: inviteSnapshot.inviteId,
       inviteExpiresAt: inviteSnapshot.expiresAt,
+      operationalStatus: operationalLock.status,
+      operationalMessage: operationalLock.message,
+      lockExpiresAt: operationalLock.lockExpiresAt,
       blockedBy,
     };
   }
@@ -822,6 +1120,38 @@ export class RoomsService {
     };
   }
 
+  private async resolveLatestRoomInviteStateForAdmin(
+    minorProfileId: string,
+    roomId: string,
+  ): Promise<RoomInviteSnapshot> {
+    const invites = await this.invitesService.listAsAdmin({
+      minorProfileId,
+      inviteType: 'monitored_room',
+      roomId,
+    });
+
+    const invite = invites[0];
+    if (!invite) {
+      return {
+        roomId,
+        roomTitle: this.resolveAdminRoomTitle(roomId),
+        status: 'missing',
+        inviteId: '',
+        expiresAt: '',
+      };
+    }
+
+    const resolvedRoomId = this.resolveMetadataString(invite.metadata, 'roomId');
+    const resolvedRoomTitle = this.resolveMetadataString(invite.metadata, 'roomTitle');
+    return {
+      roomId: resolvedRoomId || roomId,
+      roomTitle: resolvedRoomTitle || this.resolveAdminRoomTitle(resolvedRoomId || roomId),
+      status: invite.status,
+      inviteId: invite.id,
+      expiresAt: invite.expiresAt?.toISOString?.() ?? '',
+    };
+  }
+
   private upsertParticipant(
     roomId: string,
     minorProfileId: string,
@@ -877,6 +1207,9 @@ export class RoomsService {
       presenceMode: room.presenceMode,
       participantCount: participants.length,
       participants,
+      operationalStatus: access.operationalStatus,
+      operationalMessage: access.operationalMessage || null,
+      lockExpiresAt: access.lockExpiresAt || null,
     };
   }
 
@@ -898,6 +1231,9 @@ export class RoomsService {
       presenceMode: room.presenceMode,
       participantCount: 0,
       participants: [],
+      operationalStatus: access.operationalStatus,
+      operationalMessage: access.operationalMessage || null,
+      lockExpiresAt: access.lockExpiresAt || null,
     };
   }
 
@@ -971,6 +1307,9 @@ export class RoomsService {
         therapistParticipationAllowed: access.policy.therapistParticipationAllowed,
       },
       accessSource: access.accessSource,
+      operationalStatus: access.operationalStatus,
+      operationalMessage: access.operationalMessage || null,
+      lockExpiresAt: access.lockExpiresAt || null,
       blockedBy: access.blockedBy,
       blockedReason: this.buildBlockedReason(access),
     };
@@ -978,6 +1317,14 @@ export class RoomsService {
 
   private buildBlockedReason(access: AccessContext) {
     const { blockedBy } = access;
+
+    if (blockedBy.includes('room_closed_admin')) {
+      return access.operationalMessage || 'A sala foi pausada temporariamente pela operacao.';
+    }
+
+    if (blockedBy.includes('participant_removed_admin')) {
+      return access.operationalMessage || 'Sua participacao foi encerrada temporariamente pela operacao.';
+    }
 
     if (blockedBy.includes('guardian_link_required')) {
       return 'Este menor precisa de GuardianLink ativo antes de usar salas monitoradas.';
@@ -1053,6 +1400,21 @@ export class RoomsService {
     );
   }
 
+  private isAdminOperationalBlocked(blockedBy: string[]) {
+    return (
+      blockedBy.includes('room_closed_admin') || blockedBy.includes('participant_removed_admin')
+    );
+  }
+
+  private isOperationallyBlocked(blockedBy: string[]) {
+    return (
+      blockedBy.length > 0 &&
+      blockedBy.every(
+        (item) => item === 'room_closed_admin' || item === 'participant_removed_admin',
+      )
+    );
+  }
+
   private async auditAccessBlocked(
     eventType: string,
     actor: AppActor,
@@ -1072,6 +1434,9 @@ export class RoomsService {
         accessSource: access.accessSource,
         roomInviteStatus: access.roomInviteStatus,
         activeInviteId: access.activeInviteId,
+        lockExpiresAt: access.lockExpiresAt,
+        operationalStatus: access.operationalStatus,
+        operationalMessage: access.operationalMessage,
       },
     });
   }
@@ -1088,6 +1453,7 @@ export class RoomsService {
     const blockedBy = this.resolveMetadataString(event.metadata, 'blockedBy');
     const activeShell = this.resolveMetadataString(event.metadata, 'activeShell');
     const inviteExpiresAt = this.resolveMetadataString(event.metadata, 'inviteExpiresAt');
+    const lockExpiresAt = this.resolveMetadataString(event.metadata, 'lockExpiresAt');
     const roomTitle =
       this.resolveMetadataString(event.metadata, 'roomTitle') ||
       this.resolveAdminRoomTitle(roomId);
@@ -1110,6 +1476,7 @@ export class RoomsService {
       activeShell,
       activeInviteId: inviteId || this.resolveMetadataString(event.metadata, 'activeInviteId'),
       inviteExpiresAt: inviteExpiresAt || null,
+      lockExpiresAt: lockExpiresAt || null,
       blockedBy: blockedBy ? blockedBy.split(',').filter(Boolean) : [],
       summary: this.buildRuntimeEventSummary(event.eventType, roomTitle, event.metadata),
     };
@@ -1133,12 +1500,20 @@ export class RoomsService {
         return `Entrada monitorada liberada em ${roomTitle}.`;
       case 'room.join_blocked_invite':
         return `Entrada bloqueada por convite em ${roomTitle}.`;
+      case 'room.join_blocked_admin_lock':
+        return `Entrada bloqueada por lock operacional em ${roomTitle}.`;
       case 'presence.heartbeat':
         return `Heartbeat recebido em ${roomTitle}.`;
       case 'presence.heartbeat_blocked_invite':
         return `Heartbeat bloqueado por convite em ${roomTitle}.`;
+      case 'presence.heartbeat_blocked_admin_lock':
+        return `Heartbeat bloqueado por lock operacional em ${roomTitle}.`;
       case 'presence.session_closed_timeout':
         return `Sessao encerrada por ausencia de heartbeat em ${roomTitle}.`;
+      case 'admin.room_terminated':
+        return `Sala encerrada operacionalmente em ${roomTitle}.`;
+      case 'admin.runtime_participant_removed':
+        return `Participante removido operacionalmente em ${roomTitle}.`;
       default:
         return this.resolveMetadataString(metadata, 'blockedReason') || `Evento operacional em ${roomTitle}.`;
     }
@@ -1186,6 +1561,233 @@ export class RoomsService {
       if (participants.size === 0) {
         this.presenceByRoom.delete(roomId);
       }
+    }
+  }
+
+  private pruneOperationalLocks() {
+    const now = Date.now();
+
+    for (const [key, lock] of this.roomLocks.entries()) {
+      const expiresAt = Date.parse(lock.expiresAt);
+      if (!Number.isNaN(expiresAt) && expiresAt <= now) {
+        this.roomLocks.delete(key);
+      }
+    }
+
+    for (const [key, lock] of this.participantLocks.entries()) {
+      const expiresAt = Date.parse(lock.expiresAt);
+      if (!Number.isNaN(expiresAt) && expiresAt <= now) {
+        this.participantLocks.delete(key);
+      }
+    }
+  }
+
+  private resolveOperationalLockSnapshot(
+    minorProfileId: string,
+    actor: AppActor,
+    roomId?: string,
+  ): RuntimeOperationalSnapshot {
+    this.pruneOperationalLocks();
+
+    const roomLock = roomId
+      ? this.roomLocks.get(this.buildRoomLockKey(roomId, minorProfileId)) ?? null
+      : this.findLatestRoomLock(minorProfileId);
+    const participantLock =
+      actor.subjectId && actor.actorRole
+        ? roomId
+          ? this.participantLocks.get(
+              this.buildParticipantLockKey(roomId, minorProfileId, actor.actorRole, actor.subjectId),
+            ) ?? null
+          : this.findLatestParticipantLock(minorProfileId, actor.actorRole, actor.subjectId)
+        : null;
+
+    if (roomLock) {
+      return {
+        roomLock,
+        participantLock,
+        status: roomLock.operationalStatus,
+        message: roomLock.message,
+        lockExpiresAt: roomLock.expiresAt,
+      };
+    }
+
+    if (participantLock) {
+      return {
+        roomLock,
+        participantLock,
+        status: participantLock.operationalStatus,
+        message: participantLock.message,
+        lockExpiresAt: participantLock.expiresAt,
+      };
+    }
+
+    return {
+      roomLock: null,
+      participantLock: null,
+      status: 'open',
+      message: '',
+      lockExpiresAt: '',
+    };
+  }
+
+  private createRoomLock(
+    roomId: string,
+    minorProfileId: string,
+    actor: { subjectId: string; actorRole: string },
+    options: { lockMinutes?: number; message: string },
+  ) {
+    const now = new Date();
+    const expiresAt = new Date(
+      now.getTime() + this.resolveOperationalLockMinutes(options.lockMinutes) * 60 * 1000,
+    ).toISOString();
+    const lock: RuntimeOperationalLock = {
+      roomId,
+      minorProfileId,
+      operationalStatus: 'room_closed_admin',
+      message: options.message,
+      expiresAt,
+      createdAt: now.toISOString(),
+      createdByRole: actor.actorRole,
+      createdByUserId: actor.subjectId,
+    };
+
+    this.roomLocks.set(this.buildRoomLockKey(roomId, minorProfileId), lock);
+    return lock;
+  }
+
+  private createParticipantLock(
+    roomId: string,
+    minorProfileId: string,
+    actorRole: string,
+    actorUserId: string | undefined,
+    actor: { subjectId: string; actorRole: string },
+    options: { lockMinutes?: number; message: string },
+  ) {
+    if (!actorUserId) {
+      throw new NotFoundException('Participant user is required');
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(
+      now.getTime() + this.resolveOperationalLockMinutes(options.lockMinutes) * 60 * 1000,
+    ).toISOString();
+    const lock: RuntimeOperationalLock = {
+      roomId,
+      minorProfileId,
+      actorRole,
+      actorUserId,
+      operationalStatus: 'participant_removed_admin',
+      message: options.message,
+      expiresAt,
+      createdAt: now.toISOString(),
+      createdByRole: actor.actorRole,
+      createdByUserId: actor.subjectId,
+    };
+
+    this.participantLocks.set(
+      this.buildParticipantLockKey(roomId, minorProfileId, actorRole, actorUserId),
+      lock,
+    );
+    return lock;
+  }
+
+  private resolveOperationalLockMinutes(lockMinutes?: number) {
+    if (typeof lockMinutes !== 'number' || Number.isNaN(lockMinutes) || lockMinutes <= 0) {
+      return OperationalLockDefaultMinutes;
+    }
+
+    return lockMinutes;
+  }
+
+  private buildRoomLockKey(roomId: string, minorProfileId: string) {
+    return `${roomId}:${minorProfileId}`;
+  }
+
+  private buildParticipantLockKey(
+    roomId: string,
+    minorProfileId: string,
+    actorRole: string,
+    actorUserId: string,
+  ) {
+    return `${roomId}:${minorProfileId}:${actorRole}:${actorUserId}`;
+  }
+
+  private findLatestRoomLock(minorProfileId: string) {
+    let selected: RuntimeOperationalLock | null = null;
+
+    for (const lock of this.roomLocks.values()) {
+      if (lock.minorProfileId !== minorProfileId) {
+        continue;
+      }
+
+      if (!selected || Date.parse(lock.createdAt) > Date.parse(selected.createdAt)) {
+        selected = lock;
+      }
+    }
+
+    return selected;
+  }
+
+  private findLatestParticipantLock(
+    minorProfileId: string,
+    actorRole: string,
+    actorUserId: string,
+  ) {
+    let selected: RuntimeOperationalLock | null = null;
+
+    for (const lock of this.participantLocks.values()) {
+      if (
+        lock.minorProfileId !== minorProfileId ||
+        lock.actorRole !== actorRole ||
+        lock.actorUserId !== actorUserId
+      ) {
+        continue;
+      }
+
+      if (!selected || Date.parse(lock.createdAt) > Date.parse(selected.createdAt)) {
+        selected = lock;
+      }
+    }
+
+    return selected;
+  }
+
+  private resolveParticipantsForRoom(roomId: string, minorProfileId: string) {
+    this.prunePresence();
+    const roomPresence = this.presenceByRoom.get(roomId);
+    if (!roomPresence) {
+      return [];
+    }
+
+    return Array.from(roomPresence.values()).filter(
+      (participant) => participant.minorProfileId === minorProfileId,
+    );
+  }
+
+  private removeParticipantsMatching(
+    roomId: string,
+    minorProfileId: string,
+    predicate: (participant: PresenceParticipant) => boolean,
+  ) {
+    const roomPresence = this.presenceByRoom.get(roomId);
+    if (!roomPresence) {
+      return;
+    }
+
+    for (const [participantKey, participant] of roomPresence.entries()) {
+      if (participant.minorProfileId !== minorProfileId) {
+        continue;
+      }
+
+      if (!predicate(participant)) {
+        continue;
+      }
+
+      roomPresence.delete(participantKey);
+    }
+
+    if (roomPresence.size === 0) {
+      this.presenceByRoom.delete(roomId);
     }
   }
 }

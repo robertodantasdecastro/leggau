@@ -76,6 +76,9 @@
 - `GET /api/presence/:roomId`
 - `GET /api/admin/rooms/presence`
 - `GET /api/admin/rooms/events`
+- `GET /api/admin/rooms/:roomId/snapshot`
+- `POST /api/admin/rooms/:roomId/terminate`
+- `POST /api/admin/rooms/:roomId/participants/remove`
 - `PATCH /api/admin/invites/:id`
 - `GET /manifest.webmanifest`
 - `GET /sw.js`
@@ -116,6 +119,7 @@
     - `ageBand=13-17`
     - `activeShell=adolescent`
     - `availableRoomCount=2`
+- Unity batch validation for child/adolescent shells must run sequentially on the same project; concurrent validations can collide on `Library/Bee/TundraBuildState.state`
 - After the persistence/resume cut on `2026-03-26`, the same probe path again reached:
   - `state=ready`
   - `status=Dashboard carregado.`
@@ -234,6 +238,9 @@
   - admin runtime operations now include `/api/admin/interaction-policies/:minorProfileId` and `/api/admin/rooms/presence`
   - monitored room invites now gate therapist runtime participation and are validated through `scripts/test-room-runtime-invites.mjs`
   - admin runtime operations now also include `/api/admin/rooms/events` and `/api/admin/invites/:id`
+  - admin runtime escalation now also includes `/api/admin/rooms/:roomId/snapshot`, `/api/admin/rooms/:roomId/terminate` and `/api/admin/rooms/:roomId/participants/remove`
+  - runtime escalation is now validated through `scripts/test-runtime-escalation.mjs`
+  - incident and moderation creation now accept runtime-context payloads from the admin runtime console
   - continued admin/compliance/billing hardening remains the companion track around the live governance stack
 - The VM edge proxy was corrected on `2026-03-27` so the public gateway again validates:
   - `/`

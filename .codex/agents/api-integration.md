@@ -14,6 +14,7 @@ Keep the frontend and backend contract aligned and stable across local, VM and p
 - Validate invite ownership, parent-approval visibility and adolescent-compatible progress flows.
 - Validate admin-governance flows for filtered care-team review, audit, incidents and moderation.
 - Validate room-invite and runtime-timeline flows for guardians, therapists and admins.
+- Validate runtime-escalation flows for room snapshot, room termination, participant removal and runtime-context incident/moderation creation.
 - Keep the live `web/portal` parent and therapist shells aligned with the backend responses they now consume in production-like VM routing.
 - Keep API contract changes versioned and documented.
 
@@ -71,3 +72,7 @@ Keep the frontend and backend contract aligned and stable across local, VM and p
   - `/api/admin/rooms/presence`
   - `/api/admin/rooms/events`
   - `/api/admin/invites/:id`
+  - `/api/admin/rooms/:roomId/snapshot`
+  - `/api/admin/rooms/:roomId/terminate`
+  - `/api/admin/rooms/:roomId/participants/remove`
+  - aditive `runtimeContext` on `/api/incidents` and `/api/moderation/cases`

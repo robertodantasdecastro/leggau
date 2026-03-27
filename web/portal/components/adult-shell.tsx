@@ -222,6 +222,9 @@ type RoomAccessRequirements = {
   inviteExpiresAt?: string | null;
   policySnapshot?: PolicySnapshot | null;
   accessSource?: string | null;
+  operationalStatus?: string | null;
+  operationalMessage?: string | null;
+  lockExpiresAt?: string | null;
   blockedBy: string[];
   blockedReason?: string | null;
 };
@@ -274,6 +277,9 @@ type PresenceState = {
   presenceMode: string;
   participantCount: number;
   participants: PresenceParticipant[];
+  operationalStatus?: string | null;
+  operationalMessage?: string | null;
+  lockExpiresAt?: string | null;
 };
 
 type MonitoredRoomsPayload = {
@@ -283,6 +289,9 @@ type MonitoredRoomsPayload = {
   activeRoomId?: string | null;
   items: MonitoredRoom[];
   requirements?: RoomAccessRequirements | null;
+  operationalStatus?: string | null;
+  operationalMessage?: string | null;
+  lockExpiresAt?: string | null;
 };
 
 const DEV_VM_API_BASE = 'http://10.211.55.22:8080/api';
@@ -2252,6 +2261,17 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                       <strong>{selectedRuntime?.allowed ? 'Liberado' : 'Bloqueado'}</strong>
                       <span>{selectedRuntime?.reason ?? 'Atualize para carregar o estado monitorado.'}</span>
                     </div>
+                    <div className="miniCard">
+                      <span className="microLabel">Estado operacional</span>
+                      <strong>{slugToLabel(selectedRuntime?.operationalStatus ?? parentRuntimeRequirements?.operationalStatus ?? 'open')}</strong>
+                      <span>
+                        {selectedRuntime?.operationalMessage ??
+                          parentRuntimeRequirements?.operationalMessage ??
+                          (selectedRuntime?.lockExpiresAt || parentRuntimeRequirements?.lockExpiresAt
+                            ? `Lock ate ${formatDate(selectedRuntime?.lockExpiresAt ?? parentRuntimeRequirements?.lockExpiresAt ?? null)}`
+                            : 'Sem lock operacional ativo neste runtime.')}
+                      </span>
+                    </div>
                   </div>
                   <div className="grid3 responsive">
                     <div className="miniCard">
@@ -2332,6 +2352,9 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                             ? `${selectedPresence.participantCount} participante(s) · ${slugToLabel(selectedPresence.status)}`
                             : selectedRuntime?.reason ?? 'Atualize o runtime para ler a presenca.'}
                         </span>
+                        {selectedPresence?.operationalMessage ? (
+                          <span>{selectedPresence.operationalMessage}</span>
+                        ) : null}
                       </div>
                       {selectedPresence?.participants?.length ? (
                         <div className="stack">
@@ -2715,6 +2738,17 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                 <strong>{lookupRuntime?.allowed ? 'Runtime liberado' : 'Runtime bloqueado'}</strong>
                 <span>{lookupRuntime?.reason ?? 'Carregue uma familia e um perfil para ler o runtime monitorado.'}</span>
               </div>
+              <div className="miniCard">
+                <span className="microLabel">Estado operacional</span>
+                <strong>{slugToLabel(lookupRuntime?.operationalStatus ?? therapistRuntimeRequirements?.operationalStatus ?? 'open')}</strong>
+                <span>
+                  {lookupRuntime?.operationalMessage ??
+                    therapistRuntimeRequirements?.operationalMessage ??
+                    (lookupRuntime?.lockExpiresAt || therapistRuntimeRequirements?.lockExpiresAt
+                      ? `Lock ate ${formatDate(lookupRuntime?.lockExpiresAt ?? therapistRuntimeRequirements?.lockExpiresAt ?? null)}`
+                      : 'Sem lock operacional ativo para este contexto.')}
+                </span>
+              </div>
               {therapistRuntimeRequirements?.blockedBy?.length ? (
                 <div className="chipRow">
                   {therapistRuntimeRequirements.blockedBy.map((item) => (
@@ -2755,6 +2789,7 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                         <span className="microLabel">{lookupPresence.roomTitle}</span>
                         <strong>{slugToLabel(lookupPresence.status)}</strong>
                         <span>{lookupPresence.participantCount} participante(s) observados</span>
+                        {lookupPresence.operationalMessage ? <span>{lookupPresence.operationalMessage}</span> : null}
                       </div>
                       {lookupPresence.participants.map((participant) => (
                         <div key={participant.participantKey} className="miniCard">

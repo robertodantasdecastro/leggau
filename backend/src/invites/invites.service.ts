@@ -80,6 +80,30 @@ export class InvitesService {
     });
   }
 
+  async listAsAdmin(filters: InviteFilters = {}) {
+    const items = await this.inviteRepository.find({
+      where: {
+        ...(filters.minorProfileId ? { minorProfileId: filters.minorProfileId } : {}),
+        ...(filters.inviteType ? { inviteType: filters.inviteType } : {}),
+      },
+      order: { createdAt: 'DESC' },
+      take: 200,
+    });
+    const normalized = await this.normalizeInviteStatuses(items);
+
+    return normalized.filter((invite) => {
+      if (filters.status && invite.status !== filters.status) {
+        return false;
+      }
+
+      if (filters.roomId && this.resolveRoomId(invite) !== filters.roomId) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
   async create(dto: CreateInviteDto, actor: InviteActor) {
     if (!['parent_guardian', 'therapist'].includes(actor.actorRole)) {
       throw new ForbiddenException('This actor cannot create invites');

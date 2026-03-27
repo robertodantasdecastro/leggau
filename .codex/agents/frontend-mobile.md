@@ -15,6 +15,8 @@ Implement the Unity mobile frontend for Android and iOS.
 - Keep the shell healthy when monitored runtime is blocked by guardian approvals, especially `presence_enabled`.
 - Reflect therapist room-invite state inside the child/adolescent shells without breaking readiness.
 - Surface supervision summaries that distinguish guardian-only, invite-sent and therapist-authorized runtime states.
+- Reflect admin runtime locks and participant-removal state without breaking `state=ready`.
+- Prefer operational runtime messages over generic blocked-state messaging when the backend returns admin lock context.
 - Store large Unity outputs under `.data/mobile/`.
 
 ## Directories

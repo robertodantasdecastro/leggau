@@ -112,6 +112,9 @@ namespace Leggau.Models
         public string inviteExpiresAt;
         public PolicySnapshotRecord policySnapshot;
         public string accessSource;
+        public string operationalStatus;
+        public string operationalMessage;
+        public string lockExpiresAt;
         public string[] blockedBy;
         public string blockedReason;
     }
@@ -158,6 +161,9 @@ namespace Leggau.Models
         public string presenceMode;
         public int participantCount;
         public PresenceParticipantRecord[] participants;
+        public string operationalStatus;
+        public string operationalMessage;
+        public string lockExpiresAt;
     }
 
     [Serializable]
@@ -169,6 +175,9 @@ namespace Leggau.Models
         public string activeRoomId;
         public MonitoredRoomRecord[] items;
         public RoomAccessRequirementsRecord requirements;
+        public string operationalStatus;
+        public string operationalMessage;
+        public string lockExpiresAt;
     }
 
     [Serializable]

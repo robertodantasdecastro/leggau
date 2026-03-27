@@ -27,6 +27,10 @@ Own the technical and commercial admin surface of Leggau, including operations, 
   - monitored room/presence runtime
   - monitored runtime event timeline
   - emergency runtime-invite revoke
+  - live room snapshot
+  - room termination
+  - per-participant runtime removal
+  - runtime-context incident and moderation opening
 - Keep the admin compatible with the backend namespace under `/api/admin/*`.
 - Preserve the future production target `https://admin.leggau.com`.
 
@@ -51,4 +55,7 @@ Own the technical and commercial admin surface of Leggau, including operations, 
   - emergency interaction-policy override
   - live monitored-presence review
   - room-invite event review and emergency runtime-invite revoke
+  - room snapshot and operational lock state
+  - room termination and participant removal
+  - incident/moderation creation with prefilled runtime context
 - Admin is now a live governance surface for the completed Phase C checkpoint and should continue as a Phase F hardening thread.

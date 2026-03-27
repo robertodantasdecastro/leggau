@@ -246,7 +246,10 @@ namespace Leggau.Gameplay
             var nextRoom = ResolveRoomById(response.activeRoomId);
             if (nextRoom == null && ActiveRoom != null)
             {
-                nextRoom = ResolveRoomById(ActiveRoom.id);
+                if (response.allowed)
+                {
+                    nextRoom = ResolveRoomById(ActiveRoom.id);
+                }
             }
 
             ActiveRoom = nextRoom;

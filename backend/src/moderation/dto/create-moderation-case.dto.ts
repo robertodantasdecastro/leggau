@@ -23,4 +23,8 @@ export class CreateModerationCaseDto {
   @IsOptional()
   @IsObject()
   aiDecision?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsObject()
+  runtimeContext?: Record<string, unknown>;
 }

@@ -122,7 +122,7 @@
   - the runtime now persists `SelectedMinor`, `ResolvedAgeBand`, `ActiveShell` and the resolved policy snapshot
   - explicit `child` and `adolescent` shells now exist in the same scene with age-profile presentation for `6-9`, `10-12` and `13-17`
   - both a `child` shell and an `adolescent` shell now validate against `vm2` with `state=ready`
-- Phase E is now in progress through its first three runtime slices:
+- Phase E is now in progress through its first four runtime slices:
   - backend now exposes monitored `rooms` and `presence` routes on top of the policy-aware Unity shells
   - `scripts/test-monitored-interactions.mjs` now validates child and adolescent room/presence flow against `vm2`
   - `scripts/test-monitored-supervision.mjs` now validates guardian, therapist and admin supervision gates against `vm2`
@@ -130,6 +130,9 @@
   - therapist participation in monitored runtime now also depends on an accepted `monitored_room` invite scoped by `minorProfileId + roomId`
   - `scripts/test-room-runtime-invites.mjs` now validates pending, accepted, revoked and expired room-invite runtime paths against `vm2`
   - `/pais` now owns room-invite emission/revoke, `/profissionais` now owns room-invite acceptance, and `web/admin` now owns runtime-event review plus emergency runtime-invite revoke
+  - admin runtime escalation now also includes live room snapshot, room termination and per-participant removal
+  - incidents and moderation cases can now be opened from runtime context with room, actor, invite and presence metadata attached
+  - `scripts/test-runtime-escalation.mjs` now validates operational locks, incident/moderation runtime context and lock expiry against `vm2`
   - the completed Phase C adult web/PWA and admin-governance surfaces remain the stable companion layers around this monitored runtime
 - After the machine reboot later on `2026-03-26`, `vm2` had to be started again from `~/leggau`, and the refreshed batch validation still reached:
   - `state=ready`
@@ -197,6 +200,28 @@
     - `activeShell=adolescent`
     - `availableRoomCount=2`
     - `presenceCount=0`
+- After the Phase E runtime-escalation slice later on `2026-03-27`, the canonical VM-backed Unity validations still reached:
+  - child shell:
+    - `state=ready`
+    - `status=Shell carregada.`
+    - `childName=Gau`
+    - `selectedMinorId=40db73f9-f746-45c0-a436-6b09f4a99924`
+    - `minorRole=child`
+    - `ageBand=6-9`
+    - `activeShell=child`
+    - `availableRoomCount=1`
+    - `presenceCount=0`
+  - adolescent shell:
+    - `state=ready`
+    - `status=Shell carregada.`
+    - `childName=Gau Teen`
+    - `selectedMinorId=aaf64358-c3ba-4e69-a4c8-5b181b9327fd`
+    - `minorRole=adolescent`
+    - `ageBand=13-17`
+    - `activeShell=adolescent`
+    - `availableRoomCount=2`
+    - `presenceCount=0`
+- Unity batch validation for `child` and `adolescent` shells must run sequentially on the same project path; concurrent runs can collide on `Library/Bee`.
 
 ## Delivery Workflow
 

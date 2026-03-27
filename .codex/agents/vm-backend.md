@@ -51,6 +51,9 @@ Own backend, reverse proxy, persistence and operational scripts on `vm2`.
 - `/api/admin/interaction-policies/:minorProfileId`
 - `/api/admin/rooms/presence`
 - `/api/admin/rooms/events`
+- `/api/admin/rooms/:roomId/snapshot`
+- `/api/admin/rooms/:roomId/terminate`
+- `/api/admin/rooms/:roomId/participants/remove`
 - `/api/admin/invites/:id`
 - `/api/activities`
 - `/api/progress/summary`
@@ -67,6 +70,7 @@ Own backend, reverse proxy, persistence and operational scripts on `vm2`.
 - The first Phase E monitored-room slice is also authoritative only on `vm2`, because `rooms/presence` gating depends on the live Postgres-backed multiactor runtime and VM deployment state.
 - The second Phase E supervision slice is also authoritative only on `vm2`, because hard approval gates, admin policy override and live presence rows only make sense against the deployed runtime.
 - The third Phase E runtime-invite slice is also authoritative only on `vm2`, because room-invite acceptance, expiry, revoke and runtime-event projection depend on the deployed API plus Nginx edge routing.
+- The fourth Phase E runtime-escalation slice is also authoritative only on `vm2`, because room snapshot, room termination, participant removal and their temporary operational locks depend on the live API runtime state.
 - VM promotion must use the corrected `scripts/promote-stack-to-vm.sh`, which syncs project surfaces into canonical remote directories.
 - `scripts/deploy-vm.sh` now force-recreates `api`, `portal`, `admin` and `nginx`, so edge config changes inside `infra/` are applied during normal promotion.
 - If the VM appears to serve stale routes after a sync, the recovery path is:

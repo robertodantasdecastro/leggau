@@ -1158,7 +1158,7 @@ namespace Leggau.App
                 yield break;
             }
 
-            if (!sessionState.RoomsAllowed && !sessionState.HasAvailableRooms)
+            if (!sessionState.RoomsAllowed)
             {
                 dashboardPresenter?.SetStatus(ResolveRuntimeBlockedMessage());
                 yield break;
@@ -1283,6 +1283,12 @@ namespace Leggau.App
                 yield break;
             }
 
+            if (!sessionState.RoomsAllowed)
+            {
+                dashboardPresenter?.SetStatus(ResolveRuntimeBlockedMessage());
+                yield break;
+            }
+
             isBusy = true;
             dashboardPresenter?.SyncOnboardingControls(sessionState, true);
             dashboardPresenter?.SetStatus($"Atualizando presenca em {sessionState.ActiveRoom.title}...");
@@ -1384,6 +1390,12 @@ namespace Leggau.App
             if (!string.IsNullOrWhiteSpace(sessionState.RoomCatalogMessage))
             {
                 return sessionState.RoomCatalogMessage;
+            }
+
+            if (sessionState.RoomRequirements != null &&
+                !string.IsNullOrWhiteSpace(sessionState.RoomRequirements.operationalMessage))
+            {
+                return sessionState.RoomRequirements.operationalMessage;
             }
 
             if (sessionState.RoomRequirements != null &&

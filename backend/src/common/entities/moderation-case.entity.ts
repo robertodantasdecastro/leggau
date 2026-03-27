@@ -27,7 +27,7 @@ export class ModerationCase {
   policyCode?: string | null;
 
   @Column({ type: 'simple-json', nullable: true })
-  aiDecision?: Record<string, string | number | boolean | null> | null;
+  aiDecision?: Record<string, unknown> | null;
 
   @Column({ default: true })
   humanReviewRequired: boolean;
@@ -44,4 +44,3 @@ export class ModerationCase {
   @UpdateDateColumn()
   updatedAt: Date;
 }
-

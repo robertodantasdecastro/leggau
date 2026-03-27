@@ -173,10 +173,18 @@ Date checked: `2026-03-27`
   - `PATCH /api/invites/:id`
   - `GET /api/admin/rooms/events`
   - `PATCH /api/admin/invites/:id`
+- The fourth Phase E runtime-escalation slice now also validates against the VM for:
+  - `GET /api/admin/rooms/:roomId/snapshot`
+  - `POST /api/admin/rooms/:roomId/terminate`
+  - `POST /api/admin/rooms/:roomId/participants/remove`
+  - `POST /api/incidents` with aditive `runtimeContext`
+  - `POST /api/moderation/cases` with aditive `runtimeContext`
 - The monitored interaction validation driver for this slice is:
   - `scripts/test-monitored-interactions.mjs`
 - The monitored room-invite validation driver for this slice is:
   - `scripts/test-room-runtime-invites.mjs`
+- The runtime-escalation validation driver for this slice is:
+  - `scripts/test-runtime-escalation.mjs`
 - `scripts/promote-stack-to-vm.sh` was corrected on `2026-03-26` to rsync `backend/`, `web/`, `infra/`, `docs/`, `scripts/` and `.codex/` into their canonical remote directories instead of flattening directory contents into the VM root
 - When stale Docker cache prevented new runtime routes from surfacing after the corrected sync, the authoritative recovery path became:
   - `ssh vm2 'cd ~/leggau && docker compose build --no-cache api portal admin && docker compose up -d --force-recreate api portal admin nginx'`
@@ -268,9 +276,34 @@ Date checked: `2026-03-27`
   - `/profissionais` now exposes a runtime inbox for `monitored_room` invites plus explicit gate and expiry messaging
   - `web/admin` now aggregates runtime invite events, blocked joins and heartbeat failures into the same governance console
   - `scripts/test-room-runtime-invites.mjs` now validates pending, accepted, revoked and expired room-invite paths against `vm2`
+- Phase E slice 4 is now completed on top of that escalated runtime:
+  - admin can now inspect a live room snapshot through:
+    - `GET /api/admin/rooms/:roomId/snapshot`
+  - admin can now terminate a monitored room or remove a specific participant through:
+    - `POST /api/admin/rooms/:roomId/terminate`
+    - `POST /api/admin/rooms/:roomId/participants/remove`
+  - monitored runtime now applies temporary operational locks with explicit blocked reasons:
+    - `room_closed_admin`
+    - `participant_removed_admin`
+  - `GET /api/rooms`, `POST /api/rooms/:id/join` and `GET /api/presence/:roomId` now expose:
+    - `operationalStatus`
+    - `operationalMessage`
+    - `lockExpiresAt`
+  - incidents and moderation cases can now be opened directly from runtime context with:
+    - `roomId`
+    - `minorProfileId`
+    - `minorRole`
+    - `actorUserId`
+    - `actorRole`
+    - `activeInviteId`
+    - `eventId`
+    - `presenceSnapshot`
+  - `web/admin` now exposes snapshot, terminate and remove-participant actions in the runtime panel
+  - `/pais`, `/profissionais` and Unity now reflect paused runtime and temporary participant removal without breaking the child/adolescent shells
+  - `scripts/test-runtime-escalation.mjs` now validates termination, participant removal, runtime-context incident/moderation creation and lock expiry against `vm2`
 - The next execution step now continues inside Phase E:
-  - deepen moderation/runtime controls beyond the now-live guardian/therapist/admin supervision plus room-invite slice
-  - expand monitored interaction from structured presence and explicit runtime invites into richer governed runtime behaviors
+  - deepen moderation/runtime controls beyond the now-live guardian/therapist/admin supervision, explicit room invites and temporary operational locks
+  - expand monitored interaction from structured presence and explicit runtime invites into richer governed runtime behaviors and operator workflows
   - keep the completed Phase C adult web/PWA and admin-governance surfaces as the stable companion layer
   - keep Phase F admin/compliance/billing hardening as a parallel operational thread
 
@@ -312,6 +345,10 @@ Date checked: `2026-03-27`
     - somente responsavel
     - convite enviado
     - terapeuta autorizado
+  - operational runtime status for:
+    - sala pausada pela operacao
+    - participacao encerrada pela operacao
+    - lock temporario ate `lockExpiresAt`
 
 ## Unity Runtime Status
 
@@ -360,6 +397,11 @@ Date checked: `2026-03-27`
   - join first available monitored room
   - leave active room
   - send presence heartbeat
+- Runtime lock reflection now also keeps the shell healthy when:
+  - the room was paused by admin
+  - the current participant was removed by admin
+  - monitored runtime remains unavailable until `lockExpiresAt`
+- Canonical batch validation for this slice must run sequentially per shell on the same Unity project; concurrent child/adolescent batch sessions can collide on `Library/Bee`
 
 ## Web Admin Status
 
@@ -374,10 +416,17 @@ Date checked: `2026-03-27`
   - runtime presence review
   - runtime event timeline with quick incident/moderation actions
   - emergency runtime-invite revoke
+  - live room snapshot
+  - room termination
+  - per-participant runtime removal
+  - incident/moderation creation with prefilled `runtimeContext`
 - Admin governance now validates against the VM runtime through the canonical namespaces:
   - `/api/care-team/admin`
   - `/api/audit/events`
   - `/api/incidents`
+  - `/api/admin/rooms/:roomId/snapshot`
+  - `/api/admin/rooms/:roomId/terminate`
+  - `/api/admin/rooms/:roomId/participants/remove`
   - `/api/moderation/cases`
 
 ## Mobile Mac Status
@@ -664,3 +713,9 @@ Date checked: `2026-03-27`
   - `scripts/promote-stack-to-vm.sh`
 - Portal/admin/billing foundation was added to the repo and is ready for container/runtime validation once dependencies finish and `vm2` SSH is restored.
 - The current phase checkpoint and remaining blockers are now tracked in `docs/mvp-timeline.md`.
+- The current monitored-runtime checkpoint now includes operational escalation:
+  - room snapshot
+  - room termination
+  - per-participant runtime removal
+  - runtime-context incident and moderation opening
+- Phase E remains the main execution line, now from the operational-escalation slice on top of rooms, presence, invite gating and admin supervision.

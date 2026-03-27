@@ -36,4 +36,5 @@ Own the public Leggau web surface for institutional narrative, legal publication
 - Public product, legal and distribution surfaces stay coherent with the mobile beta.
 - Adult shell routes stay aligned with the live social-auth catalog, legal gates and `care-team` flows.
 - Adult shell routes also need to stay aligned with scoped invites, parent approvals and selected-minor reporting.
+- Adult shell routes also need to stay aligned with monitored-runtime operational state, including room pause, participant removal and temporary locks rendered as read-only product state.
 - Adult shell routes remain installable and responsive as the web/PWA surface for adults.

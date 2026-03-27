@@ -143,6 +143,7 @@ type AdminPresenceRecord = {
   minorProfileId: string;
   minorRole: string;
   actorRole: string;
+  actorUserId: string;
   accessSource: string;
   activeShell: string;
   joinedAt: string;
@@ -167,8 +168,40 @@ type RoomRuntimeEvent = {
   activeShell?: string | null;
   activeInviteId?: string | null;
   inviteExpiresAt?: string | null;
+  lockExpiresAt?: string | null;
   blockedBy?: string[];
   summary: string;
+};
+
+type RuntimeContextPayload = {
+  roomId: string;
+  minorProfileId: string;
+  minorRole?: string | null;
+  actorUserId?: string | null;
+  actorRole?: string | null;
+  activeInviteId?: string | null;
+  eventId?: string | null;
+  presenceSnapshot?: Record<string, unknown> | null;
+};
+
+type RoomRuntimeSnapshot = {
+  roomId: string;
+  roomTitle: string;
+  roomDescription?: string | null;
+  presenceMode: string;
+  minorProfileId: string;
+  minorRole: string;
+  ageBand: string;
+  activeInviteId?: string | null;
+  roomInviteStatus: string;
+  inviteExpiresAt?: string | null;
+  operationalStatus: string;
+  operationalMessage?: string | null;
+  lockExpiresAt?: string | null;
+  participantCount: number;
+  participants: AdminPresenceRecord[];
+  lastHeartbeatAt?: string | null;
+  policySnapshot?: Record<string, unknown> | null;
 };
 
 type ProviderFormState = {
@@ -343,6 +376,60 @@ function buildQuery(params: Record<string, string>) {
 
   const result = query.toString();
   return result ? `?${result}` : '';
+}
+
+function buildRuntimeContextFromPresence(record: AdminPresenceRecord): RuntimeContextPayload {
+  return {
+    roomId: record.roomId,
+    minorProfileId: record.minorProfileId,
+    minorRole: record.minorRole,
+    actorUserId: record.actorUserId,
+    actorRole: record.actorRole,
+    presenceSnapshot: {
+      roomTitle: record.roomTitle,
+      accessSource: record.accessSource,
+      activeShell: record.activeShell,
+      joinedAt: record.joinedAt,
+      lastHeartbeatAt: record.lastHeartbeatAt,
+    },
+  };
+}
+
+function buildRuntimeContextFromEvent(event: RoomRuntimeEvent): RuntimeContextPayload {
+  return {
+    roomId: event.roomId,
+    minorProfileId: event.minorProfileId ?? '',
+    minorRole: event.minorRole ?? null,
+    actorUserId: event.actorUserId ?? null,
+    actorRole: event.actorRole,
+    activeInviteId: event.activeInviteId ?? null,
+    eventId: event.id,
+    presenceSnapshot: {
+      roomTitle: event.roomTitle,
+      accessSource: event.accessSource ?? null,
+      activeShell: event.activeShell ?? null,
+      occurredAt: event.occurredAt,
+      blockedBy: event.blockedBy ?? [],
+      summary: event.summary,
+    },
+  };
+}
+
+function buildRuntimeContextFromSnapshot(snapshot: RoomRuntimeSnapshot): RuntimeContextPayload {
+  return {
+    roomId: snapshot.roomId,
+    minorProfileId: snapshot.minorProfileId,
+    minorRole: snapshot.minorRole,
+    activeInviteId: snapshot.activeInviteId ?? null,
+    presenceSnapshot: {
+      roomTitle: snapshot.roomTitle,
+      participantCount: snapshot.participantCount,
+      lastHeartbeatAt: snapshot.lastHeartbeatAt ?? null,
+      operationalStatus: snapshot.operationalStatus,
+      operationalMessage: snapshot.operationalMessage ?? null,
+      lockExpiresAt: snapshot.lockExpiresAt ?? null,
+    },
+  };
 }
 
 function ScopeSummary({ scope }: { scope?: Record<string, unknown> | null }) {
@@ -587,6 +674,7 @@ export function AdminDashboard() {
   const [moderationEdits, setModerationEdits] = useState<
     Record<string, { severity?: string; status?: string }>
   >({});
+  const [runtimeSnapshot, setRuntimeSnapshot] = useState<RoomRuntimeSnapshot | null>(null);
 
   const stats = useMemo(() => {
     if (!overview) {
@@ -750,6 +838,9 @@ export function AdminDashboard() {
     setError(null);
     try {
       await loadDashboard(token);
+      if (runtimeSnapshot) {
+        await loadRoomSnapshot(runtimeSnapshot.roomId, runtimeSnapshot.minorProfileId);
+      }
     } catch (reason) {
       setError((reason as Error).message);
     } finally {
@@ -899,6 +990,83 @@ export function AdminDashboard() {
     }
   }
 
+  async function loadRoomSnapshot(roomId: string, minorProfileId: string) {
+    if (!token || !roomId || !minorProfileId) {
+      return;
+    }
+
+    setBusyAction(`runtime-snapshot-${roomId}-${minorProfileId}`);
+    setError(null);
+    try {
+      const response = await apiRequest<RoomRuntimeSnapshot>(
+        `/admin/rooms/${encodeURIComponent(roomId)}/snapshot?minorProfileId=${encodeURIComponent(minorProfileId)}`,
+        token,
+      );
+      setRuntimeSnapshot(response);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function terminateRuntimeRoom(roomId: string, minorProfileId: string) {
+    if (!token) {
+      return;
+    }
+
+    setBusyAction(`runtime-terminate-${roomId}-${minorProfileId}`);
+    setError(null);
+    try {
+      await apiRequest<RoomRuntimeSnapshot>(`/admin/rooms/${encodeURIComponent(roomId)}/terminate`, token, {
+        method: 'POST',
+        body: JSON.stringify({
+          minorProfileId,
+        }),
+      });
+      await loadDashboard(token);
+      await loadRoomSnapshot(roomId, minorProfileId);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function removeRuntimeParticipant(
+    roomId: string,
+    minorProfileId: string,
+    actorRole: string,
+    actorUserId: string,
+  ) {
+    if (!token) {
+      return;
+    }
+
+    setBusyAction(`runtime-remove-${roomId}-${minorProfileId}-${actorRole}`);
+    setError(null);
+    try {
+      await apiRequest<RoomRuntimeSnapshot>(
+        `/admin/rooms/${encodeURIComponent(roomId)}/participants/remove`,
+        token,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            minorProfileId,
+            actorRole,
+            actorUserId,
+          }),
+        },
+      );
+      await loadDashboard(token);
+      await loadRoomSnapshot(roomId, minorProfileId);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
   async function openIncidentFromPresence(record: AdminPresenceRecord) {
     if (!token) {
       return;
@@ -914,6 +1082,7 @@ export function AdminDashboard() {
           sourceType: 'presence_runtime',
           sourceId: `${record.roomId}:${record.minorProfileId}:${record.actorRole}`,
           summary: `Runtime monitorado em ${record.roomTitle} para ${record.minorRole} via ${record.accessSource}`,
+          runtimeContext: buildRuntimeContextFromPresence(record),
         }),
       });
       await loadDashboard(token);
@@ -944,6 +1113,7 @@ export function AdminDashboard() {
             disposition: 'hold',
             accessSource: record.accessSource,
           },
+          runtimeContext: buildRuntimeContextFromPresence(record),
         }),
       });
       await loadDashboard(token);
@@ -969,6 +1139,7 @@ export function AdminDashboard() {
           sourceType: 'runtime_event',
           sourceId: event.id,
           summary: `${event.eventType} · ${event.roomTitle} · ${event.summary}`,
+          runtimeContext: buildRuntimeContextFromEvent(event),
         }),
       });
       await loadDashboard(token);
@@ -1000,6 +1171,7 @@ export function AdminDashboard() {
             eventType: event.eventType,
             roomId: event.roomId,
           },
+          runtimeContext: buildRuntimeContextFromEvent(event),
         }),
       });
       await loadDashboard(token);
@@ -1047,6 +1219,30 @@ export function AdminDashboard() {
         severity: 'medium',
         sourceType: incidentDraft.sourceType,
         summary: '',
+      });
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function createIncidentFromSnapshot() {
+    if (!token || !runtimeSnapshot) {
+      return;
+    }
+
+    setBusyAction('incident-create-runtime');
+    try {
+      await apiRequest('/incidents', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          ...incidentDraft,
+          sourceType: 'runtime_snapshot',
+          sourceId: `${runtimeSnapshot.roomId}:${runtimeSnapshot.minorProfileId}`,
+          runtimeContext: buildRuntimeContextFromSnapshot(runtimeSnapshot),
+        }),
       });
       await loadDashboard(token);
     } catch (reason) {
@@ -1116,6 +1312,36 @@ export function AdminDashboard() {
     }
   }
 
+  async function createModerationFromSnapshot() {
+    if (!token || !runtimeSnapshot) {
+      return;
+    }
+
+    setBusyAction('moderation-create-runtime');
+    try {
+      await apiRequest('/moderation/cases', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          severity: moderationDraft.severity,
+          sourceType: 'runtime_snapshot',
+          sourceId: `${runtimeSnapshot.roomId}:${runtimeSnapshot.minorProfileId}`,
+          policyCode: moderationDraft.policyCode || undefined,
+          humanReviewRequired: true,
+          aiDecision: {
+            channel: 'admin-console',
+            disposition: 'hold',
+          },
+          runtimeContext: buildRuntimeContextFromSnapshot(runtimeSnapshot),
+        }),
+      });
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
   async function updateModerationCase(id: string) {
     if (!token) {
       return;
@@ -1153,6 +1379,7 @@ export function AdminDashboard() {
     setAdminPolicyDraft(buildAdminPolicyDraft());
     setPolicyTargetMinorId('');
     setPresenceRecords([]);
+    setRuntimeSnapshot(null);
   }
 
   if (!token) {
@@ -1558,6 +1785,41 @@ export function AdminDashboard() {
                       <div className="actionColumn">
                         <button
                           type="button"
+                          disabled={busyAction === `runtime-snapshot-${record.roomId}-${record.minorProfileId}`}
+                          onClick={() => void loadRoomSnapshot(record.roomId, record.minorProfileId)}
+                        >
+                          {busyAction === `runtime-snapshot-${record.roomId}-${record.minorProfileId}`
+                            ? 'Abrindo...'
+                            : 'Snapshot'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busyAction === `runtime-terminate-${record.roomId}-${record.minorProfileId}`}
+                          onClick={() => void terminateRuntimeRoom(record.roomId, record.minorProfileId)}
+                        >
+                          {busyAction === `runtime-terminate-${record.roomId}-${record.minorProfileId}`
+                            ? 'Encerrando...'
+                            : 'Encerrar sala'}
+                        </button>
+                        <button
+                          type="button"
+                          className="secondaryButton"
+                          disabled={busyAction === `runtime-remove-${record.roomId}-${record.minorProfileId}-${record.actorRole}`}
+                          onClick={() =>
+                            void removeRuntimeParticipant(
+                              record.roomId,
+                              record.minorProfileId,
+                              record.actorRole,
+                              record.actorUserId,
+                            )
+                          }
+                        >
+                          {busyAction === `runtime-remove-${record.roomId}-${record.minorProfileId}-${record.actorRole}`
+                            ? 'Removendo...'
+                            : 'Remover participante'}
+                        </button>
+                        <button
+                          type="button"
                           disabled={busyAction === 'policy-load'}
                           onClick={() => void loadAdminPolicy(record.minorProfileId)}
                         >
@@ -1599,6 +1861,168 @@ export function AdminDashboard() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="panel stack">
+        <div className="row spread">
+          <div>
+            <h2>Snapshot operacional da sala</h2>
+            <p className="muted">
+              Contexto vivo do runtime para encerrar a sessao, remover participante ou abrir incidente e moderacao com payload preenchido.
+            </p>
+          </div>
+          {runtimeSnapshot ? (
+            <button
+              type="button"
+              onClick={() => void loadRoomSnapshot(runtimeSnapshot.roomId, runtimeSnapshot.minorProfileId)}
+            >
+              {busyAction === `runtime-snapshot-${runtimeSnapshot.roomId}-${runtimeSnapshot.minorProfileId}`
+                ? 'Atualizando...'
+                : 'Atualizar snapshot'}
+            </button>
+          ) : null}
+        </div>
+        {runtimeSnapshot ? (
+          <div className="stack">
+            <div className="grid3 responsive">
+              <div className="miniCard">
+                <span className="microLabel">Sala</span>
+                <strong>{runtimeSnapshot.roomTitle}</strong>
+                <span>{runtimeSnapshot.roomId}</span>
+              </div>
+              <div className="miniCard">
+                <span className="microLabel">Menor</span>
+                <strong>{compactId(runtimeSnapshot.minorProfileId)}</strong>
+                <span>{slugToLabel(runtimeSnapshot.minorRole)} · {runtimeSnapshot.ageBand}</span>
+              </div>
+              <div className="miniCard">
+                <span className="microLabel">Estado operacional</span>
+                <strong>{slugToLabel(runtimeSnapshot.operationalStatus || 'open')}</strong>
+                <span>
+                  {runtimeSnapshot.operationalMessage ??
+                    (runtimeSnapshot.lockExpiresAt
+                      ? `Lock ate ${formatDate(runtimeSnapshot.lockExpiresAt)}`
+                      : 'Sem lock operacional ativo.')}
+                </span>
+              </div>
+            </div>
+            <div className="grid3 responsive">
+              <div className="miniCard">
+                <span className="microLabel">Invite</span>
+                <strong>{slugToLabel(runtimeSnapshot.roomInviteStatus)}</strong>
+                <span>
+                  {runtimeSnapshot.activeInviteId
+                    ? `Invite ${compactId(runtimeSnapshot.activeInviteId)}`
+                    : 'Sem invite ativo'}
+                </span>
+              </div>
+              <div className="miniCard">
+                <span className="microLabel">Presence mode</span>
+                <strong>{slugToLabel(runtimeSnapshot.presenceMode)}</strong>
+                <span>{runtimeSnapshot.participantCount} participante(s) ativos</span>
+              </div>
+              <div className="miniCard">
+                <span className="microLabel">Ultimo heartbeat</span>
+                <strong>{formatDate(runtimeSnapshot.lastHeartbeatAt)}</strong>
+                <span>{runtimeSnapshot.lockExpiresAt ? `Lock expira ${formatDate(runtimeSnapshot.lockExpiresAt)}` : 'Sem lock programado'}</span>
+              </div>
+            </div>
+            <div className="actionRow">
+              <button
+                type="button"
+                disabled={busyAction === `runtime-terminate-${runtimeSnapshot.roomId}-${runtimeSnapshot.minorProfileId}`}
+                onClick={() => void terminateRuntimeRoom(runtimeSnapshot.roomId, runtimeSnapshot.minorProfileId)}
+              >
+                {busyAction === `runtime-terminate-${runtimeSnapshot.roomId}-${runtimeSnapshot.minorProfileId}`
+                  ? 'Encerrando...'
+                  : 'Encerrar sala'}
+              </button>
+              <button
+                type="button"
+                className="secondaryButton"
+                disabled={busyAction === 'incident-create-runtime'}
+                onClick={() => void createIncidentFromSnapshot()}
+              >
+                {busyAction === 'incident-create-runtime' ? 'Abrindo...' : 'Abrir incidente com contexto'}
+              </button>
+              <button
+                type="button"
+                className="secondaryButton"
+                disabled={busyAction === 'moderation-create-runtime'}
+                onClick={() => void createModerationFromSnapshot()}
+              >
+                {busyAction === 'moderation-create-runtime' ? 'Abrindo...' : 'Abrir moderacao com contexto'}
+              </button>
+            </div>
+            <div className="tableWrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Participante</th>
+                    <th>Contexto</th>
+                    <th>Heartbeat</th>
+                    <th>Acoes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {runtimeSnapshot.participants.length ? (
+                    runtimeSnapshot.participants.map((participant) => (
+                      <tr key={`${participant.roomId}-${participant.actorRole}-${participant.actorUserId}`}>
+                        <td>
+                          <strong>{slugToLabel(participant.actorRole)}</strong>
+                          <div className="tableMeta">{compactId(participant.actorUserId)}</div>
+                        </td>
+                        <td>
+                          <div className="stackCompact">
+                            <span>Origem {slugToLabel(participant.accessSource)}</span>
+                            <span>Shell {slugToLabel(participant.activeShell)}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="stackCompact">
+                            <span>Entrou {formatDate(participant.joinedAt)}</span>
+                            <span>Heartbeat {formatDate(participant.lastHeartbeatAt)}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="secondaryButton"
+                            disabled={busyAction === `runtime-remove-${runtimeSnapshot.roomId}-${runtimeSnapshot.minorProfileId}-${participant.actorRole}`}
+                            onClick={() =>
+                              void removeRuntimeParticipant(
+                                runtimeSnapshot.roomId,
+                                runtimeSnapshot.minorProfileId,
+                                participant.actorRole,
+                                participant.actorUserId,
+                              )
+                            }
+                          >
+                            {busyAction === `runtime-remove-${runtimeSnapshot.roomId}-${runtimeSnapshot.minorProfileId}-${participant.actorRole}`
+                              ? 'Removendo...'
+                              : 'Remover'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4}>
+                        <div className="emptyState">
+                          Nenhum participante ativo no snapshot atual.
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="emptyState">
+            Abra um snapshot a partir da presenca ativa ou de um evento do runtime.
+          </div>
+        )}
       </section>
 
       <section className="panel stack">
@@ -1705,10 +2129,22 @@ export function AdminDashboard() {
                       <div className="stackCompact">
                         <span>{formatDate(event.occurredAt)}</span>
                         {event.inviteExpiresAt ? <span>invite expira {formatDate(event.inviteExpiresAt)}</span> : null}
+                        {event.lockExpiresAt ? <span>lock ate {formatDate(event.lockExpiresAt)}</span> : null}
                       </div>
                     </td>
                     <td>
                       <div className="actionColumn">
+                        {event.roomId && event.minorProfileId ? (
+                          <button
+                            type="button"
+                            disabled={busyAction === `runtime-snapshot-${event.roomId}-${event.minorProfileId}`}
+                            onClick={() => void loadRoomSnapshot(event.roomId, event.minorProfileId ?? '')}
+                          >
+                            {busyAction === `runtime-snapshot-${event.roomId}-${event.minorProfileId}`
+                              ? 'Abrindo...'
+                              : 'Snapshot'}
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           className="secondaryButton"

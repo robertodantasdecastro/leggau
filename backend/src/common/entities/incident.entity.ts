@@ -39,7 +39,7 @@ export class Incident {
   reviewedAt?: Date | null;
 
   @Column({ type: 'simple-json', nullable: true })
-  metadata?: Record<string, string | number | boolean | null> | null;
+  metadata?: Record<string, unknown> | null;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -47,4 +47,3 @@ export class Incident {
   @UpdateDateColumn()
   updatedAt: Date;
 }
-

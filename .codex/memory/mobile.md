@@ -47,16 +47,16 @@
 
 ## Immediate Next UI Targets
 
-1. Invite-aware monitored runtime escalation
+1. Operational runtime escalation reflection beyond the current admin-lock slice
 2. Stronger supervision summaries per shell
-3. Deeper governed-runtime behaviors beyond room catalog and heartbeat
+3. Deeper governed-runtime behaviors beyond room catalog, heartbeat and temporary operational locks
 4. More interactive first-home experience
 5. Check-in and reward refresh
-6. Keep compatibility with `guardian_links`, `policy_versions`, room invites and persistent sessions while adult surfaces keep evolving
+6. Keep compatibility with `guardian_links`, `policy_versions`, room invites, operational locks and persistent sessions while adult surfaces keep evolving
 
 ## Current Recommended Next Step
 
-- Continue the current monitored-runtime work from the now-live room-invite slice.
+- Continue the current monitored-runtime work from the now-live operational-escalation slice.
 - Keep builds, exported assets and Unity cache pointed to SSD-backed directories inside the repository.
 - Gau asset source now exists at `mobile/Assets/Art/Characters/Gau/Source/Gau.blend`
 - Gau Unity export now exists at `mobile/Assets/Art/Characters/Gau/Exports/Gau.fbx`
@@ -190,7 +190,7 @@
   - age-profile presentation system on top of the already-compatible Phase B backend
   - policy-aware shell gating driven by `interaction-policies`
   - persisted minor selection and shell restoration
-- Phase E is now in progress for mobile through the first three monitored-interaction slices:
+- Phase E is now in progress for mobile through the first four monitored-interaction slices:
   - monitored room surfaces now live inside `Bootstrap.unity`
   - policy-governed presence and room affordances now resolve after shell selection
   - `presence_enabled` now acts as a hard runtime gate while `therapist_linking` now gates therapist participation
@@ -200,6 +200,10 @@
     - convite terapeutico enviado
     - terapeuta autorizado
   - blocked room access no longer breaks bootstrap readiness; the child shell still reaches `state=ready` and explains the missing gate
+  - admin operational locks now also surface:
+    - sala pausada pela operacao
+    - participacao encerrada temporariamente
+    - lock temporario ate `lockExpiresAt`
   - compatibility remains intact with the adult web/admin governance layer
 - The Unity workspace had to be reopened on `2026-03-26` through the canonical `-projectPath` flow after a temporary nested project folder appeared under `mobile/`; that stray folder was removed
 - The Phase D runtime now:
@@ -233,6 +237,12 @@
   - `child` shell reaches `state=ready` while exposing room-invite supervision state without breaking the shell
   - `adolescent` shell reaches `state=ready` while consuming room-invite-aware runtime requirements
   - therapist runtime participation can move through `pending`, `accepted`, `expired` and `revoked` invite states without breaking bootstrap
+- The fourth monitored-interaction slice now also validates:
+  - `child` and `adolescent` shells still reach `state=ready` while consuming operational runtime lock messages
+  - room pause and participant-removal states now render explicitly without breaking shell restore, Gau, check-in, rewards or progress
+  - stale `ActiveRoom` state is now dropped when runtime becomes unavailable through admin operational lock
+  - runtime lock messaging now prefers `operationalMessage` over generic blocked text
+- Unity batch validation for `child` and `adolescent` shells must run sequentially on the same project path; concurrent batch jobs can collide on `Library/Bee`
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination
 - `~/Library/Application Support/UnityHub/secondaryInstallPath.json` now points to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors`

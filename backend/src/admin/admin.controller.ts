@@ -208,6 +208,40 @@ export class AdminController {
     });
   }
 
+  @Get('rooms/:roomId/snapshot')
+  monitoredRoomSnapshot(
+    @Param('roomId') roomId: string,
+    @Query('minorProfileId') minorProfileId: string,
+    @Req() request: { adminSession: { subjectId: string; actorRole: string } },
+  ) {
+    return this.roomsService.getRoomSnapshotForAdmin(roomId, minorProfileId, request.adminSession);
+  }
+
+  @Post('rooms/:roomId/terminate')
+  terminateMonitoredRoom(
+    @Param('roomId') roomId: string,
+    @Body() body: { minorProfileId: string; lockMinutes?: number; message?: string },
+    @Req() request: { adminSession: { subjectId: string; actorRole: string } },
+  ) {
+    return this.roomsService.terminateRoomForAdmin(roomId, body, request.adminSession);
+  }
+
+  @Post('rooms/:roomId/participants/remove')
+  removeMonitoredRoomParticipant(
+    @Param('roomId') roomId: string,
+    @Body()
+    body: {
+      minorProfileId: string;
+      actorRole: string;
+      actorUserId?: string;
+      lockMinutes?: number;
+      message?: string;
+    },
+    @Req() request: { adminSession: { subjectId: string; actorRole: string } },
+  ) {
+    return this.roomsService.removeParticipantForAdmin(roomId, body, request.adminSession);
+  }
+
   @Patch('invites/:id')
   updateInvite(
     @Param('id') id: string,

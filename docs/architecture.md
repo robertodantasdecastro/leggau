@@ -120,3 +120,11 @@
   - `/pais` agora emite e revoga convites de sala por menor e por sala, enquanto `/profissionais` agora aceita esses convites no inbox de runtime
   - `web/admin` agora opera eventos de runtime, bloqueios de join/heartbeat e revogacao emergencial de convite
   - o proxy Nginx da `vm2` foi corrigido para manter o portal PWA, o admin e a borda `/` funcionando com o roteamento atual
+- A quarta fatia da Fase E agora tambem esta ativa:
+  - `GET /api/admin/rooms/:roomId/snapshot`, `POST /api/admin/rooms/:roomId/terminate` e `POST /api/admin/rooms/:roomId/participants/remove` agora entregam snapshot vivo e acoes operacionais de runtime
+  - locks operacionais temporarios continuam efemeros na memoria do processo da API, sem introduzir event store nem persistencia historica nova
+  - `GET /api/rooms`, `POST /api/rooms/:id/join` e `GET /api/presence/:roomId` agora projetam `operationalStatus`, `operationalMessage` e `lockExpiresAt`
+  - `blockedBy` agora tambem cobre `room_closed_admin` e `participant_removed_admin`
+  - `POST /api/incidents` e `POST /api/moderation/cases` agora aceitam `runtimeContext` aditivo para abrir casos a partir da presenca, timeline ou snapshot da sala
+  - `/pais`, `/profissionais` e Unity apenas refletem o lock operacional; o operador continua sendo o `admin`
+  - o Unity continua chegando a `state=ready` quando a sala esta pausada ou quando o participante foi removido, mantendo Gau, check-in, progresso e recompensas fora do lock operacional

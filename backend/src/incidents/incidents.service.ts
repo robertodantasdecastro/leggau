@@ -34,6 +34,7 @@ export class IncidentsService {
         summary: dto.summary,
         status: 'open',
         createdByRole: 'admin',
+        metadata: dto.runtimeContext ? { runtimeContext: dto.runtimeContext } : null,
       }),
     );
 
@@ -43,6 +44,10 @@ export class IncidentsService {
       resourceId: saved.id,
       outcome: 'success',
       severity: saved.severity,
+      metadata: {
+        sourceType: saved.sourceType,
+        sourceId: saved.sourceId ?? '',
+      },
     });
 
     return saved;

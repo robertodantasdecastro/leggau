@@ -188,7 +188,7 @@ As of `2026-03-27`:
   - the age-profile presentation system now differentiates `6-9`, `10-12` and `13-17`
   - the runtime now persists `SelectedMinor`, `ResolvedAgeBand`, `ActiveShell` and the resolved policy snapshot
   - the VM-backed probe now validates both `child` and `adolescent` shells at `state=ready`
-- Phase E is now in progress through the first three monitored-interaction slices:
+- Phase E is now in progress through the first four monitored-interaction slices:
   - backend now exposes `rooms` and `presence` routes on top of the policy-aware multiactor runtime
   - Unity now consumes monitored room catalog and monitored presence state inside the same `Bootstrap.unity`
   - `presence_enabled` is now a hard gate for room listing, join and heartbeat
@@ -196,6 +196,11 @@ As of `2026-03-27`:
   - admin now owns emergency policy override and live runtime visibility through `/api/admin/interaction-policies/:minorProfileId` and `/api/admin/rooms/presence`
   - therapist runtime participation now also requires an accepted `monitored_room` invite scoped by `minorProfileId + roomId`
   - admin now owns the runtime-event timeline through `/api/admin/rooms/events` and emergency room-invite revoke through `/api/admin/invites/:id`
+  - admin now also owns room snapshot, room termination and per-participant removal through:
+    - `/api/admin/rooms/:roomId/snapshot`
+    - `/api/admin/rooms/:roomId/terminate`
+    - `/api/admin/rooms/:roomId/participants/remove`
+  - incidents and moderation cases can now be opened directly from runtime context, without manual context reconstruction
   - the VM edge proxy was corrected so `/`, `/pais`, `/profissionais`, `/manifest.webmanifest` and `/sw.js` remain healthy after the room-invite rollout
   - adult web/admin remain in maintenance and continued polish while supervision and moderation grow around the monitored runtime
 - Mac toolchain status:
@@ -229,6 +234,7 @@ As of `2026-03-27`:
     - `ageBand=13-17`
     - `activeShell=adolescent`
     - `availableRoomCount=2`
+- Canonical Unity batch validation for child/adolescent shells must run sequentially on the same project; parallel runs can collide on `Library/Bee`.
 - Platform replan artifacts are now canonical docs:
   - `docs/platform-blueprint.md`
   - `docs/actor-matrix.md`

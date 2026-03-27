@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsObject, IsOptional, IsString } from 'class-validator';
 
 export class CreateIncidentDto {
   @IsString()
@@ -13,5 +13,8 @@ export class CreateIncidentDto {
 
   @IsString()
   summary: string;
-}
 
+  @IsOptional()
+  @IsObject()
+  runtimeContext?: Record<string, unknown>;
+}

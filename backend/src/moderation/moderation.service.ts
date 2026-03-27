@@ -34,7 +34,12 @@ export class ModerationService {
         severity: dto.severity ?? 'medium',
         policyCode: dto.policyCode ?? null,
         humanReviewRequired: dto.humanReviewRequired ?? true,
-        aiDecision: (dto.aiDecision as Record<string, string | number | boolean | null>) ?? null,
+        aiDecision: dto.runtimeContext
+          ? {
+              ...(dto.aiDecision ?? {}),
+              runtimeContext: dto.runtimeContext,
+            }
+          : (dto.aiDecision ?? null),
       }),
     );
 
@@ -44,6 +49,10 @@ export class ModerationService {
       resourceId: saved.id,
       outcome: 'success',
       severity: saved.severity,
+      metadata: {
+        sourceType: saved.sourceType,
+        sourceId: saved.sourceId ?? '',
+      },
     });
 
     return saved;

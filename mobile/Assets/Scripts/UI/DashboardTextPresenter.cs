@@ -540,6 +540,22 @@ namespace Leggau.UI
             {
                 builder.AppendLine($"Gate presence_enabled: {session.RoomRequirements.presenceApprovalStatus}");
 
+                if (!string.IsNullOrWhiteSpace(session.RoomRequirements.operationalStatus) &&
+                    session.RoomRequirements.operationalStatus != "open")
+                {
+                    builder.AppendLine($"Operacao: {session.RoomRequirements.operationalStatus}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(session.RoomRequirements.operationalMessage))
+                {
+                    builder.AppendLine(session.RoomRequirements.operationalMessage);
+                }
+
+                if (!string.IsNullOrWhiteSpace(session.RoomRequirements.lockExpiresAt))
+                {
+                    builder.AppendLine($"Lock ate: {session.RoomRequirements.lockExpiresAt}");
+                }
+
                 if (!string.IsNullOrWhiteSpace(session.RoomRequirements.therapistLinkingStatus) &&
                     session.RoomRequirements.therapistLinkingStatus != "missing")
                 {
@@ -608,6 +624,12 @@ namespace Leggau.UI
                 builder.AppendLine(session.ActivePresence != null
                     ? $"Presenca monitorada: {session.ActivePresence.participantCount} participante(s)"
                     : "Presenca monitorada pronta para heartbeat.");
+
+                if (session.ActivePresence != null &&
+                    !string.IsNullOrWhiteSpace(session.ActivePresence.operationalMessage))
+                {
+                    builder.AppendLine(session.ActivePresence.operationalMessage);
+                }
             }
             else
             {
