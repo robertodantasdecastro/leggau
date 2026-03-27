@@ -136,6 +136,7 @@ type InviteRecord = {
   minorProfileId?: string | null;
   status: string;
   acceptedAt?: string | null;
+  expiresAt?: string | null;
   createdAt: string;
   metadata?: Record<string, string | number | boolean | null> | null;
 };
@@ -216,6 +217,9 @@ type RoomAccessRequirements = {
   adminApprovalStatus: string;
   presenceApprovalStatus: string;
   therapistLinkingStatus: string;
+  roomInviteStatus?: string | null;
+  activeInviteId?: string | null;
+  inviteExpiresAt?: string | null;
   policySnapshot?: PolicySnapshot | null;
   accessSource?: string | null;
   blockedBy: string[];
@@ -242,6 +246,9 @@ type MonitoredRoom = {
   ageBand: string;
   shell: string;
   presenceMode: string;
+  inviteStatus?: string | null;
+  activeInviteId?: string | null;
+  inviteExpiresAt?: string | null;
 };
 
 type PresenceParticipant = {
@@ -399,6 +406,7 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
   const [lookupMinorId, setLookupMinorId] = useState('');
   const [scopeDraft, setScopeDraft] = useState('{"focus":"rotina","channel":"portal"}');
   const [inviteTargetEmail, setInviteTargetEmail] = useState('terapeuta@exemplo.com');
+  const [runtimeInviteRoomId, setRuntimeInviteRoomId] = useState('');
   const [policyDraft, setPolicyDraft] = useState({
     roomsEnabled: true,
     presenceEnabled: true,
@@ -450,6 +458,19 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
       setSelectedMinorId(familyOverview.minorProfiles[0].id);
     }
   }, [familyOverview, selectedMinorId]);
+
+  useEffect(() => {
+    if (!selectedRuntime?.items?.length) {
+      setRuntimeInviteRoomId('');
+      return;
+    }
+
+    if (selectedRuntime.items.some((room) => room.id === runtimeInviteRoomId)) {
+      return;
+    }
+
+    setRuntimeInviteRoomId(selectedRuntime.items[0].id);
+  }, [runtimeInviteRoomId, selectedRuntime]);
 
   useEffect(() => {
     if (!lookupMinorId && lookupFamily?.minorProfiles?.length) {
@@ -953,10 +974,56 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
         },
       });
       await loadInvites(session, selectedMinor.id);
-      setStatus('Convite criado. O profissional ja pode aceitar pelo shell dele.');
+      setStatus('Convite de care-team criado. O profissional ja pode aceitar pelo shell dele.');
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel criar o convite.');
       setStatus('O convite rastreavel nao foi criado.');
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function handleCreateRoomInvite() {
+    if (!session || !selectedMinor || !familyOverview?.parent || !runtimeInviteRoomId) {
+      return;
+    }
+
+    const room = selectedRuntime?.items?.find((item) => item.id === runtimeInviteRoomId);
+    if (!room) {
+      return;
+    }
+
+    setBusyKey('create-room-invite');
+    setError('');
+    setStatus('Emitindo convite terapeutico para a sala monitorada...');
+
+    try {
+      await apiRequest('/invites', {
+        method: 'POST',
+        token: session.accessToken,
+        body: {
+          inviteType: 'monitored_room',
+          targetEmail: inviteTargetEmail,
+          targetActorRole: 'therapist',
+          minorProfileId: selectedMinor.id,
+          metadata: {
+            parentEmail: familyOverview.parent.email,
+            parentName: familyOverview.parent.name,
+            minorName: selectedMinor.name,
+            minorRole: selectedMinor.role,
+            ageBand: selectedMinor.ageBand,
+            roomId: room.id,
+            roomTitle: room.title,
+          },
+        },
+      });
+      await loadMinorWorkspace(session, selectedMinor.id);
+      setStatus('Convite de sala emitido. O terapeuta ja pode aceitar pelo shell dele.');
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error ? requestError.message : 'Nao foi possivel emitir o convite de sala.',
+      );
+      setStatus('O convite terapeutico de sala nao foi criado.');
     } finally {
       setBusyKey('');
     }
@@ -994,6 +1061,39 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel aceitar o convite.');
       setStatus('O convite nao foi aceito.');
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function handleRevokeInvite(invite: InviteRecord) {
+    if (!session) {
+      return;
+    }
+
+    setBusyKey(`revoke-invite-${invite.id}`);
+    setError('');
+    setStatus('Revogando convite monitorado...');
+
+    try {
+      await apiRequest(`/invites/${invite.id}`, {
+        method: 'PATCH',
+        token: session.accessToken,
+        body: {
+          status: 'revoked',
+        },
+      });
+
+      if (isParent && selectedMinorId) {
+        await loadMinorWorkspace(session, selectedMinorId);
+      } else {
+        await loadInvites(session, invite.minorProfileId ?? undefined);
+      }
+
+      setStatus('Convite atualizado com sucesso.');
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel revogar o convite.');
+      setStatus('O convite nao foi revogado.');
     } finally {
       setBusyKey('');
     }
@@ -1276,6 +1376,12 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
   const inviteInbox = isParent
     ? invites.filter((invite) => invite.creatorActorRole === 'parent_guardian')
     : invites.filter((invite) => invite.targetEmail === session?.user.email);
+  const careTeamInvites = inviteInbox.filter((invite) => invite.inviteType === 'care_team_invite');
+  const monitoredRoomInvites = inviteInbox.filter((invite) => invite.inviteType === 'monitored_room');
+  const selectedRuntimeInvite =
+    monitoredRoomInvites.find(
+      (invite) => String(invite.metadata?.roomId ?? '') === runtimeInviteRoomId,
+    ) ?? null;
   const parentRuntimeRequirements = selectedRuntime?.requirements ?? null;
   const therapistRuntimeRequirements = lookupRuntime?.requirements ?? null;
   const parentTasks = [
@@ -1295,9 +1401,9 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
     },
     {
       title: 'Convites enviados',
-      done: inviteInbox.some((invite) => invite.status === 'accepted'),
-      detail: inviteInbox.length
-        ? `${inviteInbox.length} convites rastreaveis em andamento com terapeutas.`
+      done: careTeamInvites.some((invite) => invite.status === 'accepted'),
+      detail: careTeamInvites.length
+        ? `${careTeamInvites.length} convites rastreaveis em andamento com terapeutas.`
         : 'Nenhum convite emitido ainda para a equipe de cuidado.',
     },
     {
@@ -2147,6 +2253,43 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                       <span>{selectedRuntime?.reason ?? 'Atualize para carregar o estado monitorado.'}</span>
                     </div>
                   </div>
+                  <div className="grid3 responsive">
+                    <div className="miniCard">
+                      <span className="microLabel">Convite terapeutico</span>
+                      <strong>
+                        {slugToLabel(
+                          selectedRuntimeInvite?.status ??
+                            parentRuntimeRequirements?.roomInviteStatus ??
+                            'missing',
+                        )}
+                      </strong>
+                      <span>
+                        {selectedRuntimeInvite?.expiresAt
+                          ? `Expira em ${formatDate(selectedRuntimeInvite.expiresAt)}`
+                          : 'Nenhum convite de sala emitido para este contexto ainda.'}
+                      </span>
+                    </div>
+                    <div className="miniCard">
+                      <span className="microLabel">Estado adulto</span>
+                      <strong>
+                        {selectedRuntimeInvite?.status === 'accepted'
+                          ? 'Terapeuta autorizado'
+                          : selectedRuntimeInvite?.status === 'pending'
+                            ? 'Convite enviado'
+                            : 'Somente responsavel'}
+                      </strong>
+                      <span>O terapeuta so entra depois do aceite e com todos os gates aprovados.</span>
+                    </div>
+                    <div className="miniCard">
+                      <span className="microLabel">Ultimo invite</span>
+                      <strong>{selectedRuntimeInvite?.id ? selectedRuntimeInvite.id : 'Nao emitido'}</strong>
+                      <span>
+                        {selectedRuntimeInvite?.metadata?.roomTitle
+                          ? `Sala ${String(selectedRuntimeInvite.metadata.roomTitle)}`
+                          : 'Escolha uma sala para liberar participacao clinica.'}
+                      </span>
+                    </div>
+                  </div>
                   {parentRuntimeRequirements?.blockedBy?.length ? (
                     <div className="chipRow">
                       {parentRuntimeRequirements.blockedBy.map((item) => (
@@ -2166,6 +2309,10 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                               <span className="microLabel">{room.presenceMode}</span>
                               <strong>{room.title}</strong>
                               <span>{room.description}</span>
+                              <span>
+                                Convite: {slugToLabel(room.inviteStatus ?? 'missing')}
+                                {room.inviteExpiresAt ? ` · expira ${formatDate(room.inviteExpiresAt)}` : ''}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -2205,6 +2352,71 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                       )}
                     </div>
                   </div>
+                  <div className="toolbar">
+                    <label className="field grow">
+                      <span>Email do terapeuta</span>
+                      <input
+                        className="input"
+                        value={inviteTargetEmail}
+                        onChange={(event) => setInviteTargetEmail(event.target.value)}
+                        placeholder="terapeuta@exemplo.com"
+                      />
+                    </label>
+                    <label className="field grow">
+                      <span>Sala para convite terapeutico</span>
+                      <select
+                        className="input"
+                        value={runtimeInviteRoomId}
+                        onChange={(event) => setRuntimeInviteRoomId(event.target.value)}
+                      >
+                        <option value="">Selecione uma sala</option>
+                        {(selectedRuntime?.items ?? []).map((room) => (
+                          <option key={room.id} value={room.id}>
+                            {room.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button
+                      className="button primary"
+                      disabled={!session || !selectedMinor || !runtimeInviteRoomId || busyKey === 'create-room-invite'}
+                      onClick={() => void handleCreateRoomInvite()}
+                      type="button"
+                    >
+                      {busyKey === 'create-room-invite' ? 'Enviando...' : 'Emitir convite de sala'}
+                    </button>
+                  </div>
+                  {monitoredRoomInvites.length ? (
+                    <div className="stack">
+                      {monitoredRoomInvites.map((invite) => (
+                        <div key={invite.id} className="miniCard">
+                          <span className="microLabel">{invite.id}</span>
+                          <strong>{String(invite.metadata?.roomTitle ?? 'Sala monitorada')}</strong>
+                          <span>
+                            {slugToLabel(invite.status)} · {String(invite.metadata?.minorName ?? selectedMinor.name)} ·{' '}
+                            {invite.expiresAt ? `expira ${formatDate(invite.expiresAt)}` : 'sem expiracao'}
+                          </span>
+                          <div className="ctaRow">
+                            <span className="badge">{invite.targetEmail}</span>
+                            {invite.status !== 'revoked' && invite.status !== 'expired' ? (
+                              <button
+                                className="button ghost"
+                                disabled={busyKey === `revoke-invite-${invite.id}`}
+                                onClick={() => void handleRevokeInvite(invite)}
+                                type="button"
+                              >
+                                {busyKey === `revoke-invite-${invite.id}` ? 'Revogando...' : 'Revogar convite'}
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="emptyState">
+                      Nenhum convite terapeutico de sala emitido ainda para este perfil.
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="emptyState">
@@ -2214,7 +2426,7 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
             </article>
 
             <article className="stageCard card">
-              <h2>Convites para terapeutas</h2>
+              <h2>Convites de care-team</h2>
               <p className="subtle">
                 Use convites rastreaveis para puxar o profissional certo para o fluxo de `care-team`.
               </p>
@@ -2237,9 +2449,9 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                   {busyKey === 'create-invite' ? 'Criando...' : 'Enviar convite rastreavel'}
                 </button>
               </div>
-              {inviteInbox.length ? (
+              {careTeamInvites.length ? (
                 <div className="stack">
-                  {inviteInbox.map((invite) => (
+                  {careTeamInvites.map((invite) => (
                     <div key={invite.id} className="miniCard">
                       <span className="microLabel">{invite.id}</span>
                       <strong>{invite.targetEmail}</strong>
@@ -2255,7 +2467,7 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                 </div>
               ) : (
                 <div className="emptyState">
-                  Nenhum convite emitido ainda para terapeutas.
+                  Nenhum convite de care-team emitido ainda para terapeutas.
                 </div>
               )}
             </article>
@@ -2280,8 +2492,15 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                         {invite.targetEmail} · {invite.status} · {formatDate(invite.createdAt)}
                       </span>
                       <span>
-                        Faixa {String(invite.metadata?.ageBand ?? 'n/d')} · papel {String(invite.metadata?.minorRole ?? 'child')}
+                        {slugToLabel(invite.inviteType)} · faixa {String(invite.metadata?.ageBand ?? 'n/d')} · papel{' '}
+                        {String(invite.metadata?.minorRole ?? 'child')}
                       </span>
+                      {invite.metadata?.roomTitle ? (
+                        <span>
+                          Sala {String(invite.metadata.roomTitle)} ·{' '}
+                          {invite.expiresAt ? `expira ${formatDate(invite.expiresAt)}` : 'sem expiracao'}
+                        </span>
+                      ) : null}
                       <div className="ctaRow">
                         <button
                           className="button secondary"
@@ -2293,7 +2512,9 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                             ? 'Aceitando...'
                             : invite.status === 'accepted'
                               ? 'Convite aceito'
-                              : 'Aceitar e carregar familia'}
+                              : invite.inviteType === 'monitored_room'
+                                ? 'Aceitar convite de sala'
+                                : 'Aceitar e carregar familia'}
                         </button>
                       </div>
                     </div>
@@ -2473,12 +2694,21 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                   </span>
                 </div>
                 <div className="miniCard">
-                  <span className="microLabel">Policy efetiva</span>
-                  <strong>{lookupPolicy ? `${lookupPolicy.minorRole} · ${lookupPolicy.ageBand}` : 'Aguardando leitura'}</strong>
+                  <span className="microLabel">Convite de sala</span>
+                  <strong>{slugToLabel(therapistRuntimeRequirements?.roomInviteStatus ?? 'missing')}</strong>
                   <span>
-                    rooms {lookupPolicy?.roomsEnabled ? 'on' : 'off'} · presence {lookupPolicy?.presenceEnabled ? 'on' : 'off'} · therapist {lookupPolicy?.therapistParticipationAllowed ? 'on' : 'off'}
+                    {therapistRuntimeRequirements?.inviteExpiresAt
+                      ? `Expira em ${formatDate(therapistRuntimeRequirements.inviteExpiresAt)}`
+                      : 'Sem convite aceito para este runtime ainda.'}
                   </span>
                 </div>
+              </div>
+              <div className="miniCard">
+                <span className="microLabel">Policy efetiva</span>
+                <strong>{lookupPolicy ? `${lookupPolicy.minorRole} · ${lookupPolicy.ageBand}` : 'Aguardando leitura'}</strong>
+                <span>
+                  rooms {lookupPolicy?.roomsEnabled ? 'on' : 'off'} · presence {lookupPolicy?.presenceEnabled ? 'on' : 'off'} · therapist {lookupPolicy?.therapistParticipationAllowed ? 'on' : 'off'}
+                </span>
               </div>
               <div className="miniCard highlight">
                 <span className="microLabel">Estado do runtime</span>
@@ -2504,6 +2734,10 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                           <span className="microLabel">{room.presenceMode}</span>
                           <strong>{room.title}</strong>
                           <span>{room.description}</span>
+                          <span>
+                            Convite: {slugToLabel(room.inviteStatus ?? 'missing')}
+                            {room.inviteExpiresAt ? ` · expira ${formatDate(room.inviteExpiresAt)}` : ''}
+                          </span>
                         </div>
                       ))}
                     </div>

@@ -551,6 +551,12 @@ namespace Leggau.UI
                 {
                     builder.AppendLine($"Bloqueios: {string.Join(", ", session.RoomRequirements.blockedBy)}");
                 }
+
+                if (!string.IsNullOrWhiteSpace(session.RoomRequirements.roomInviteStatus) &&
+                    session.RoomRequirements.roomInviteStatus != "missing")
+                {
+                    builder.AppendLine($"Convite terapeutico: {session.RoomRequirements.roomInviteStatus}");
+                }
             }
 
             if (session.SelectedMinorPolicy == null)
@@ -582,6 +588,10 @@ namespace Leggau.UI
             {
                 var room = session.AvailableRooms[index];
                 builder.AppendLine($"• {room.title} · {room.presenceMode}");
+                if (!string.IsNullOrWhiteSpace(room.inviteStatus) && room.inviteStatus != "missing")
+                {
+                    builder.AppendLine($"  convite {room.inviteStatus}");
+                }
             }
 
             if (session.ActiveRoom != null)
@@ -602,6 +612,41 @@ namespace Leggau.UI
             else
             {
                 builder.AppendLine("Presenca monitorada permanece oculta pela policy.");
+            }
+
+            var hasAcceptedInvite = false;
+            var hasPendingInvite = false;
+            for (var index = 0; index < session.AvailableRooms.Length; index += 1)
+            {
+                var room = session.AvailableRooms[index];
+                if (room == null || string.IsNullOrWhiteSpace(room.inviteStatus))
+                {
+                    continue;
+                }
+
+                if (room.inviteStatus == "accepted")
+                {
+                    hasAcceptedInvite = true;
+                    break;
+                }
+
+                if (room.inviteStatus == "pending")
+                {
+                    hasPendingInvite = true;
+                }
+            }
+
+            if (hasAcceptedInvite)
+            {
+                builder.AppendLine("Supervisao: terapeuta autorizado.");
+            }
+            else if (hasPendingInvite)
+            {
+                builder.AppendLine("Supervisao: convite terapeutico enviado.");
+            }
+            else
+            {
+                builder.AppendLine("Supervisao: somente responsavel.");
             }
 
             return builder.ToString();

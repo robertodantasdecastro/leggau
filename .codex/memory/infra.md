@@ -64,12 +64,19 @@
 - `GET /api/moderation/cases`
 - `POST /api/moderation/cases`
 - `PATCH /api/moderation/cases/:id`
+- `GET /api/invites`
+- `POST /api/invites`
+- `POST /api/invites/:id/accept`
+- `PATCH /api/invites/:id`
 - `POST /api/media-verification`
 - `GET /api/rooms`
 - `POST /api/rooms/:id/join`
 - `POST /api/rooms/:id/leave`
 - `POST /api/presence/heartbeat`
 - `GET /api/presence/:roomId`
+- `GET /api/admin/rooms/presence`
+- `GET /api/admin/rooms/events`
+- `PATCH /api/admin/invites/:id`
 - `GET /manifest.webmanifest`
 - `GET /sw.js`
 
@@ -94,9 +101,21 @@
   - `open -na '/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors/6000.4.0f1/Unity.app' --args -projectPath '/Volumes/SSDExterno/Desenvolvimento/Leggau/mobile'`
 - Unity bootstrap runtime probe path is:
   - `./.data/runtime/unity/bootstrap-playmode-status.json`
-- Latest validated probe snapshot reached:
-  - `state=ready`
-  - `status=Dashboard carregado.`
+- Latest validated probe snapshots reached:
+  - child shell:
+    - `state=ready`
+    - `status=Shell carregada.`
+    - `minorRole=child`
+    - `ageBand=6-9`
+    - `activeShell=child`
+    - `availableRoomCount=1`
+  - adolescent shell:
+    - `state=ready`
+    - `status=Shell carregada.`
+    - `minorRole=adolescent`
+    - `ageBand=13-17`
+    - `activeShell=adolescent`
+    - `availableRoomCount=2`
 - After the persistence/resume cut on `2026-03-26`, the same probe path again reached:
   - `state=ready`
   - `status=Dashboard carregado.`
@@ -213,10 +232,19 @@
   - policy-governed presence and room affordances are now validated through `scripts/test-monitored-interactions.mjs`
   - guardian/therapist/admin supervision gates are now validated through `scripts/test-monitored-supervision.mjs`
   - admin runtime operations now include `/api/admin/interaction-policies/:minorProfileId` and `/api/admin/rooms/presence`
+  - monitored room invites now gate therapist runtime participation and are validated through `scripts/test-room-runtime-invites.mjs`
+  - admin runtime operations now also include `/api/admin/rooms/events` and `/api/admin/invites/:id`
   - continued admin/compliance/billing hardening remains the companion track around the live governance stack
+- The VM edge proxy was corrected on `2026-03-27` so the public gateway again validates:
+  - `/`
+  - `/pais`
+  - `/profissionais`
+  - `/manifest.webmanifest`
+  - `/sw.js`
 - VM memory and docs sync should continue through `./scripts/sync-codex-to-vm.sh`
 - Full Phase 0 promotion should use:
   - `./scripts/promote-stack-to-vm.sh`
+- `scripts/deploy-vm.sh` now force-recreates `api`, `portal`, `admin` and `nginx`, so changes under `infra/` apply on the VM without a separate manual restart step
 - Canonical validation for the current supervision slice now includes:
   - `node scripts/test-social-auth-security.mjs`
   - `node scripts/test-monitored-interactions.mjs`

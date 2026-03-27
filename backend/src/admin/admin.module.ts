@@ -12,6 +12,7 @@ import { FamiliesModule } from '../families/families.module';
 import { HealthModule } from '../health/health.module';
 import { IdentityProvidersModule } from '../identity-providers/identity-providers.module';
 import { InteractionPoliciesModule } from '../interaction-policies/interaction-policies.module';
+import { InvitesModule } from '../invites/invites.module';
 import { LegalModule } from '../legal/legal.module';
 import { MediaVerificationModule } from '../media-verification/media-verification.module';
 import { RoomsModule } from '../rooms/rooms.module';
@@ -30,6 +31,7 @@ import { AdminTokenGuard } from './admin-token.guard';
     HealthModule,
     IdentityProvidersModule,
     InteractionPoliciesModule,
+    InvitesModule,
     LegalModule,
     MediaVerificationModule,
     RoomsModule,

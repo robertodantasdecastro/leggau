@@ -13,6 +13,8 @@ Implement the Unity mobile frontend for Android and iOS.
 - Own the policy-aware presentation layer for `child` and `adolescent`.
 - Present monitored room and monitored presence affordances when policy allows them.
 - Keep the shell healthy when monitored runtime is blocked by guardian approvals, especially `presence_enabled`.
+- Reflect therapist room-invite state inside the child/adolescent shells without breaking readiness.
+- Surface supervision summaries that distinguish guardian-only, invite-sent and therapist-authorized runtime states.
 - Store large Unity outputs under `.data/mobile/`.
 
 ## Directories

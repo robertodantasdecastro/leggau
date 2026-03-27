@@ -12,7 +12,7 @@ export class RoomsController {
   @Get('rooms')
   list(
     @Query('minorProfileId') minorProfileId: string,
-    @Req() request: { appSession: { subjectId: string; actorRole: string } },
+    @Req() request: { appSession: { subjectId: string; actorRole: string; email: string } },
   ) {
     return this.roomsService.list(minorProfileId, request.appSession);
   }
@@ -21,7 +21,7 @@ export class RoomsController {
   join(
     @Param('roomId') roomId: string,
     @Body() dto: RoomActionDto,
-    @Req() request: { appSession: { subjectId: string; actorRole: string } },
+    @Req() request: { appSession: { subjectId: string; actorRole: string; email: string } },
   ) {
     return this.roomsService.join(roomId, dto, request.appSession);
   }
@@ -30,7 +30,7 @@ export class RoomsController {
   leave(
     @Param('roomId') roomId: string,
     @Body() dto: RoomActionDto,
-    @Req() request: { appSession: { subjectId: string; actorRole: string } },
+    @Req() request: { appSession: { subjectId: string; actorRole: string; email: string } },
   ) {
     return this.roomsService.leave(roomId, dto, request.appSession);
   }
@@ -38,7 +38,7 @@ export class RoomsController {
   @Post('presence/heartbeat')
   heartbeat(
     @Body() dto: PresenceHeartbeatDto,
-    @Req() request: { appSession: { subjectId: string; actorRole: string } },
+    @Req() request: { appSession: { subjectId: string; actorRole: string; email: string } },
   ) {
     return this.roomsService.heartbeat(dto, request.appSession);
   }
@@ -47,7 +47,7 @@ export class RoomsController {
   getPresence(
     @Param('roomId') roomId: string,
     @Query('minorProfileId') minorProfileId: string,
-    @Req() request: { appSession: { subjectId: string; actorRole: string } },
+    @Req() request: { appSession: { subjectId: string; actorRole: string; email: string } },
   ) {
     return this.roomsService.getPresence(roomId, minorProfileId, request.appSession);
   }

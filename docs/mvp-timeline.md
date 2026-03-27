@@ -5,7 +5,7 @@
 - Timeline baseline: `16 weeks`
 - Cadence: `sustained`
 - Target: `closed beta`
-- Current checkpoint date: `2026-03-26`
+- Current checkpoint date: `2026-03-27`
 
 ## Current Phase Status
 
@@ -144,10 +144,23 @@
   - Unity validation now explicitly covers:
     - `child` shell with `presence_enabled` revoked still reaching `state=ready` and `availableRoomCount=0`
     - `child` shell restored to healthy state with `availableRoomCount=1`
+- Completed in slice 3:
+  - `invites` now supports `inviteType=monitored_room` as the room-scoped runtime control for therapists
+  - therapist room participation now requires, in addition to the existing gates, an active accepted room invite scoped by `minorProfileId + roomId`
+  - `GET /api/rooms`, `POST /api/rooms/:id/join` and `POST /api/presence/heartbeat` now expose invite-aware requirements and blocked reasons
+  - admin now exposes runtime events through:
+    - `GET /api/admin/rooms/events`
+  - admin can now revoke room invites emergencially through:
+    - `PATCH /api/admin/invites/:id`
+  - `/pais` now emits and revokes monitored room invites for therapists
+  - `/profissionais` now exposes a runtime invite inbox with pending, accepted, expired and revoked states
+  - `web/admin` now surfaces runtime invite events, blocked joins and heartbeat failures in the live governance console
+  - `scripts/test-room-runtime-invites.mjs` now validates invite creation, acceptance, expiry and emergency revoke against `vm2`
+  - the VM edge proxy was corrected so `/`, `/pais`, `/profissionais`, `/manifest.webmanifest` and `/sw.js` are healthy again after deployment
 - Remaining:
-  - invite-driven room entry refinement beyond the current structured-room model
   - moderation pipeline deeper than the current supervision and audit slice
-  - richer governed runtime behaviors beyond monitored presence
+  - richer governed runtime behaviors beyond monitored presence and explicit room invites
+  - deeper escalation/supervision flows around the runtime timeline and emergency controls
 
 ### Phase F — Billing, admin and beta readiness
 
@@ -164,8 +177,8 @@
 
 ## Next Execution Step
 
-1. Continue Phase E from the now-live supervision slice on top of rooms/presence.
-2. Expand moderation and governed-runtime controls beyond the current structured presence model.
+1. Continue Phase E from the now-live room-invite slice on top of rooms/presence and supervision gates.
+2. Expand moderation and governed-runtime controls beyond the current structured presence plus explicit invite model.
 3. Preserve the completed Phase C portal/admin surfaces and the completed Phase D Unity shells as stable foundations.
 4. Keep Phase F admin/compliance/billing hardening as a parallel operational thread on top of the live governance console.
 

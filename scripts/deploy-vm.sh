@@ -13,5 +13,5 @@ chmod +x ./scripts/bootstrap-ssd-storage.sh
 if [[ -x ./scripts/sync-cloudflare-dev-alias.sh ]]; then
   ./scripts/sync-cloudflare-dev-alias.sh || true
 fi
-docker compose up -d --build
+docker compose up -d --build --force-recreate api portal admin nginx
 docker compose ps

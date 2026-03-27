@@ -117,6 +117,7 @@ Use `.env.example` as the non-sensitive source of truth.
 - `parent-approvals`
 - `policy-versions`
 - `interaction-policies`
+- `rooms`
 - `identity-providers`
 - `media-verification`
 - `audit`
@@ -133,7 +134,7 @@ Use `.env.example` as the non-sensitive source of truth.
 
 ## Current Environment Status
 
-As of `2026-03-26`:
+As of `2026-03-27`:
 
 - Official dev backend target is `vm2` at `10.211.55.22`.
 - Backend infrastructure must run on `vm2` under `~/leggau`.
@@ -187,12 +188,15 @@ As of `2026-03-26`:
   - the age-profile presentation system now differentiates `6-9`, `10-12` and `13-17`
   - the runtime now persists `SelectedMinor`, `ResolvedAgeBand`, `ActiveShell` and the resolved policy snapshot
   - the VM-backed probe now validates both `child` and `adolescent` shells at `state=ready`
-- Phase E is now in progress through the first two monitored-interaction slices:
+- Phase E is now in progress through the first three monitored-interaction slices:
   - backend now exposes `rooms` and `presence` routes on top of the policy-aware multiactor runtime
   - Unity now consumes monitored room catalog and monitored presence state inside the same `Bootstrap.unity`
   - `presence_enabled` is now a hard gate for room listing, join and heartbeat
   - therapist runtime access now also requires active `therapist_linking` and `therapistParticipationAllowed=true`
   - admin now owns emergency policy override and live runtime visibility through `/api/admin/interaction-policies/:minorProfileId` and `/api/admin/rooms/presence`
+  - therapist runtime participation now also requires an accepted `monitored_room` invite scoped by `minorProfileId + roomId`
+  - admin now owns the runtime-event timeline through `/api/admin/rooms/events` and emergency room-invite revoke through `/api/admin/invites/:id`
+  - the VM edge proxy was corrected so `/`, `/pais`, `/profissionais`, `/manifest.webmanifest` and `/sw.js` remain healthy after the room-invite rollout
   - adult web/admin remain in maintenance and continued polish while supervision and moderation grow around the monitored runtime
 - Mac toolchain status:
   - Docker: ready
@@ -211,6 +215,7 @@ As of `2026-03-26`:
 - Latest validated Unity runtime probe against the VM reached:
   - child shell:
     - `state=ready`
+    - `status=Shell carregada.`
     - `childName=Gau`
     - `minorRole=child`
     - `ageBand=6-9`
@@ -218,6 +223,7 @@ As of `2026-03-26`:
     - `availableRoomCount=1`
   - adolescent shell:
     - `state=ready`
+    - `status=Shell carregada.`
     - `childName=Gau Teen`
     - `minorRole=adolescent`
     - `ageBand=13-17`

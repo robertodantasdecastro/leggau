@@ -13,6 +13,7 @@ Keep the frontend and backend contract aligned and stable across local, VM and p
 - Validate social auth, provider governance and media-verification flows.
 - Validate invite ownership, parent-approval visibility and adolescent-compatible progress flows.
 - Validate admin-governance flows for filtered care-team review, audit, incidents and moderation.
+- Validate room-invite and runtime-timeline flows for guardians, therapists and admins.
 - Keep the live `web/portal` parent and therapist shells aligned with the backend responses they now consume in production-like VM routing.
 - Keep API contract changes versioned and documented.
 
@@ -57,6 +58,9 @@ Keep the frontend and backend contract aligned and stable across local, VM and p
   - `/api/incidents`
   - `/api/moderation/cases`
 - Phase E monitored interaction must also stay aligned with:
+  - `/api/invites`
+  - `/api/invites/:id/accept`
+  - `/api/invites/:id`
   - `/api/rooms`
   - `/api/rooms/:id/join`
   - `/api/rooms/:id/leave`
@@ -65,3 +69,5 @@ Keep the frontend and backend contract aligned and stable across local, VM and p
   - `/api/interaction-policies/:minorProfileId`
   - `/api/admin/interaction-policies/:minorProfileId`
   - `/api/admin/rooms/presence`
+  - `/api/admin/rooms/events`
+  - `/api/admin/invites/:id`

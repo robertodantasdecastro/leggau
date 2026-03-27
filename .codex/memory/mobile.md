@@ -47,16 +47,16 @@
 
 ## Immediate Next UI Targets
 
-1. Child shell and adolescent shell split
-2. Age-profile presentation system
-3. Policy-aware interaction gates
+1. Invite-aware monitored runtime escalation
+2. Stronger supervision summaries per shell
+3. Deeper governed-runtime behaviors beyond room catalog and heartbeat
 4. More interactive first-home experience
 5. Check-in and reward refresh
-6. Keep compatibility with `guardian_links`, `policy_versions` and persistent sessions while Phase C starts on web
+6. Keep compatibility with `guardian_links`, `policy_versions`, room invites and persistent sessions while adult surfaces keep evolving
 
 ## Current Recommended Next Step
 
-- Use the generated bootstrap scene as the base for the first real mobile flow and runtime validation inside the editor.
+- Continue the current monitored-runtime work from the now-live room-invite slice.
 - Keep builds, exported assets and Unity cache pointed to SSD-backed directories inside the repository.
 - Gau asset source now exists at `mobile/Assets/Art/Characters/Gau/Source/Gau.blend`
 - Gau Unity export now exists at `mobile/Assets/Art/Characters/Gau/Exports/Gau.fbx`
@@ -190,10 +190,15 @@
   - age-profile presentation system on top of the already-compatible Phase B backend
   - policy-aware shell gating driven by `interaction-policies`
   - persisted minor selection and shell restoration
-- Phase E is now in progress for mobile through the first two monitored-interaction slices:
+- Phase E is now in progress for mobile through the first three monitored-interaction slices:
   - monitored room surfaces now live inside `Bootstrap.unity`
   - policy-governed presence and room affordances now resolve after shell selection
   - `presence_enabled` now acts as a hard runtime gate while `therapist_linking` now gates therapist participation
+  - therapist participation now also depends on an accepted `monitored_room` invite for the selected room
+  - supervision summaries now distinguish:
+    - somente responsavel
+    - convite terapeutico enviado
+    - terapeuta autorizado
   - blocked room access no longer breaks bootstrap readiness; the child shell still reaches `state=ready` and explains the missing gate
   - compatibility remains intact with the adult web/admin governance layer
 - The Unity workspace had to be reopened on `2026-03-26` through the canonical `-projectPath` flow after a temporary nested project folder appeared under `mobile/`; that stray folder was removed
@@ -224,6 +229,10 @@
 - The second monitored-interaction slice now also validates:
   - `child` shell with `presence_enabled` revoked still reaches `state=ready` with `availableRoomCount=0`
   - restoring the approval reopens the healthy child shell path with `availableRoomCount=1`
+- The third monitored-interaction slice now also validates:
+  - `child` shell reaches `state=ready` while exposing room-invite supervision state without breaking the shell
+  - `adolescent` shell reaches `state=ready` while consuming room-invite-aware runtime requirements
+  - therapist runtime participation can move through `pending`, `accepted`, `expired` and `revoked` invite states without breaking bootstrap
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination
 - `~/Library/Application Support/UnityHub/secondaryInstallPath.json` now points to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors`

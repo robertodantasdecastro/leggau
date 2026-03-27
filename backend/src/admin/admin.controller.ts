@@ -14,6 +14,8 @@ import { FamiliesService } from '../families/families.service';
 import { UpsertAuthProviderConfigDto } from '../identity-providers/dto/upsert-auth-provider-config.dto';
 import { UpdateInteractionPolicyDto } from '../interaction-policies/dto/update-interaction-policy.dto';
 import { InteractionPoliciesService } from '../interaction-policies/interaction-policies.service';
+import { InvitesService } from '../invites/invites.service';
+import { UpdateInviteDto } from '../invites/dto/update-invite.dto';
 import { LegalService } from '../legal/legal.service';
 import { RoomsService } from '../rooms/rooms.service';
 import { AdminService } from './admin.service';
@@ -28,6 +30,7 @@ export class AdminController {
     private readonly legalService: LegalService,
     private readonly familiesService: FamiliesService,
     private readonly interactionPoliciesService: InteractionPoliciesService,
+    private readonly invitesService: InvitesService,
     private readonly roomsService: RoomsService,
   ) {}
 
@@ -187,6 +190,31 @@ export class AdminController {
       actorRole,
       accessSource,
     });
+  }
+
+  @Get('rooms/events')
+  monitoredRuntimeEvents(
+    @Query('roomId') roomId: string | undefined,
+    @Query('minorProfileId') minorProfileId: string | undefined,
+    @Query('actorRole') actorRole: string | undefined,
+    @Query('eventType') eventType: string | undefined,
+    @Req() request: { adminSession: { subjectId: string; actorRole: string } },
+  ) {
+    return this.roomsService.listRuntimeEventsForAdmin(request.adminSession, {
+      roomId,
+      minorProfileId,
+      actorRole,
+      eventType,
+    });
+  }
+
+  @Patch('invites/:id')
+  updateInvite(
+    @Param('id') id: string,
+    @Body() body: UpdateInviteDto,
+    @Req() request: { adminSession: { subjectId: string; actorRole: string } },
+  ) {
+    return this.invitesService.updateAsAdmin(id, body, request.adminSession);
   }
 
   @Post('dev/cloudflare-alias/sync')

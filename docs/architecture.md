@@ -35,7 +35,7 @@
 2. O terapeuta entra por fluxo próprio com senha ou login rápido Google/Apple e só acessa dados após vínculo aprovado pelo responsável e pelo admin.
 3. A criança/adolescente entra no app Unity apenas com vínculo e política válidos.
 4. O app carrega perfil, faixa etária, atividades, progresso, recompensas e Gau.
-5. Interações, salas e comunicação dependem de `InteractionPolicy`.
+5. Interações, salas e comunicação dependem de `InteractionPolicy`; participacao terapeutica em runtime monitorado tambem depende de convite explicito por sala.
 6. Admin opera usuários, provedores de identidade, vínculos, billing, moderação, auditoria, incidentes e jobs de verificação.
 
 ## Dados persistidos
@@ -113,3 +113,10 @@
   - `GET/PATCH /api/interaction-policies/:minorProfileId` agora respeita matriz de autorizacao com guardian-write e therapist-read-only
   - `GET/PATCH /api/admin/interaction-policies/:minorProfileId` e `GET /api/admin/rooms/presence` agora fecham a governanca operacional do runtime
   - portal e admin agora consomem `requirements`, `blockedBy`, `accessSource` e snapshots de policy para explicar gates sem falha generica
+- A terceira fatia da Fase E agora tambem esta ativa:
+  - `invites` agora suporta `inviteType=monitored_room` como controle operacional fino de runtime terapeutico
+  - terapeuta so participa de uma sala quando, alem dos gates globais, existe convite de sala aceito e ainda valido para aquele `minorProfileId + roomId`
+  - `GET /api/admin/rooms/events` projeta a timeline operacional do runtime a partir de `audit_events`
+  - `/pais` agora emite e revoga convites de sala por menor e por sala, enquanto `/profissionais` agora aceita esses convites no inbox de runtime
+  - `web/admin` agora opera eventos de runtime, bloqueios de join/heartbeat e revogacao emergencial de convite
+  - o proxy Nginx da `vm2` foi corrigido para manter o portal PWA, o admin e a borda `/` funcionando com o roteamento atual

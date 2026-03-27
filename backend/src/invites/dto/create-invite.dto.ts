@@ -1,4 +1,4 @@
-import { IsEmail, IsObject, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsISO8601, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class CreateInviteDto {
   @IsString()
@@ -18,4 +18,8 @@ export class CreateInviteDto {
   @IsOptional()
   @IsObject()
   metadata?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsISO8601()
+  expiresAt?: string;
 }

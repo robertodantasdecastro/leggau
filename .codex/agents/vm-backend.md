@@ -36,6 +36,9 @@ Own backend, reverse proxy, persistence and operational scripts on `vm2`.
 - `/api/audit/events`
 - `/api/incidents`
 - `/api/moderation/cases`
+- `/api/invites`
+- `/api/invites/:id/accept`
+- `/api/invites/:id`
 - `/api/admin/auth/providers`
 - `/api/admin/media-verification/jobs`
 - `/api/media-verification`
@@ -47,6 +50,8 @@ Own backend, reverse proxy, persistence and operational scripts on `vm2`.
 - `/api/interaction-policies/:minorProfileId`
 - `/api/admin/interaction-policies/:minorProfileId`
 - `/api/admin/rooms/presence`
+- `/api/admin/rooms/events`
+- `/api/admin/invites/:id`
 - `/api/activities`
 - `/api/progress/summary`
 - `/api/progress/checkins`
@@ -61,6 +66,8 @@ Own backend, reverse proxy, persistence and operational scripts on `vm2`.
 - The completed Phase C portal/admin checkpoint is also authoritative only on `vm2`, because invite ownership, guardian approval visibility, adolescent progress compatibility, admin governance filters and the installable adult PWA now depend on the deployed VM runtime.
 - The first Phase E monitored-room slice is also authoritative only on `vm2`, because `rooms/presence` gating depends on the live Postgres-backed multiactor runtime and VM deployment state.
 - The second Phase E supervision slice is also authoritative only on `vm2`, because hard approval gates, admin policy override and live presence rows only make sense against the deployed runtime.
+- The third Phase E runtime-invite slice is also authoritative only on `vm2`, because room-invite acceptance, expiry, revoke and runtime-event projection depend on the deployed API plus Nginx edge routing.
 - VM promotion must use the corrected `scripts/promote-stack-to-vm.sh`, which syncs project surfaces into canonical remote directories.
+- `scripts/deploy-vm.sh` now force-recreates `api`, `portal`, `admin` and `nginx`, so edge config changes inside `infra/` are applied during normal promotion.
 - If the VM appears to serve stale routes after a sync, the recovery path is:
   - `docker compose build --no-cache api portal admin && docker compose up -d --force-recreate api portal admin nginx`

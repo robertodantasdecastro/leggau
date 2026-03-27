@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-Date checked: `2026-03-26`
+Date checked: `2026-03-27`
 
 ## Repository
 
@@ -166,12 +166,23 @@ Date checked: `2026-03-26`
   - `POST /api/rooms/:id/leave`
   - `POST /api/presence/heartbeat`
   - `GET /api/presence/:roomId`
+- The third Phase E monitored-runtime slice now also validates against the VM for:
+  - `GET /api/invites`
+  - `POST /api/invites`
+  - `POST /api/invites/:id/accept`
+  - `PATCH /api/invites/:id`
+  - `GET /api/admin/rooms/events`
+  - `PATCH /api/admin/invites/:id`
 - The monitored interaction validation driver for this slice is:
   - `scripts/test-monitored-interactions.mjs`
+- The monitored room-invite validation driver for this slice is:
+  - `scripts/test-room-runtime-invites.mjs`
 - `scripts/promote-stack-to-vm.sh` was corrected on `2026-03-26` to rsync `backend/`, `web/`, `infra/`, `docs/`, `scripts/` and `.codex/` into their canonical remote directories instead of flattening directory contents into the VM root
 - When stale Docker cache prevented new runtime routes from surfacing after the corrected sync, the authoritative recovery path became:
   - `ssh vm2 'cd ~/leggau && docker compose build --no-cache api portal admin && docker compose up -d --force-recreate api portal admin nginx'`
 - `web/portal/.dockerignore` and `web/admin/.dockerignore` now exist to keep future VM rebuild contexts smaller and faster
+- During the room-invite deploy on `2026-03-27`, Nginx initially served `404` for `/`, `/pais`, `/profissionais`, `manifest.webmanifest` and `sw.js`; the edge proxy config was corrected and the VM gateway now again passes those routes
+- `scripts/deploy-vm.sh` now force-recreates `api`, `portal`, `admin` and `nginx`, so edge-config changes under `infra/` are no longer silently skipped on promotion
 - Dependency audit checks now also pass with zero production vulnerabilities in:
   - `backend`
   - `web/admin`
@@ -242,12 +253,24 @@ Date checked: `2026-03-26`
   - admin now has live runtime visibility and emergency policy override through:
     - `GET /api/admin/interaction-policies/:minorProfileId`
     - `PATCH /api/admin/interaction-policies/:minorProfileId`
-    - `GET /api/admin/rooms/presence`
+  - `GET /api/admin/rooms/presence`
   - `/pais`, `/profissionais` and `web/admin` now all surface monitored runtime state and explicit gate reasons
   - `scripts/test-monitored-supervision.mjs` now validates parent, therapist and admin supervision gates against `vm2`
+- Phase E slice 3 is now completed on top of that supervised runtime:
+  - `invites` now supports the canonical `inviteType=monitored_room`
+  - therapist participation in monitored runtime now requires an active accepted room invite scoped by `minorProfileId + roomId`
+  - `GET /api/rooms`, `POST /api/rooms/:id/join` and `POST /api/presence/heartbeat` now expose invite-aware `requirements`
+  - admin now has a runtime-event timeline through:
+    - `GET /api/admin/rooms/events`
+  - admin can now revoke runtime invites emergencially through:
+    - `PATCH /api/admin/invites/:id`
+  - `/pais` now emits and revokes room invites for therapists per sala publicada
+  - `/profissionais` now exposes a runtime inbox for `monitored_room` invites plus explicit gate and expiry messaging
+  - `web/admin` now aggregates runtime invite events, blocked joins and heartbeat failures into the same governance console
+  - `scripts/test-room-runtime-invites.mjs` now validates pending, accepted, revoked and expired room-invite paths against `vm2`
 - The next execution step now continues inside Phase E:
-  - deepen moderation/runtime controls beyond the now-live guardian/therapist/admin supervision slice
-  - expand monitored interaction from structured presence into richer governed runtime behaviors
+  - deepen moderation/runtime controls beyond the now-live guardian/therapist/admin supervision plus room-invite slice
+  - expand monitored interaction from structured presence and explicit runtime invites into richer governed runtime behaviors
   - keep the completed Phase C adult web/PWA and admin-governance surfaces as the stable companion layer
   - keep Phase F admin/compliance/billing hardening as a parallel operational thread
 
@@ -268,11 +291,13 @@ Date checked: `2026-03-26`
   - quick check-in and reward/progress refresh
   - explicit parent-approval ledger for OCR, presence and therapist linking
   - scoped therapist invite creation
+  - monitored room-invite creation and revoke per selected minor/room
   - persistent session listing and revoke
 - Therapist shell currently covers:
   - password auth
   - social auth using the public provider catalog
   - invite inbox and invite acceptance
+  - monitored room invite inbox with pending/accepted/expired/revoked status
   - guardian email lookup
   - minor selection
   - `care-team` request creation
@@ -283,6 +308,10 @@ Date checked: `2026-03-26`
   - responsive task/radar cards for parent and therapist
   - stronger mobile navigation treatment
   - installable PWA metadata and service worker shell caching
+  - monitored-runtime supervision summaries for:
+    - somente responsavel
+    - convite enviado
+    - terapeuta autorizado
 
 ## Unity Runtime Status
 
@@ -304,22 +333,26 @@ Date checked: `2026-03-26`
 - The runtime now blocks the product home when no linked minor exists and redirects the responsible actor to `/pais`, while preserving a dev-only quick-create path
 - Latest validated child-shell probe against `vm2` reached:
   - `state=ready`
+  - `status=Shell carregada.`
   - `childName=Gau`
   - `selectedMinorId=40db73f9-f746-45c0-a436-6b09f4a99924`
   - `minorRole=child`
   - `ageBand=6-9`
   - `activeShell=child`
   - `availableRoomCount=1`
+  - `presenceCount=0`
   - `activityCount=3`
   - `rewardCount=2`
 - Latest validated adolescent-shell probe against `vm2` reached:
   - `state=ready`
+  - `status=Shell carregada.`
   - `childName=Gau Teen`
   - `selectedMinorId=aaf64358-c3ba-4e69-a4c8-5b181b9327fd`
   - `minorRole=adolescent`
   - `ageBand=13-17`
   - `activeShell=adolescent`
   - `availableRoomCount=2`
+  - `presenceCount=0`
   - `activityCount=3`
   - `rewardCount=2`
 - The home-side action layer now also supports:
@@ -338,6 +371,9 @@ Date checked: `2026-03-26`
   - audit trail reading with filters for `eventType`, `actorRole` and `resourceType`
   - incident creation and triage updates
   - moderation-case creation and triage updates
+  - runtime presence review
+  - runtime event timeline with quick incident/moderation actions
+  - emergency runtime-invite revoke
 - Admin governance now validates against the VM runtime through the canonical namespaces:
   - `/api/care-team/admin`
   - `/api/audit/events`

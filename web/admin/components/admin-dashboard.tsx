@@ -149,6 +149,28 @@ type AdminPresenceRecord = {
   lastHeartbeatAt: string;
 };
 
+type RoomRuntimeEvent = {
+  id: string;
+  eventType: string;
+  actorRole: string;
+  actorUserId?: string | null;
+  resourceType: string;
+  resourceId?: string | null;
+  outcome: string;
+  severity: string;
+  occurredAt: string;
+  roomId: string;
+  roomTitle: string;
+  minorProfileId?: string | null;
+  minorRole?: string | null;
+  accessSource?: string | null;
+  activeShell?: string | null;
+  activeInviteId?: string | null;
+  inviteExpiresAt?: string | null;
+  blockedBy?: string[];
+  summary: string;
+};
+
 type ProviderFormState = {
   enabled: boolean;
   verificationMode: 'mock' | 'live';
@@ -192,6 +214,13 @@ type PresenceFilters = {
   minorRole: string;
   actorRole: string;
   accessSource: string;
+};
+
+type RuntimeEventFilters = {
+  roomId: string;
+  minorProfileId: string;
+  actorRole: string;
+  eventType: string;
 };
 
 type IncidentDraft = {
@@ -503,6 +532,7 @@ export function AdminDashboard() {
   const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
   const [moderationCases, setModerationCases] = useState<ModerationCase[]>([]);
   const [presenceRecords, setPresenceRecords] = useState<AdminPresenceRecord[]>([]);
+  const [runtimeEvents, setRuntimeEvents] = useState<RoomRuntimeEvent[]>([]);
   const [careTeamFilters, setCareTeamFilters] = useState<CareTeamFilters>({
     status: '',
     parentApprovalStatus: '',
@@ -529,6 +559,12 @@ export function AdminDashboard() {
     minorRole: '',
     actorRole: '',
     accessSource: '',
+  });
+  const [runtimeEventFilters, setRuntimeEventFilters] = useState<RuntimeEventFilters>({
+    roomId: '',
+    minorProfileId: '',
+    actorRole: '',
+    eventType: '',
   });
   const [incidentDraft, setIncidentDraft] = useState<IncidentDraft>({
     severity: 'medium',
@@ -600,6 +636,7 @@ export function AdminDashboard() {
       incidentsResponse,
       moderationResponse,
       presenceResponse,
+      runtimeEventsResponse,
       policyResponse,
     ] = await Promise.all([
       apiRequest<AdminOverview>('/admin/overview', activeToken),
@@ -628,6 +665,10 @@ export function AdminDashboard() {
         `/admin/rooms/presence${buildQuery(presenceFilters)}`,
         activeToken,
       ),
+      apiRequest<RoomRuntimeEvent[]>(
+        `/admin/rooms/events${buildQuery(runtimeEventFilters)}`,
+        activeToken,
+      ),
       policyTargetMinorId.trim()
         ? apiRequest<AdminInteractionPolicy>(
             `/admin/interaction-policies/${encodeURIComponent(policyTargetMinorId.trim())}`,
@@ -652,6 +693,7 @@ export function AdminDashboard() {
     setIncidents(incidentsResponse);
     setModerationCases(moderationResponse);
     setPresenceRecords(presenceResponse);
+    setRuntimeEvents(runtimeEventsResponse);
     setAdminPolicy(policyResponse);
     setAdminPolicyDraft(buildAdminPolicyDraft(policyResponse));
   }
@@ -902,6 +944,84 @@ export function AdminDashboard() {
             disposition: 'hold',
             accessSource: record.accessSource,
           },
+        }),
+      });
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function openIncidentFromRuntimeEvent(event: RoomRuntimeEvent) {
+    if (!token) {
+      return;
+    }
+
+    setBusyAction(`runtime-event-incident-${event.id}`);
+    setError(null);
+    try {
+      await apiRequest('/incidents', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          severity: event.severity ?? 'medium',
+          sourceType: 'runtime_event',
+          sourceId: event.id,
+          summary: `${event.eventType} · ${event.roomTitle} · ${event.summary}`,
+        }),
+      });
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function openModerationFromRuntimeEvent(event: RoomRuntimeEvent) {
+    if (!token) {
+      return;
+    }
+
+    setBusyAction(`runtime-event-moderation-${event.id}`);
+    setError(null);
+    try {
+      await apiRequest('/moderation/cases', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          severity: event.severity ?? 'medium',
+          sourceType: 'runtime_event',
+          sourceId: event.id,
+          policyCode: 'runtime-monitoring-review',
+          humanReviewRequired: true,
+          aiDecision: {
+            disposition: 'hold',
+            eventType: event.eventType,
+            roomId: event.roomId,
+          },
+        }),
+      });
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function revokeRuntimeInvite(inviteId: string) {
+    if (!token) {
+      return;
+    }
+
+    setBusyAction(`runtime-invite-revoke-${inviteId}`);
+    setError(null);
+    try {
+      await apiRequest(`/admin/invites/${inviteId}`, token, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'revoked',
         }),
       });
       await loadDashboard(token);
@@ -1472,6 +1592,159 @@ export function AdminDashboard() {
                   <td colSpan={4}>
                     <div className="emptyState">
                       Nenhuma presenca ativa no runtime com os filtros atuais.
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="panel stack">
+        <div className="row spread">
+          <div>
+            <h2>Timeline de runtime</h2>
+            <p className="muted">
+              Trilha operacional de convite, aceite, bloqueios, joins e heartbeats do runtime monitorado.
+            </p>
+          </div>
+          <button type="button" onClick={() => void refreshDashboard()}>
+            Atualizar timeline
+          </button>
+        </div>
+        <div className="filterBar">
+          <label className="field smallField">
+            <span>Sala</span>
+            <input
+              value={runtimeEventFilters.roomId}
+              onChange={(event) =>
+                setRuntimeEventFilters((current) => ({
+                  ...current,
+                  roomId: event.target.value,
+                }))
+              }
+              placeholder="focus-lab"
+            />
+          </label>
+          <label className="field smallField">
+            <span>Minor profile</span>
+            <input
+              value={runtimeEventFilters.minorProfileId}
+              onChange={(event) =>
+                setRuntimeEventFilters((current) => ({
+                  ...current,
+                  minorProfileId: event.target.value,
+                }))
+              }
+              placeholder="UUID do menor"
+            />
+          </label>
+          <label className="field smallField">
+            <span>Ator</span>
+            <select
+              value={runtimeEventFilters.actorRole}
+              onChange={(event) =>
+                setRuntimeEventFilters((current) => ({
+                  ...current,
+                  actorRole: event.target.value,
+                }))
+              }
+            >
+              <option value="">Todos</option>
+              <option value="parent_guardian">Parent guardian</option>
+              <option value="therapist">Therapist</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+          <label className="field smallField">
+            <span>Evento</span>
+            <input
+              value={runtimeEventFilters.eventType}
+              onChange={(event) =>
+                setRuntimeEventFilters((current) => ({
+                  ...current,
+                  eventType: event.target.value,
+                }))
+              }
+              placeholder="room_invite.accepted"
+            />
+          </label>
+          <button type="button" onClick={() => void refreshDashboard()}>
+            Aplicar filtros
+          </button>
+        </div>
+        <div className="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Evento</th>
+                <th>Contexto</th>
+                <th>Momento</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {runtimeEvents.length ? (
+                runtimeEvents.map((event) => (
+                  <tr key={event.id}>
+                    <td>
+                      <strong>{event.eventType}</strong>
+                      <div className="tableMeta">
+                        {event.roomTitle} · {event.severity} · {event.outcome}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="stackCompact">
+                        <span>Menor {compactId(event.minorProfileId ?? '')} · {slugToLabel(event.minorRole ?? 'child')}</span>
+                        <span>Ator {slugToLabel(event.actorRole)} · origem {slugToLabel(event.accessSource ?? 'n/a')}</span>
+                        <span>{event.summary}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="stackCompact">
+                        <span>{formatDate(event.occurredAt)}</span>
+                        {event.inviteExpiresAt ? <span>invite expira {formatDate(event.inviteExpiresAt)}</span> : null}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="actionColumn">
+                        <button
+                          type="button"
+                          className="secondaryButton"
+                          disabled={busyAction === `runtime-event-incident-${event.id}`}
+                          onClick={() => void openIncidentFromRuntimeEvent(event)}
+                        >
+                          {busyAction === `runtime-event-incident-${event.id}` ? 'Abrindo...' : 'Incidente'}
+                        </button>
+                        <button
+                          type="button"
+                          className="secondaryButton"
+                          disabled={busyAction === `runtime-event-moderation-${event.id}`}
+                          onClick={() => void openModerationFromRuntimeEvent(event)}
+                        >
+                          {busyAction === `runtime-event-moderation-${event.id}` ? 'Abrindo...' : 'Moderacao'}
+                        </button>
+                        {event.activeInviteId ? (
+                          <button
+                            type="button"
+                            disabled={busyAction === `runtime-invite-revoke-${event.activeInviteId}`}
+                            onClick={() => void revokeRuntimeInvite(event.activeInviteId ?? '')}
+                          >
+                            {busyAction === `runtime-invite-revoke-${event.activeInviteId}`
+                              ? 'Revogando...'
+                              : 'Revogar invite'}
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4}>
+                    <div className="emptyState">
+                      Nenhum evento de runtime encontrado com os filtros atuais.
                     </div>
                   </td>
                 </tr>

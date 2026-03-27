@@ -307,10 +307,56 @@ async function main() {
   });
   assert(therapistPolicy.minorProfileId === minor.id, 'therapist should read policy after gates');
 
+  const therapistAwaitingInvite = await request(`/rooms?minorProfileId=${minor.id}`, {
+    headers: authHeaders(therapistToken),
+  });
+  assert(
+    therapistAwaitingInvite.allowed === false &&
+      therapistAwaitingInvite.requirements?.blockedBy?.includes('room_invite_required'),
+    'therapist should still need an explicit monitored room invite',
+  );
+
+  const roomInvite = await request('/invites', {
+    method: 'POST',
+    headers: authHeaders(parentToken),
+    body: JSON.stringify({
+      inviteType: 'monitored_room',
+      targetEmail: therapistEmail,
+      targetActorRole: 'therapist',
+      minorProfileId: minor.id,
+      metadata: {
+        parentEmail,
+        parentName: 'Guardia Demo',
+        minorName: minor.name,
+        minorRole: minor.role,
+        ageBand: minor.ageBand,
+        roomId: room.id,
+        roomTitle: room.title,
+      },
+    }),
+  });
+  assert(roomInvite.id, 'room invite should be created');
+
+  const therapistPendingInvite = await request(`/rooms?minorProfileId=${minor.id}`, {
+    headers: authHeaders(therapistToken),
+  });
+  assert(
+    therapistPendingInvite.requirements?.roomInviteStatus === 'pending',
+    'therapist should see pending invite status before accepting',
+  );
+
+  await request(`/invites/${roomInvite.id}/accept`, {
+    method: 'POST',
+    headers: authHeaders(therapistToken),
+  });
+
   const therapistRooms = await request(`/rooms?minorProfileId=${minor.id}`, {
     headers: authHeaders(therapistToken),
   });
-  assert(therapistRooms.allowed === true && therapistRooms.items.length > 0, 'therapist should access monitored rooms after all gates');
+  assert(
+    therapistRooms.allowed === true && therapistRooms.items.length > 0,
+    'therapist should access monitored rooms after gates and invite acceptance',
+  );
 
   await request(`/rooms/${room.id}/join`, {
     method: 'POST',
@@ -392,6 +438,22 @@ async function main() {
     'admin filtered presence should expose therapist runtime row',
   );
   logStep('admin runtime view', `${adminPresenceAll.length} linha(s) de presenca listadas`);
+
+  const runtimeEvents = await request(
+    `/admin/rooms/events?${new URLSearchParams({
+      roomId: room.id,
+      minorProfileId: minor.id,
+    }).toString()}`,
+    {
+      headers: authHeaders(adminToken),
+    },
+  );
+  assert(
+    runtimeEvents.some((event) => event.eventType === 'room_invite.created') &&
+      runtimeEvents.some((event) => event.eventType === 'room_invite.accepted'),
+    'admin runtime events should include room invite create/accept entries',
+  );
+  logStep('admin runtime timeline', `${runtimeEvents.length} evento(s) rastreados`);
 
   await request(`/rooms/${room.id}/leave`, {
     method: 'POST',

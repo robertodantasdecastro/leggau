@@ -107,6 +107,9 @@ namespace Leggau.Models
         public string adminApprovalStatus;
         public string presenceApprovalStatus;
         public string therapistLinkingStatus;
+        public string roomInviteStatus;
+        public string activeInviteId;
+        public string inviteExpiresAt;
         public PolicySnapshotRecord policySnapshot;
         public string accessSource;
         public string[] blockedBy;
@@ -123,6 +126,9 @@ namespace Leggau.Models
         public string ageBand;
         public string shell;
         public string presenceMode;
+        public string inviteStatus;
+        public string activeInviteId;
+        public string inviteExpiresAt;
     }
 
     [Serializable]
