@@ -199,6 +199,85 @@ type ProgressSummary = {
   }>;
 };
 
+type PolicySnapshot = {
+  minorProfileId: string;
+  minorRole: string;
+  ageBand: string;
+  roomsEnabled: boolean;
+  presenceEnabled: boolean;
+  messagingMode: string;
+  therapistParticipationAllowed: boolean;
+};
+
+type RoomAccessRequirements = {
+  guardianLinkStatus: string;
+  careTeamStatus: string;
+  parentApprovalStatus: string;
+  adminApprovalStatus: string;
+  presenceApprovalStatus: string;
+  therapistLinkingStatus: string;
+  policySnapshot?: PolicySnapshot | null;
+  accessSource?: string | null;
+  blockedBy: string[];
+  blockedReason?: string | null;
+};
+
+type InteractionPolicy = {
+  id: string;
+  minorProfileId: string;
+  minorRole: string;
+  ageBand: string;
+  roomsEnabled: boolean;
+  presenceEnabled: boolean;
+  messagingMode: string;
+  therapistParticipationAllowed: boolean;
+  accessSource?: string | null;
+};
+
+type MonitoredRoom = {
+  id: string;
+  title: string;
+  description: string;
+  audience: string;
+  ageBand: string;
+  shell: string;
+  presenceMode: string;
+};
+
+type PresenceParticipant = {
+  participantKey: string;
+  minorProfileId: string;
+  minorRole?: string;
+  actorRole: string;
+  activeShell: string;
+  accessSource: string;
+  joinedAt: string;
+  lastHeartbeatAt: string;
+};
+
+type PresenceState = {
+  allowed?: boolean;
+  reason?: string | null;
+  requirements?: RoomAccessRequirements | null;
+  roomId: string;
+  roomTitle: string;
+  minorProfileId: string;
+  activeShell: string;
+  status: string;
+  presenceMode: string;
+  participantCount: number;
+  participants: PresenceParticipant[];
+};
+
+type MonitoredRoomsPayload = {
+  allowed: boolean;
+  reason: string;
+  presenceEnabled: boolean;
+  activeRoomId?: string | null;
+  items: MonitoredRoom[];
+  requirements?: RoomAccessRequirements | null;
+};
+
 const DEV_VM_API_BASE = 'http://10.211.55.22:8080/api';
 
 function resolveApiBase() {
@@ -286,6 +365,12 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [rewardSummary, setRewardSummary] = useState<RewardPayload | null>(null);
   const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
+  const [selectedPolicy, setSelectedPolicy] = useState<InteractionPolicy | null>(null);
+  const [selectedRuntime, setSelectedRuntime] = useState<MonitoredRoomsPayload | null>(null);
+  const [selectedPresence, setSelectedPresence] = useState<PresenceState | null>(null);
+  const [lookupPolicy, setLookupPolicy] = useState<InteractionPolicy | null>(null);
+  const [lookupRuntime, setLookupRuntime] = useState<MonitoredRoomsPayload | null>(null);
+  const [lookupPresence, setLookupPresence] = useState<PresenceState | null>(null);
   const [status, setStatus] = useState('Pronto para autenticar.');
   const [error, setError] = useState('');
   const [busyKey, setBusyKey] = useState('');
@@ -314,6 +399,11 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
   const [lookupMinorId, setLookupMinorId] = useState('');
   const [scopeDraft, setScopeDraft] = useState('{"focus":"rotina","channel":"portal"}');
   const [inviteTargetEmail, setInviteTargetEmail] = useState('terapeuta@exemplo.com');
+  const [policyDraft, setPolicyDraft] = useState({
+    roomsEnabled: true,
+    presenceEnabled: true,
+    therapistParticipationAllowed: false,
+  });
 
   useEffect(() => {
     void loadProviders();
@@ -381,6 +471,12 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
     setActivities([]);
     setRewardSummary(null);
     setProgressSummary(null);
+    setSelectedPolicy(null);
+    setSelectedRuntime(null);
+    setSelectedPresence(null);
+    setLookupPolicy(null);
+    setLookupRuntime(null);
+    setLookupPresence(null);
   }, [session]);
 
   async function loadProviders() {
@@ -422,19 +518,62 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
     setParentApprovals(approvals);
   }
 
+  async function loadPolicy(envelope: SessionEnvelope, minorProfileId: string) {
+    return apiRequest<InteractionPolicy>(`/interaction-policies/${encodeURIComponent(minorProfileId)}`, {
+      token: envelope.accessToken,
+    });
+  }
+
+  async function loadMonitoredRuntime(
+    envelope: SessionEnvelope,
+    minorProfileId: string,
+  ) {
+    const rooms = await apiRequest<MonitoredRoomsPayload>(
+      `/rooms?minorProfileId=${encodeURIComponent(minorProfileId)}`,
+      {
+        token: envelope.accessToken,
+      },
+    );
+
+    let presence: PresenceState | null = null;
+    if (rooms.activeRoomId) {
+      presence = await apiRequest<PresenceState>(
+        `/presence/${encodeURIComponent(rooms.activeRoomId)}?minorProfileId=${encodeURIComponent(minorProfileId)}`,
+        {
+          token: envelope.accessToken,
+        },
+      );
+    }
+
+    return {
+      rooms,
+      presence,
+    };
+  }
+
   async function loadMinorWorkspace(envelope: SessionEnvelope, minorProfileId: string) {
-    const [memberships, activitiesPayload, rewardsPayload] = await Promise.all([
+    const [memberships, activitiesPayload, rewardsPayload, policy, monitoredRuntime] = await Promise.all([
       apiRequest<CareTeamMembership[]>(
         `/care-team?minorProfileId=${encodeURIComponent(minorProfileId)}`,
         { token: envelope.accessToken },
       ),
       apiRequest<ActivitiesPayload>('/activities'),
       apiRequest<RewardPayload>(`/rewards?childId=${encodeURIComponent(minorProfileId)}`),
+      loadPolicy(envelope, minorProfileId),
+      loadMonitoredRuntime(envelope, minorProfileId),
     ]);
 
     setCareTeamMemberships(memberships);
     setActivities(activitiesPayload.items);
     setRewardSummary(rewardsPayload);
+    setSelectedPolicy(policy);
+    setPolicyDraft({
+      roomsEnabled: policy.roomsEnabled,
+      presenceEnabled: policy.presenceEnabled,
+      therapistParticipationAllowed: policy.therapistParticipationAllowed,
+    });
+    setSelectedRuntime(monitoredRuntime.rooms);
+    setSelectedPresence(monitoredRuntime.presence);
 
     if (isParent) {
       await loadParentApprovals(envelope, minorProfileId);
@@ -448,6 +587,43 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
       setProgressSummary(summary);
     } catch {
       setProgressSummary(null);
+    }
+  }
+
+  async function loadTherapistRuntime(envelope: SessionEnvelope, minorProfileId: string) {
+    const [memberships, monitoredRuntime] = await Promise.all([
+      apiRequest<CareTeamMembership[]>(
+        `/care-team?minorProfileId=${encodeURIComponent(minorProfileId)}`,
+        { token: envelope.accessToken },
+      ),
+      loadMonitoredRuntime(envelope, minorProfileId),
+    ]);
+
+    setCareTeamMemberships(memberships);
+    setLookupRuntime(monitoredRuntime.rooms);
+    setLookupPresence(monitoredRuntime.presence);
+
+    try {
+      const policy = await loadPolicy(envelope, minorProfileId);
+      setLookupPolicy(policy);
+    } catch {
+      const policySnapshot = monitoredRuntime.rooms.requirements?.policySnapshot;
+      setLookupPolicy(
+        policySnapshot
+          ? {
+              id: minorProfileId,
+              minorProfileId: policySnapshot.minorProfileId,
+              minorRole: policySnapshot.minorRole,
+              ageBand: policySnapshot.ageBand,
+              roomsEnabled: policySnapshot.roomsEnabled,
+              presenceEnabled: policySnapshot.presenceEnabled,
+              messagingMode: policySnapshot.messagingMode,
+              therapistParticipationAllowed:
+                policySnapshot.therapistParticipationAllowed,
+              accessSource: monitoredRuntime.rooms.requirements?.accessSource ?? null,
+            }
+          : null,
+      );
     }
   }
 
@@ -497,6 +673,9 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
           setActivities([]);
           setRewardSummary(null);
           setProgressSummary(null);
+          setSelectedPolicy(null);
+          setSelectedRuntime(null);
+          setSelectedPresence(null);
         }
 
         setSession((current) =>
@@ -519,6 +698,9 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
         setLookupFamily(null);
         setLookupMinorId('');
         setCareTeamMemberships([]);
+        setLookupPolicy(null);
+        setLookupRuntime(null);
+        setLookupPresence(null);
       }
 
       setStatus('Painel adulto pronto para uso.');
@@ -730,7 +912,10 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
     setStatus('Buscando familia pelo email do responsavel...');
 
     try {
-      await lookupFamilyByEmail(familyLookupEmail);
+      const overview = await lookupFamilyByEmail(familyLookupEmail);
+      if (session && overview.minorProfiles?.length) {
+        await loadTherapistRuntime(session, overview.minorProfiles[0].id);
+      }
       setStatus('Familia localizada. Escolha o perfil para solicitar o vinculo.');
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel localizar a familia.');
@@ -799,6 +984,9 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
         const overview = await lookupFamilyByEmail(parentEmail);
         if (invite.minorProfileId && overview.minorProfiles.some((minor) => minor.id === invite.minorProfileId)) {
           setLookupMinorId(invite.minorProfileId);
+          await loadTherapistRuntime(session, invite.minorProfileId);
+        } else if (overview.minorProfiles?.length) {
+          await loadTherapistRuntime(session, overview.minorProfiles[0].id);
         }
       }
 
@@ -867,6 +1055,68 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel revogar a aprovacao.');
       setStatus('A aprovacao nao foi revogada.');
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function handleUpdatePolicy() {
+    if (!session || !selectedMinor) {
+      return;
+    }
+
+    setBusyKey('policy-update');
+    setError('');
+    setStatus('Atualizando policy efetiva do menor...');
+
+    try {
+      const policy = await apiRequest<InteractionPolicy>(
+        `/interaction-policies/${selectedMinor.id}`,
+        {
+          method: 'PATCH',
+          token: session.accessToken,
+          body: policyDraft,
+        },
+      );
+      setSelectedPolicy(policy);
+      await loadMinorWorkspace(session, selectedMinor.id);
+      setStatus('Policy atualizada. O runtime monitorado foi recalculado.');
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel atualizar a policy.');
+      setStatus('A policy do menor nao foi atualizada.');
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function handleRefreshMonitoredRuntime() {
+    if (!session) {
+      return;
+    }
+
+    const minorId = isParent ? selectedMinorId : lookupMinorId;
+    if (!minorId) {
+      return;
+    }
+
+    setBusyKey('runtime-refresh');
+    setError('');
+    setStatus('Atualizando supervisao do runtime monitorado...');
+
+    try {
+      if (isParent) {
+        await loadMinorWorkspace(session, minorId);
+      } else {
+        await loadTherapistRuntime(session, minorId);
+      }
+      setStatus('Supervisao do runtime monitorado atualizada.');
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Nao foi possivel atualizar o runtime monitorado.',
+      );
+      setStatus('A supervisao do runtime monitorado falhou.');
     } finally {
       setBusyKey('');
     }
@@ -948,6 +1198,7 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
         },
       );
       setCareTeamMemberships(memberships);
+      await loadTherapistRuntime(session, minor.id);
       setStatus('Pedido criado. Agora ele depende de aprovacao do responsavel e do admin.');
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Nao foi possivel criar o pedido clinico.');
@@ -1019,9 +1270,14 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
   const selectedMinor = familyOverview?.minorProfiles.find((profile) => profile.id === selectedMinorId);
   const selectedLookupMinor = lookupFamily?.minorProfiles.find((profile) => profile.id === lookupMinorId);
   const activeApprovals = parentApprovals.filter((approval) => approval.status === 'active');
+  const selectedApprovalsByType = Object.fromEntries(
+    parentApprovals.map((approval) => [approval.approvalType, approval.status]),
+  ) as Record<string, string>;
   const inviteInbox = isParent
     ? invites.filter((invite) => invite.creatorActorRole === 'parent_guardian')
     : invites.filter((invite) => invite.targetEmail === session?.user.email);
+  const parentRuntimeRequirements = selectedRuntime?.requirements ?? null;
+  const therapistRuntimeRequirements = lookupRuntime?.requirements ?? null;
   const parentTasks = [
     {
       title: 'Consentimentos legais',
@@ -1788,6 +2044,176 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
             </article>
 
             <article className="stageCard card">
+              <div className="spread">
+                <div>
+                  <h2>Policy e runtime monitorado</h2>
+                  <p className="subtle">
+                    Ajuste a policy do menor e acompanhe se as salas monitoradas ja foram liberadas pelos gates legais e operacionais.
+                  </p>
+                </div>
+                <button
+                  className="button secondary"
+                  disabled={!session || !selectedMinor || busyKey === 'runtime-refresh'}
+                  onClick={() => void handleRefreshMonitoredRuntime()}
+                  type="button"
+                >
+                  {busyKey === 'runtime-refresh' ? 'Atualizando...' : 'Atualizar supervisao'}
+                </button>
+              </div>
+              {selectedMinor ? (
+                <div className="stack">
+                  <div className="grid3 responsive">
+                    <label className="field">
+                      <span>Rooms enabled</span>
+                      <select
+                        className="input"
+                        value={policyDraft.roomsEnabled ? 'true' : 'false'}
+                        onChange={(event) =>
+                          setPolicyDraft((current) => ({
+                            ...current,
+                            roomsEnabled: event.target.value === 'true',
+                          }))
+                        }
+                      >
+                        <option value="true">Sim</option>
+                        <option value="false">Nao</option>
+                      </select>
+                    </label>
+                    <label className="field">
+                      <span>Presence enabled</span>
+                      <select
+                        className="input"
+                        value={policyDraft.presenceEnabled ? 'true' : 'false'}
+                        onChange={(event) =>
+                          setPolicyDraft((current) => ({
+                            ...current,
+                            presenceEnabled: event.target.value === 'true',
+                          }))
+                        }
+                      >
+                        <option value="true">Sim</option>
+                        <option value="false">Nao</option>
+                      </select>
+                    </label>
+                    <label className="field">
+                      <span>Therapist participation</span>
+                      <select
+                        className="input"
+                        value={policyDraft.therapistParticipationAllowed ? 'true' : 'false'}
+                        onChange={(event) =>
+                          setPolicyDraft((current) => ({
+                            ...current,
+                            therapistParticipationAllowed: event.target.value === 'true',
+                          }))
+                        }
+                      >
+                        <option value="false">Nao</option>
+                        <option value="true">Sim</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div className="miniCard">
+                    <span className="microLabel">Mensageria</span>
+                    <strong>{slugToLabel(selectedPolicy?.messagingMode ?? 'none')}</strong>
+                    <span>Permanece somente leitura nesta fase do beta.</span>
+                  </div>
+                  <div className="ctaRow">
+                    <button
+                      className="button primary"
+                      disabled={!session || !selectedMinor || busyKey === 'policy-update'}
+                      onClick={() => void handleUpdatePolicy()}
+                      type="button"
+                    >
+                      {busyKey === 'policy-update' ? 'Salvando...' : 'Salvar policy'}
+                    </button>
+                    <span className="badge">
+                      source {parentRuntimeRequirements?.accessSource ?? selectedPolicy?.accessSource ?? 'guardian_link'}
+                    </span>
+                  </div>
+                  <div className="grid3 responsive">
+                    <div className="miniCard">
+                      <span className="microLabel">Gate presence_enabled</span>
+                      <strong>{slugToLabel(parentRuntimeRequirements?.presenceApprovalStatus ?? selectedApprovalsByType.presence_enabled ?? 'missing')}</strong>
+                      <span>Sem esse gate, o menor nao entra em salas nem envia heartbeat.</span>
+                    </div>
+                    <div className="miniCard">
+                      <span className="microLabel">Gate therapist_linking</span>
+                      <strong>{slugToLabel(parentRuntimeRequirements?.therapistLinkingStatus ?? selectedApprovalsByType.therapist_linking ?? 'missing')}</strong>
+                      <span>Controla quando o terapeuta pode participar do runtime monitorado.</span>
+                    </div>
+                    <div className="miniCard">
+                      <span className="microLabel">Runtime atual</span>
+                      <strong>{selectedRuntime?.allowed ? 'Liberado' : 'Bloqueado'}</strong>
+                      <span>{selectedRuntime?.reason ?? 'Atualize para carregar o estado monitorado.'}</span>
+                    </div>
+                  </div>
+                  {parentRuntimeRequirements?.blockedBy?.length ? (
+                    <div className="chipRow">
+                      {parentRuntimeRequirements.blockedBy.map((item) => (
+                        <span key={item} className="chip">
+                          {slugToLabel(item)}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  <div className="grid2">
+                    <div className="stack">
+                      <strong>Salas disponiveis</strong>
+                      {selectedRuntime?.items?.length ? (
+                        <div className="stack">
+                          {selectedRuntime.items.map((room) => (
+                            <div key={room.id} className="miniCard">
+                              <span className="microLabel">{room.presenceMode}</span>
+                              <strong>{room.title}</strong>
+                              <span>{room.description}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="emptyState">
+                          {selectedRuntime?.reason ?? 'Nenhuma sala monitorada foi carregada para este perfil.'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="stack">
+                      <strong>Presenca monitorada</strong>
+                      <div className="miniCard highlight">
+                        <span className="microLabel">Sala ativa</span>
+                        <strong>{selectedPresence?.roomTitle ?? 'Nenhuma sala ativa'}</strong>
+                        <span>
+                          {selectedPresence
+                            ? `${selectedPresence.participantCount} participante(s) · ${slugToLabel(selectedPresence.status)}`
+                            : selectedRuntime?.reason ?? 'Atualize o runtime para ler a presenca.'}
+                        </span>
+                      </div>
+                      {selectedPresence?.participants?.length ? (
+                        <div className="stack">
+                          {selectedPresence.participants.map((participant) => (
+                            <div key={participant.participantKey} className="miniCard">
+                              <span className="microLabel">{participant.actorRole}</span>
+                              <strong>{participant.activeShell}</strong>
+                              <span>
+                                ultimo heartbeat {formatDate(participant.lastHeartbeatAt)} · origem {participant.accessSource}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="emptyState">
+                          Nenhum participante ativo neste momento.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="emptyState">
+                  Selecione um perfil para supervisionar policy, gates e runtime monitorado.
+                </div>
+              )}
+            </article>
+
+            <article className="stageCard card">
               <h2>Convites para terapeutas</h2>
               <p className="subtle">
                 Use convites rastreaveis para puxar o profissional certo para o fluxo de `care-team`.
@@ -1910,7 +2336,12 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                     <button
                       key={minor.id}
                       className={minor.id === lookupMinorId ? 'miniCard selected' : 'miniCard'}
-                      onClick={() => setLookupMinorId(minor.id)}
+                      onClick={() => {
+                        setLookupMinorId(minor.id);
+                        if (session) {
+                          void loadTherapistRuntime(session, minor.id);
+                        }
+                      }}
                       type="button"
                     >
                       <span className="microLabel">{minor.role === 'adolescent' ? 'Adolescente' : 'Crianca'}</span>
@@ -2005,6 +2436,107 @@ export function AdultShell({ actor }: { actor: ActorRole }) {
                       ? 'Ao menos um vinculo ja esta ativo'
                       : 'Ainda aguardando gates de aprovacao'}
                   </span>
+                </div>
+              </div>
+            </article>
+
+            <article className="stageCard card">
+              <div className="spread">
+                <div>
+                  <h2>Supervisao monitorada</h2>
+                  <p className="subtle">
+                    Esta visao e somente leitura para o terapeuta e mostra quando a participacao clinica realmente fica liberada no runtime.
+                  </p>
+                </div>
+                <button
+                  className="button secondary"
+                  disabled={!session || !lookupMinorId || busyKey === 'runtime-refresh'}
+                  onClick={() => void handleRefreshMonitoredRuntime()}
+                  type="button"
+                >
+                  {busyKey === 'runtime-refresh' ? 'Atualizando...' : 'Atualizar supervisao'}
+                </button>
+              </div>
+              <div className="grid3 responsive">
+                <div className="miniCard">
+                  <span className="microLabel">Gate clinico</span>
+                  <strong>{slugToLabel(therapistRuntimeRequirements?.careTeamStatus ?? 'missing')}</strong>
+                  <span>
+                    Responsavel {slugToLabel(therapistRuntimeRequirements?.parentApprovalStatus ?? 'missing')} · admin {slugToLabel(therapistRuntimeRequirements?.adminApprovalStatus ?? 'missing')}
+                  </span>
+                </div>
+                <div className="miniCard">
+                  <span className="microLabel">Aprovacoes do responsavel</span>
+                  <strong>{slugToLabel(therapistRuntimeRequirements?.presenceApprovalStatus ?? 'missing')}</strong>
+                  <span>
+                    therapist_linking {slugToLabel(therapistRuntimeRequirements?.therapistLinkingStatus ?? 'missing')}
+                  </span>
+                </div>
+                <div className="miniCard">
+                  <span className="microLabel">Policy efetiva</span>
+                  <strong>{lookupPolicy ? `${lookupPolicy.minorRole} · ${lookupPolicy.ageBand}` : 'Aguardando leitura'}</strong>
+                  <span>
+                    rooms {lookupPolicy?.roomsEnabled ? 'on' : 'off'} · presence {lookupPolicy?.presenceEnabled ? 'on' : 'off'} · therapist {lookupPolicy?.therapistParticipationAllowed ? 'on' : 'off'}
+                  </span>
+                </div>
+              </div>
+              <div className="miniCard highlight">
+                <span className="microLabel">Estado do runtime</span>
+                <strong>{lookupRuntime?.allowed ? 'Runtime liberado' : 'Runtime bloqueado'}</strong>
+                <span>{lookupRuntime?.reason ?? 'Carregue uma familia e um perfil para ler o runtime monitorado.'}</span>
+              </div>
+              {therapistRuntimeRequirements?.blockedBy?.length ? (
+                <div className="chipRow">
+                  {therapistRuntimeRequirements.blockedBy.map((item) => (
+                    <span key={item} className="chip">
+                      {slugToLabel(item)}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <div className="grid2">
+                <div className="stack">
+                  <strong>Salas monitoradas</strong>
+                  {lookupRuntime?.items?.length ? (
+                    <div className="stack">
+                      {lookupRuntime.items.map((room) => (
+                        <div key={room.id} className="miniCard">
+                          <span className="microLabel">{room.presenceMode}</span>
+                          <strong>{room.title}</strong>
+                          <span>{room.description}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="emptyState">
+                      {lookupRuntime?.reason ?? 'Nenhum snapshot monitorado disponivel ainda.'}
+                    </div>
+                  )}
+                </div>
+                <div className="stack">
+                  <strong>Presenca ativa</strong>
+                  {lookupPresence ? (
+                    <div className="stack">
+                      <div className="miniCard">
+                        <span className="microLabel">{lookupPresence.roomTitle}</span>
+                        <strong>{slugToLabel(lookupPresence.status)}</strong>
+                        <span>{lookupPresence.participantCount} participante(s) observados</span>
+                      </div>
+                      {lookupPresence.participants.map((participant) => (
+                        <div key={participant.participantKey} className="miniCard">
+                          <span className="microLabel">{participant.actorRole}</span>
+                          <strong>{participant.activeShell}</strong>
+                          <span>
+                            ultimo heartbeat {formatDate(participant.lastHeartbeatAt)} · origem {participant.accessSource}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="emptyState">
+                      Nenhuma presenca ativa foi exposta para este contexto.
+                    </div>
+                  )}
                 </div>
               </div>
             </article>

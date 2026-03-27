@@ -19,6 +19,7 @@ namespace Leggau.Gameplay
         public PresenceStateRecord activePresence;
         public bool roomsAllowed;
         public string roomCatalogMessage;
+        public RoomAccessRequirementsRecord roomRequirements;
         public string resolvedAgeBand;
         public string activeShell;
         public ChildProfile activeChild;

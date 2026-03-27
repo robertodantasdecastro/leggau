@@ -130,11 +130,24 @@
   - `InteractionPolicy` now governs runtime room listing, room join and presence heartbeat behavior, not only UI visibility
   - Unity now persists and renders available rooms, active room, presence state and room availability messaging in the one-scene runtime
   - `scripts/test-monitored-interactions.mjs` now validates child and adolescent room/presence flow against `vm2`
+- Completed in slice 2:
+  - `presence_enabled` now acts as a hard approval gate for room listing, room join and heartbeat
+  - therapist runtime access now also depends on active `therapist_linking` and `therapistParticipationAllowed=true`
+  - guardians now own the app-facing write path for `interaction-policies`; therapists remain read-only
+  - admin now has live monitored-runtime operations through:
+    - `GET/PATCH /api/admin/interaction-policies/:minorProfileId`
+    - `GET /api/admin/rooms/presence`
+  - `/pais` now exposes policy toggles, approval-gate state and monitored runtime status for the selected minor
+  - `/profissionais` now exposes read-only monitored supervision with explicit dependency reasons
+  - `web/admin` now exposes monitored presence rows plus quick incident/moderation actions from runtime context
+  - `scripts/test-monitored-supervision.mjs` now validates parent, therapist and admin supervision gates against `vm2`
+  - Unity validation now explicitly covers:
+    - `child` shell with `presence_enabled` revoked still reaching `state=ready` and `availableRoomCount=0`
+    - `child` shell restored to healthy state with `availableRoomCount=1`
 - Remaining:
-  - parent and therapist controls around monitored interaction
-  - invite-driven room entry refinement
-  - moderation pipeline deeper than the current audit-first monitored surface
-  - richer room/presence UX and supervision affordances
+  - invite-driven room entry refinement beyond the current structured-room model
+  - moderation pipeline deeper than the current supervision and audit slice
+  - richer governed runtime behaviors beyond monitored presence
 
 ### Phase F — Billing, admin and beta readiness
 
@@ -151,8 +164,8 @@
 
 ## Next Execution Step
 
-1. Continue Phase E from the now-live rooms/presence slice.
-2. Add caregiver and therapist supervision controls on top of the audited monitored-room runtime.
+1. Continue Phase E from the now-live supervision slice on top of rooms/presence.
+2. Expand moderation and governed-runtime controls beyond the current structured presence model.
 3. Preserve the completed Phase C portal/admin surfaces and the completed Phase D Unity shells as stable foundations.
 4. Keep Phase F admin/compliance/billing hardening as a parallel operational thread on top of the live governance console.
 

@@ -9,6 +9,7 @@ import { AuditService } from '../audit/audit.service';
 import { CareTeamMembership } from '../common/entities/care-team-membership.entity';
 import { GuardianLink } from '../common/entities/guardian-link.entity';
 import { InteractionPolicy } from '../common/entities/interaction-policy.entity';
+import { ParentApproval } from '../common/entities/parent-approval.entity';
 import { PresenceHeartbeatDto } from './dto/presence-heartbeat.dto';
 import { RoomActionDto } from './dto/room-action.dto';
 
@@ -20,7 +21,14 @@ type AppActor = {
 type AccessContext = {
   minorProfileId: string;
   policy: InteractionPolicy;
-  accessSource: 'guardian_link' | 'care_team';
+  accessSource: 'guardian_link' | 'care_team' | 'unlinked';
+  guardianLinkStatus: string;
+  careTeamStatus: string;
+  parentApprovalStatus: string;
+  adminApprovalStatus: string;
+  presenceApprovalStatus: string;
+  therapistLinkingStatus: string;
+  blockedBy: string[];
 };
 
 type RoomDefinition = {
@@ -36,11 +44,19 @@ type RoomDefinition = {
 type PresenceParticipant = {
   participantKey: string;
   minorProfileId: string;
+  minorRole: string;
   actorRole: string;
   activeShell: string;
   accessSource: string;
   joinedAt: string;
   lastHeartbeatAt: string;
+};
+
+type PresenceFilters = {
+  roomId?: string;
+  minorRole?: string;
+  actorRole?: string;
+  accessSource?: string;
 };
 
 const PresenceTtlMs = 2 * 60 * 1000;
@@ -95,32 +111,39 @@ export class RoomsService {
     private readonly careTeamRepository: Repository<CareTeamMembership>,
     @InjectRepository(InteractionPolicy)
     private readonly interactionPolicyRepository: Repository<InteractionPolicy>,
+    @InjectRepository(ParentApproval)
+    private readonly parentApprovalRepository: Repository<ParentApproval>,
   ) {}
 
   async list(minorProfileId: string, actor: AppActor) {
     const access = await this.resolveAccess(minorProfileId, actor);
     const activeRoomId = this.resolveActiveRoomId(minorProfileId);
+    const requirements = this.serializeRequirements(access);
 
-    if (!access.policy.roomsEnabled) {
-      await this.auditService.record('rooms.list_blocked', {
-        actorRole: actor.actorRole,
-        actorUserId: actor.subjectId,
-        resourceType: 'interaction_policy',
-        resourceId: access.policy.id,
-        outcome: 'blocked',
-        severity: 'medium',
-        metadata: {
-          minorProfileId,
-          reason: 'rooms_disabled',
-        },
-      });
+    if (access.blockedBy.length > 0) {
+      await this.auditAccessBlocked('rooms.list_blocked', actor, access, activeRoomId);
+      if (this.isParentApprovalBlocked(access.blockedBy)) {
+        await this.auditService.record('rooms.access_blocked_parent_approval', {
+          actorRole: actor.actorRole,
+          actorUserId: actor.subjectId,
+          resourceType: 'minor_profile',
+          resourceId: minorProfileId,
+          outcome: 'blocked',
+          severity: 'medium',
+          metadata: {
+            blockedBy: access.blockedBy.join(','),
+            accessSource: access.accessSource,
+          },
+        });
+      }
 
       return {
         allowed: false,
-        reason: 'Salas estruturadas bloqueadas pela policy deste menor.',
+        reason: requirements.blockedReason,
         presenceEnabled: access.policy.presenceEnabled,
         activeRoomId,
         items: [],
+        requirements,
       };
     }
 
@@ -148,26 +171,31 @@ export class RoomsService {
       presenceEnabled: access.policy.presenceEnabled,
       activeRoomId,
       items,
+      requirements,
     };
   }
 
   async join(roomId: string, dto: RoomActionDto, actor: AppActor) {
     const access = await this.resolveAccess(dto.minorProfileId, actor);
-    if (!access.policy.roomsEnabled) {
-      await this.auditService.record('room.join_blocked', {
-        actorRole: actor.actorRole,
-        actorUserId: actor.subjectId,
-        resourceType: 'room',
-        resourceId: roomId,
-        outcome: 'blocked',
-        severity: 'medium',
-        metadata: {
-          minorProfileId: dto.minorProfileId,
-          reason: 'rooms_disabled',
-        },
-      });
+    if (access.blockedBy.length > 0) {
+      await this.auditAccessBlocked('room.join_blocked', actor, access, roomId);
+      if (this.isParentApprovalBlocked(access.blockedBy)) {
+        await this.auditService.record('rooms.access_blocked_parent_approval', {
+          actorRole: actor.actorRole,
+          actorUserId: actor.subjectId,
+          resourceType: 'room',
+          resourceId: roomId,
+          outcome: 'blocked',
+          severity: 'medium',
+          metadata: {
+            minorProfileId: dto.minorProfileId,
+            blockedBy: access.blockedBy.join(','),
+            accessSource: access.accessSource,
+          },
+        });
+      }
 
-      throw new ForbiddenException('Interaction policy blocks structured rooms for this minor');
+      throw new ForbiddenException(this.serializeRequirements(access).blockedReason);
     }
 
     const room = this.ensureRoomAllowed(roomId, access.policy);
@@ -179,6 +207,7 @@ export class RoomsService {
       actor,
       activeShell,
       access.accessSource,
+      access.policy.minorRole,
     );
 
     await this.auditService.record('room.joined', {
@@ -196,11 +225,11 @@ export class RoomsService {
 
     return {
       allowed: true,
+      reason: 'Entrada monitorada autorizada.',
       room,
-      presence: access.policy.presenceEnabled
-        ? this.buildPresenceState(room, dto.minorProfileId, activeShell)
-        : this.buildPresenceDisabledState(room, dto.minorProfileId, activeShell),
+      presence: this.buildPresenceState(room, dto.minorProfileId, activeShell, access),
       activeRoomId: room.id,
+      requirements: this.serializeRequirements(access),
     };
   }
 
@@ -232,55 +261,55 @@ export class RoomsService {
     });
 
     return {
-      allowed: true,
+      allowed: access.blockedBy.length == 0,
+      reason:
+        access.blockedBy.length == 0
+          ? 'Sala monitorada encerrada.'
+          : this.serializeRequirements(access).blockedReason,
       room,
-      presence: access.policy.presenceEnabled
-        ? this.buildPresenceState(room, dto.minorProfileId, activeShell)
-        : this.buildPresenceDisabledState(room, dto.minorProfileId, activeShell),
+      presence:
+        access.blockedBy.length == 0
+          ? this.buildPresenceState(room, dto.minorProfileId, activeShell, access)
+          : this.buildPresenceBlockedState(room, dto.minorProfileId, activeShell, access),
       activeRoomId: this.resolveActiveRoomId(dto.minorProfileId),
+      requirements: this.serializeRequirements(access),
     };
   }
 
   async heartbeat(dto: PresenceHeartbeatDto, actor: AppActor) {
     const access = await this.resolveAccess(dto.minorProfileId, actor);
-    if (!access.policy.roomsEnabled) {
-      await this.auditService.record('presence.heartbeat_blocked', {
-        actorRole: actor.actorRole,
-        actorUserId: actor.subjectId,
-        resourceType: 'room',
-        resourceId: dto.roomId,
-        outcome: 'blocked',
-        severity: 'medium',
-        metadata: {
-          minorProfileId: dto.minorProfileId,
-          reason: 'rooms_disabled',
-        },
-      });
+    if (access.blockedBy.length > 0) {
+      await this.auditAccessBlocked('presence.heartbeat_blocked', actor, access, dto.roomId);
+      if (this.isParentApprovalBlocked(access.blockedBy)) {
+        await this.auditService.record('presence.access_blocked_parent_approval', {
+          actorRole: actor.actorRole,
+          actorUserId: actor.subjectId,
+          resourceType: 'room',
+          resourceId: dto.roomId,
+          outcome: 'blocked',
+          severity: 'medium',
+          metadata: {
+            minorProfileId: dto.minorProfileId,
+            blockedBy: access.blockedBy.join(','),
+            accessSource: access.accessSource,
+          },
+        });
+      }
 
-      throw new ForbiddenException('Interaction policy blocks structured rooms for this minor');
+      throw new ForbiddenException(this.serializeRequirements(access).blockedReason);
     }
 
     const room = this.ensureRoomAllowed(dto.roomId, access.policy);
     const activeShell = this.resolveShell(dto.activeShell, access.policy);
 
-    if (!access.policy.presenceEnabled) {
-      await this.auditService.record('presence.heartbeat_blocked', {
-        actorRole: actor.actorRole,
-        actorUserId: actor.subjectId,
-        resourceType: 'room',
-        resourceId: room.id,
-        outcome: 'blocked',
-        severity: 'medium',
-        metadata: {
-          minorProfileId: dto.minorProfileId,
-          reason: 'presence_disabled',
-        },
-      });
-
-      throw new ForbiddenException('Presence monitoring is disabled for this minor');
-    }
-
-    this.upsertParticipant(room.id, dto.minorProfileId, actor, activeShell, access.accessSource);
+    this.upsertParticipant(
+      room.id,
+      dto.minorProfileId,
+      actor,
+      activeShell,
+      access.accessSource,
+      access.policy.minorRole,
+    );
 
     await this.auditService.record('presence.heartbeat', {
       actorRole: actor.actorRole,
@@ -295,27 +324,112 @@ export class RoomsService {
       },
     });
 
-    return this.buildPresenceState(room, dto.minorProfileId, activeShell);
+    return this.buildPresenceState(room, dto.minorProfileId, activeShell, access);
   }
 
   async getPresence(roomId: string, minorProfileId: string, actor: AppActor) {
     const access = await this.resolveAccess(minorProfileId, actor);
     const activeShell = this.resolveShell(undefined, access.policy);
-    if (!access.policy.roomsEnabled) {
-      return this.buildPresenceDisabledState(
-        this.resolveFallbackRoom(roomId, access.policy, activeShell),
-        minorProfileId,
-        activeShell,
-      );
+    const room =
+      access.policy.roomsEnabled && access.blockedBy.indexOf('rooms_disabled') == -1
+        ? this.ensureRoomAllowed(roomId, access.policy)
+        : this.resolveFallbackRoom(roomId, access.policy, activeShell);
+
+    if (access.blockedBy.length > 0) {
+      if (this.isParentApprovalBlocked(access.blockedBy)) {
+        await this.auditService.record('presence.access_blocked_parent_approval', {
+          actorRole: actor.actorRole,
+          actorUserId: actor.subjectId,
+          resourceType: 'room',
+          resourceId: roomId,
+          outcome: 'blocked',
+          severity: 'medium',
+          metadata: {
+            minorProfileId,
+            blockedBy: access.blockedBy.join(','),
+            accessSource: access.accessSource,
+          },
+        });
+      }
+
+      return this.buildPresenceBlockedState(room, minorProfileId, activeShell, access);
     }
 
-    const room = this.ensureRoomAllowed(roomId, access.policy);
+    return this.buildPresenceState(room, minorProfileId, activeShell, access);
+  }
 
-    if (!access.policy.presenceEnabled) {
-      return this.buildPresenceDisabledState(room, minorProfileId, activeShell);
+  async listPresenceForAdmin(
+    actor: { subjectId: string; actorRole: string },
+    filters: PresenceFilters = {},
+  ) {
+    this.prunePresence();
+
+    const rows = new Array<{
+      roomId: string;
+      roomTitle: string;
+      minorProfileId: string;
+      minorRole: string;
+      actorRole: string;
+      accessSource: string;
+      activeShell: string;
+      joinedAt: string;
+      lastHeartbeatAt: string;
+    }>();
+
+    for (const [roomId, participants] of this.presenceByRoom.entries()) {
+      const roomTitle = this.resolveAdminRoomTitle(roomId);
+      for (const participant of participants.values()) {
+        rows.push({
+          roomId,
+          roomTitle,
+          minorProfileId: participant.minorProfileId,
+          minorRole: participant.minorRole,
+          actorRole: participant.actorRole,
+          accessSource: participant.accessSource,
+          activeShell: participant.activeShell,
+          joinedAt: participant.joinedAt,
+          lastHeartbeatAt: participant.lastHeartbeatAt,
+        });
+      }
     }
 
-    return this.buildPresenceState(room, minorProfileId, activeShell);
+    const filtered = rows.filter((row) => {
+      if (filters.roomId && row.roomId !== filters.roomId) {
+        return false;
+      }
+
+      if (filters.minorRole && row.minorRole !== filters.minorRole) {
+        return false;
+      }
+
+      if (filters.actorRole && row.actorRole !== filters.actorRole) {
+        return false;
+      }
+
+      if (filters.accessSource && row.accessSource !== filters.accessSource) {
+        return false;
+      }
+
+      return true;
+    });
+
+    await this.auditService.record('admin.rooms_presence_viewed', {
+      actorRole: actor.actorRole,
+      actorUserId: actor.subjectId,
+      resourceType: 'presence_runtime',
+      resourceId: filters.roomId ?? 'all',
+      outcome: 'success',
+      severity: 'low',
+      metadata: {
+        roomId: filters.roomId ?? '',
+        minorRole: filters.minorRole ?? '',
+        actorRoleFilter: filters.actorRole ?? '',
+        accessSource: filters.accessSource ?? '',
+        resultCount: filtered.length,
+      },
+    });
+
+    return filtered;
   }
 
   private async resolveAccess(minorProfileId: string, actor: AppActor): Promise<AccessContext> {
@@ -332,6 +446,17 @@ export class RoomsService {
       throw new NotFoundException('Interaction policy not found');
     }
 
+    if (actor.actorRole !== 'parent_guardian' && actor.actorRole !== 'therapist') {
+      throw new ForbiddenException('Actor role is not allowed to use monitored rooms');
+    }
+
+    let accessSource: AccessContext['accessSource'] = 'unlinked';
+    let guardianLinkStatus = 'missing';
+    let careTeamStatus = 'missing';
+    let parentApprovalStatus = 'missing';
+    let adminApprovalStatus = 'missing';
+    let parentUserId = '';
+
     if (actor.actorRole === 'parent_guardian') {
       const guardianLink = await this.guardianLinkRepository.findOne({
         where: {
@@ -342,45 +467,85 @@ export class RoomsService {
         order: { createdAt: 'DESC' },
       });
 
-      if (!guardianLink) {
-        throw new ForbiddenException('Active guardian link required');
-      }
-
-      return {
-        minorProfileId,
-        policy,
-        accessSource: 'guardian_link',
-      };
-    }
-
-    if (actor.actorRole === 'therapist') {
+      guardianLinkStatus = guardianLink ? 'active' : 'missing';
+      accessSource = guardianLink ? 'guardian_link' : 'unlinked';
+      parentUserId = actor.subjectId;
+    } else {
       const membership = await this.careTeamRepository.findOne({
         where: {
           therapistUserId: actor.subjectId,
           minorProfileId,
-          status: 'active',
-          parentApprovalStatus: 'approved',
-          adminApprovalStatus: 'approved',
         },
         order: { createdAt: 'DESC' },
       });
 
-      if (!membership) {
-        throw new ForbiddenException('Active care-team membership required');
+      if (membership) {
+        accessSource = 'care_team';
+        careTeamStatus = membership.status ?? 'pending';
+        parentApprovalStatus = membership.parentApprovalStatus ?? 'pending';
+        adminApprovalStatus = membership.adminApprovalStatus ?? 'pending';
+        parentUserId = membership.parentUserId ?? '';
       }
-
-      if (!policy.therapistParticipationAllowed) {
-        throw new ForbiddenException('Interaction policy blocks therapist participation');
-      }
-
-      return {
-        minorProfileId,
-        policy,
-        accessSource: 'care_team',
-      };
     }
 
-    throw new ForbiddenException('Actor role is not allowed to use monitored rooms');
+    const presenceApprovalStatus = parentUserId
+      ? await this.resolveApprovalStatus(parentUserId, minorProfileId, 'presence_enabled')
+      : 'missing';
+    const therapistLinkingStatus = parentUserId
+      ? await this.resolveApprovalStatus(parentUserId, minorProfileId, 'therapist_linking')
+      : 'missing';
+
+    const blockedBy: string[] = [];
+
+    if (actor.actorRole === 'parent_guardian' && guardianLinkStatus !== 'active') {
+      blockedBy.push('guardian_link_required');
+    }
+
+    if (actor.actorRole === 'therapist') {
+      if (careTeamStatus === 'missing') {
+        blockedBy.push('care_team_required');
+      }
+      if (parentApprovalStatus !== 'approved') {
+        blockedBy.push('care_team_parent_approval_required');
+      }
+      if (adminApprovalStatus !== 'approved') {
+        blockedBy.push('care_team_admin_approval_required');
+      }
+      if (careTeamStatus !== 'active') {
+        blockedBy.push('care_team_inactive');
+      }
+      if (therapistLinkingStatus !== 'active') {
+        blockedBy.push('therapist_linking_required');
+      }
+      if (!policy.therapistParticipationAllowed) {
+        blockedBy.push('therapist_participation_disabled');
+      }
+    }
+
+    if (presenceApprovalStatus !== 'active') {
+      blockedBy.push('presence_enabled_required');
+    }
+
+    if (!policy.roomsEnabled) {
+      blockedBy.push('rooms_disabled');
+    }
+
+    if (!policy.presenceEnabled) {
+      blockedBy.push('presence_disabled');
+    }
+
+    return {
+      minorProfileId,
+      policy,
+      accessSource,
+      guardianLinkStatus,
+      careTeamStatus,
+      parentApprovalStatus,
+      adminApprovalStatus,
+      presenceApprovalStatus,
+      therapistLinkingStatus,
+      blockedBy,
+    };
   }
 
   private buildRoomCatalog(policy: InteractionPolicy) {
@@ -437,6 +602,7 @@ export class RoomsService {
     actor: AppActor,
     activeShell: string,
     accessSource: AccessContext['accessSource'],
+    minorRole: string,
   ) {
     this.prunePresence();
     const participantKey = this.resolveParticipantKey(minorProfileId, actor.actorRole);
@@ -447,6 +613,7 @@ export class RoomsService {
     roomPresence.set(participantKey, {
       participantKey,
       minorProfileId,
+      minorRole,
       actorRole: actor.actorRole,
       activeShell,
       accessSource,
@@ -462,12 +629,19 @@ export class RoomsService {
     room: { id: string; title: string; presenceMode: string },
     minorProfileId: string,
     activeShell: string,
+    access: AccessContext,
   ) {
     this.prunePresence();
     const roomPresence = this.presenceByRoom.get(room.id);
     const participants = roomPresence ? Array.from(roomPresence.values()) : [];
 
     return {
+      allowed: true,
+      reason:
+        participants.length > 0
+          ? 'Presenca monitorada ativa.'
+          : 'Presenca pronta para heartbeat.',
+      requirements: this.serializeRequirements(access),
       roomId: room.id,
       roomTitle: room.title,
       minorProfileId,
@@ -479,17 +653,21 @@ export class RoomsService {
     };
   }
 
-  private buildPresenceDisabledState(
+  private buildPresenceBlockedState(
     room: { id: string; title: string; presenceMode: string },
     minorProfileId: string,
     activeShell: string,
+    access: AccessContext,
   ) {
     return {
+      allowed: false,
+      reason: this.serializeRequirements(access).blockedReason,
+      requirements: this.serializeRequirements(access),
       roomId: room.id,
       roomTitle: room.title,
       minorProfileId,
       activeShell,
-      status: 'disabled',
+      status: 'blocked',
       presenceMode: room.presenceMode,
       participantCount: 0,
       participants: [],
@@ -524,6 +702,125 @@ export class RoomsService {
     }
 
     return policy.minorRole === 'adolescent' ? 'adolescent' : 'child';
+  }
+
+  private async resolveApprovalStatus(
+    parentUserId: string,
+    targetId: string,
+    approvalType: string,
+  ) {
+    const approval = await this.parentApprovalRepository.findOne({
+      where: {
+        parentUserId,
+        targetId,
+        approvalType,
+        status: 'active',
+        decision: 'granted',
+      },
+      order: { updatedAt: 'DESC' },
+    });
+
+    return approval ? 'active' : 'missing';
+  }
+
+  private serializeRequirements(access: AccessContext) {
+    return {
+      guardianLinkStatus: access.guardianLinkStatus,
+      careTeamStatus: access.careTeamStatus,
+      parentApprovalStatus: access.parentApprovalStatus,
+      adminApprovalStatus: access.adminApprovalStatus,
+      presenceApprovalStatus: access.presenceApprovalStatus,
+      therapistLinkingStatus: access.therapistLinkingStatus,
+      policySnapshot: {
+        minorProfileId: access.policy.minorProfileId,
+        minorRole: access.policy.minorRole,
+        ageBand: access.policy.ageBand,
+        roomsEnabled: access.policy.roomsEnabled,
+        presenceEnabled: access.policy.presenceEnabled,
+        messagingMode: access.policy.messagingMode,
+        therapistParticipationAllowed: access.policy.therapistParticipationAllowed,
+      },
+      accessSource: access.accessSource,
+      blockedBy: access.blockedBy,
+      blockedReason: this.buildBlockedReason(access.blockedBy),
+    };
+  }
+
+  private buildBlockedReason(blockedBy: string[]) {
+    if (blockedBy.includes('guardian_link_required')) {
+      return 'Este menor precisa de GuardianLink ativo antes de usar salas monitoradas.';
+    }
+
+    if (blockedBy.includes('presence_enabled_required')) {
+      return 'A presenca estruturada ainda precisa de aprovacao explicita do responsavel em /pais.';
+    }
+
+    if (blockedBy.includes('care_team_required')) {
+      return 'O terapeuta ainda nao possui care-team valido para este menor.';
+    }
+
+    if (blockedBy.includes('care_team_parent_approval_required')) {
+      return 'O pedido clinico ainda depende da aprovacao do responsavel.';
+    }
+
+    if (blockedBy.includes('care_team_admin_approval_required')) {
+      return 'O pedido clinico ainda depende da aprovacao administrativa.';
+    }
+
+    if (blockedBy.includes('care_team_inactive')) {
+      return 'O vinculo clinico ainda nao esta ativo para este menor.';
+    }
+
+    if (blockedBy.includes('therapist_linking_required')) {
+      return 'A participacao do terapeuta ainda precisa de aprovacao explicita do responsavel.';
+    }
+
+    if (blockedBy.includes('therapist_participation_disabled')) {
+      return 'A policy atual nao autoriza participacao clinica no runtime monitorado.';
+    }
+
+    if (blockedBy.includes('rooms_disabled')) {
+      return 'A policy atual bloqueia salas estruturadas para este menor.';
+    }
+
+    if (blockedBy.includes('presence_disabled')) {
+      return 'A policy atual bloqueia presenca monitorada para este menor.';
+    }
+
+    return 'O runtime monitorado ainda nao esta liberado para este contexto.';
+  }
+
+  private isParentApprovalBlocked(blockedBy: string[]) {
+    return (
+      blockedBy.includes('presence_enabled_required') ||
+      blockedBy.includes('therapist_linking_required')
+    );
+  }
+
+  private async auditAccessBlocked(
+    eventType: string,
+    actor: AppActor,
+    access: AccessContext,
+    resourceId: string | null,
+  ) {
+    await this.auditService.record(eventType, {
+      actorRole: actor.actorRole,
+      actorUserId: actor.subjectId,
+      resourceType: 'room',
+      resourceId: resourceId ?? access.minorProfileId,
+      outcome: 'blocked',
+      severity: 'medium',
+      metadata: {
+        minorProfileId: access.minorProfileId,
+        blockedBy: access.blockedBy.join(','),
+        accessSource: access.accessSource,
+      },
+    });
+  }
+
+  private resolveAdminRoomTitle(roomId: string) {
+    const room = RoomCatalog.find((item) => item.id === roomId);
+    return room?.title ?? 'Sala monitorada';
   }
 
   private prunePresence() {

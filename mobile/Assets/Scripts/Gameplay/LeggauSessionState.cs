@@ -19,6 +19,7 @@ namespace Leggau.Gameplay
         public PresenceStateRecord ActivePresence { get; private set; }
         public bool RoomsAllowed { get; private set; }
         public string RoomCatalogMessage { get; private set; }
+        public RoomAccessRequirementsRecord RoomRequirements { get; private set; }
         public string ResolvedAgeBand { get; private set; }
         public string ActiveShell { get; private set; }
         public ChildProfile ActiveChild { get; private set; }
@@ -120,6 +121,7 @@ namespace Leggau.Gameplay
             ActivePresence = null;
             RoomsAllowed = false;
             RoomCatalogMessage = string.Empty;
+            RoomRequirements = null;
             ActiveChild = null;
             Activities = null;
             Rewards = null;
@@ -232,12 +234,14 @@ namespace Leggau.Gameplay
                 ActivePresence = null;
                 RoomsAllowed = false;
                 RoomCatalogMessage = string.Empty;
+                RoomRequirements = null;
                 return;
             }
 
             AvailableRooms = NormalizeRoomList(response.items);
             RoomsAllowed = response.allowed;
             RoomCatalogMessage = response.reason?.Trim() ?? string.Empty;
+            RoomRequirements = response.requirements;
 
             var nextRoom = ResolveRoomById(response.activeRoomId);
             if (nextRoom == null && ActiveRoom != null)
@@ -394,6 +398,7 @@ namespace Leggau.Gameplay
             ActivePresence = null;
             RoomsAllowed = false;
             RoomCatalogMessage = string.Empty;
+            RoomRequirements = null;
             ResolvedAgeBand = string.Empty;
             ActiveShell = string.Empty;
             ActiveChild = null;
@@ -490,6 +495,7 @@ namespace Leggau.Gameplay
             ActivePresence = NormalizePresence(snapshot.activePresence);
             RoomsAllowed = snapshot.roomsAllowed;
             RoomCatalogMessage = snapshot.roomCatalogMessage ?? string.Empty;
+            RoomRequirements = snapshot.roomRequirements;
             ResolvedAgeBand = snapshot.resolvedAgeBand ?? string.Empty;
             ActiveShell = snapshot.activeShell ?? string.Empty;
             ActiveChild = snapshot.activeChild ?? ConvertToChild(SelectedMinor, Parent?.id);
@@ -540,6 +546,7 @@ namespace Leggau.Gameplay
                 activePresence = ActivePresence,
                 roomsAllowed = RoomsAllowed,
                 roomCatalogMessage = RoomCatalogMessage,
+                roomRequirements = RoomRequirements,
                 resolvedAgeBand = ResolvedAgeBand,
                 activeShell = ActiveShell,
                 activeChild = ActiveChild,
@@ -639,6 +646,7 @@ namespace Leggau.Gameplay
                 ActivePresence = null;
                 RoomsAllowed = false;
                 RoomCatalogMessage = string.Empty;
+                RoomRequirements = null;
                 HomeReady = false;
                 Activities = null;
                 Rewards = null;

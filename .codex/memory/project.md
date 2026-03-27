@@ -122,9 +122,11 @@
   - the runtime now persists `SelectedMinor`, `ResolvedAgeBand`, `ActiveShell` and the resolved policy snapshot
   - explicit `child` and `adolescent` shells now exist in the same scene with age-profile presentation for `6-9`, `10-12` and `13-17`
   - both a `child` shell and an `adolescent` shell now validate against `vm2` with `state=ready`
-- Phase E is now in progress through its first runtime slice:
+- Phase E is now in progress through its first two runtime slices:
   - backend now exposes monitored `rooms` and `presence` routes on top of the policy-aware Unity shells
   - `scripts/test-monitored-interactions.mjs` now validates child and adolescent room/presence flow against `vm2`
+  - `scripts/test-monitored-supervision.mjs` now validates guardian, therapist and admin supervision gates against `vm2`
+  - `presence_enabled` is now a hard runtime gate and therapist participation now also depends on `therapist_linking`
   - the completed Phase C adult web/PWA and admin-governance surfaces remain the stable companion layers around this monitored runtime
 - After the machine reboot later on `2026-03-26`, `vm2` had to be started again from `~/leggau`, and the refreshed batch validation still reached:
   - `state=ready`

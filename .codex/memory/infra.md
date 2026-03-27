@@ -211,10 +211,16 @@
 - Phase E is now in progress on top of this runtime:
   - monitored interaction surfaces for Unity are now live against `vm2`
   - policy-governed presence and room affordances are now validated through `scripts/test-monitored-interactions.mjs`
+  - guardian/therapist/admin supervision gates are now validated through `scripts/test-monitored-supervision.mjs`
+  - admin runtime operations now include `/api/admin/interaction-policies/:minorProfileId` and `/api/admin/rooms/presence`
   - continued admin/compliance/billing hardening remains the companion track around the live governance stack
 - VM memory and docs sync should continue through `./scripts/sync-codex-to-vm.sh`
 - Full Phase 0 promotion should use:
   - `./scripts/promote-stack-to-vm.sh`
+- Canonical validation for the current supervision slice now includes:
+  - `node scripts/test-social-auth-security.mjs`
+  - `node scripts/test-monitored-interactions.mjs`
+  - `node scripts/test-monitored-supervision.mjs`
 - `scripts/deploy-vm.sh` now supports `LEGGAU_SKIP_REMOTE_GIT_PULL=1` so rsync-driven VM promotion can avoid remote worktree conflicts.
 - `scripts/promote-stack-to-vm.sh` now syncs `backend/`, `web/`, `infra/`, `docs/`, `scripts/` and `.codex/` into their canonical remote directories instead of flattening directory contents into the VM root.
 - If freshly synced code still appears stale in runtime, the authoritative cache-recovery command is:

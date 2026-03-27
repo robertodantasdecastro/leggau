@@ -62,3 +62,6 @@ Keep the frontend and backend contract aligned and stable across local, VM and p
   - `/api/rooms/:id/leave`
   - `/api/presence/heartbeat`
   - `/api/presence/:roomId`
+  - `/api/interaction-policies/:minorProfileId`
+  - `/api/admin/interaction-policies/:minorProfileId`
+  - `/api/admin/rooms/presence`

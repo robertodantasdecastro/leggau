@@ -229,14 +229,25 @@ Date checked: `2026-03-26`
   - `InteractionPolicy` now directly gates rooms, presence, messaging affordances and therapist participation affordances in the Unity UI
   - the Unity probe now records `selectedMinorId`, `minorRole`, `ageBand` and `activeShell`
   - batch validation now reaches `state=ready` for both a `child` shell and an `adolescent` shell against the canonical `vm2`
+  - after the new hard gate, the `child` shell still reaches `state=ready` with `availableRoomCount=0` when `presence_enabled` is revoked, and returns to `availableRoomCount=1` after the approval is restored
 - Phase E is now started through the first monitored-interaction slice:
   - the backend now exposes `rooms` and `presence` routes guarded by app session and multiactor link validation
   - monitored room access now depends on active `GuardianLink` or active admin-approved `CareTeamMembership`
   - Unity now consumes monitored room catalog and presence state inside the same `Bootstrap.unity` runtime
   - the first monitored interaction actions now exist in the Unity shell: refresh, join, leave and heartbeat
+- Phase E slice 2 is now completed on top of that runtime:
+  - `presence_enabled` is now a hard gate for listing rooms, joining rooms and sending presence heartbeat
+  - therapist runtime access now also requires active `therapist_linking` plus `therapistParticipationAllowed=true`
+  - guardians now own the app-facing policy write path while therapists remain read-only on `interaction-policies`
+  - admin now has live runtime visibility and emergency policy override through:
+    - `GET /api/admin/interaction-policies/:minorProfileId`
+    - `PATCH /api/admin/interaction-policies/:minorProfileId`
+    - `GET /api/admin/rooms/presence`
+  - `/pais`, `/profissionais` and `web/admin` now all surface monitored runtime state and explicit gate reasons
+  - `scripts/test-monitored-supervision.mjs` now validates parent, therapist and admin supervision gates against `vm2`
 - The next execution step now continues inside Phase E:
-  - deepen caregiver/professional supervision around monitored interaction
-  - expand moderation/runtime controls beyond the current audit-first slice
+  - deepen moderation/runtime controls beyond the now-live guardian/therapist/admin supervision slice
+  - expand monitored interaction from structured presence into richer governed runtime behaviors
   - keep the completed Phase C adult web/PWA and admin-governance surfaces as the stable companion layer
   - keep Phase F admin/compliance/billing hardening as a parallel operational thread
 

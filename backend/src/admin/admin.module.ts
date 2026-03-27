@@ -11,8 +11,10 @@ import { TherapistProfile } from '../common/entities/therapist-profile.entity';
 import { FamiliesModule } from '../families/families.module';
 import { HealthModule } from '../health/health.module';
 import { IdentityProvidersModule } from '../identity-providers/identity-providers.module';
+import { InteractionPoliciesModule } from '../interaction-policies/interaction-policies.module';
 import { LegalModule } from '../legal/legal.module';
 import { MediaVerificationModule } from '../media-verification/media-verification.module';
+import { RoomsModule } from '../rooms/rooms.module';
 import { AuthModule } from '../auth/auth.module';
 import { AdminAuthController } from './admin-auth.controller';
 import { AdminAuthService } from './admin-auth.service';
@@ -27,8 +29,10 @@ import { AdminTokenGuard } from './admin-token.guard';
     FamiliesModule,
     HealthModule,
     IdentityProvidersModule,
+    InteractionPoliciesModule,
     LegalModule,
     MediaVerificationModule,
+    RoomsModule,
     TypeOrmModule.forFeature([
       AppUser,
       AdminUser,

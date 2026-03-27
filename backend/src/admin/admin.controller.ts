@@ -5,13 +5,17 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { BillingService } from '../billing/billing.service';
 import { FamiliesService } from '../families/families.service';
 import { UpsertAuthProviderConfigDto } from '../identity-providers/dto/upsert-auth-provider-config.dto';
+import { UpdateInteractionPolicyDto } from '../interaction-policies/dto/update-interaction-policy.dto';
+import { InteractionPoliciesService } from '../interaction-policies/interaction-policies.service';
 import { LegalService } from '../legal/legal.service';
+import { RoomsService } from '../rooms/rooms.service';
 import { AdminService } from './admin.service';
 import { AdminTokenGuard } from './admin-token.guard';
 
@@ -23,6 +27,8 @@ export class AdminController {
     private readonly billingService: BillingService,
     private readonly legalService: LegalService,
     private readonly familiesService: FamiliesService,
+    private readonly interactionPoliciesService: InteractionPoliciesService,
+    private readonly roomsService: RoomsService,
   ) {}
 
   @Get('overview')
@@ -141,6 +147,46 @@ export class AdminController {
   @Get('family/overview')
   familyOverview() {
     return this.familiesService.getOverview();
+  }
+
+  @Get('interaction-policies/:minorProfileId')
+  interactionPolicy(
+    @Param('minorProfileId') minorProfileId: string,
+    @Req() request: { adminSession: { subjectId: string; actorRole: string } },
+  ) {
+    return this.interactionPoliciesService.getByMinorForAdmin(
+      minorProfileId,
+      request.adminSession,
+    );
+  }
+
+  @Patch('interaction-policies/:minorProfileId')
+  updateInteractionPolicy(
+    @Param('minorProfileId') minorProfileId: string,
+    @Body() body: UpdateInteractionPolicyDto,
+    @Req() request: { adminSession: { subjectId: string; actorRole: string } },
+  ) {
+    return this.interactionPoliciesService.updateByMinorForAdmin(
+      minorProfileId,
+      body,
+      request.adminSession,
+    );
+  }
+
+  @Get('rooms/presence')
+  monitoredPresence(
+    @Query('roomId') roomId: string | undefined,
+    @Query('minorRole') minorRole: string | undefined,
+    @Query('actorRole') actorRole: string | undefined,
+    @Query('accessSource') accessSource: string | undefined,
+    @Req() request: { adminSession: { subjectId: string; actorRole: string } },
+  ) {
+    return this.roomsService.listPresenceForAdmin(request.adminSession, {
+      roomId,
+      minorRole,
+      actorRole,
+      accessSource,
+    });
   }
 
   @Post('dev/cloudflare-alias/sync')

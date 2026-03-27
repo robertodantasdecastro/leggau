@@ -125,6 +125,30 @@ type ModerationCase = {
   createdAt: string;
 };
 
+type AdminInteractionPolicy = {
+  id: string;
+  minorProfileId: string;
+  minorRole: string;
+  ageBand: string;
+  roomsEnabled: boolean;
+  presenceEnabled: boolean;
+  messagingMode: string;
+  therapistParticipationAllowed: boolean;
+  accessSource?: string | null;
+};
+
+type AdminPresenceRecord = {
+  roomId: string;
+  roomTitle: string;
+  minorProfileId: string;
+  minorRole: string;
+  actorRole: string;
+  accessSource: string;
+  activeShell: string;
+  joinedAt: string;
+  lastHeartbeatAt: string;
+};
+
 type ProviderFormState = {
   enabled: boolean;
   verificationMode: 'mock' | 'live';
@@ -163,6 +187,13 @@ type ModerationFilters = {
   sourceType: string;
 };
 
+type PresenceFilters = {
+  roomId: string;
+  minorRole: string;
+  actorRole: string;
+  accessSource: string;
+};
+
 type IncidentDraft = {
   severity: string;
   sourceType: string;
@@ -173,6 +204,12 @@ type ModerationDraft = {
   severity: string;
   sourceType: string;
   policyCode: string;
+};
+
+type AdminPolicyDraft = {
+  roomsEnabled: boolean;
+  presenceEnabled: boolean;
+  therapistParticipationAllowed: boolean;
 };
 
 const apiBase = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL ?? '/api';
@@ -256,6 +293,14 @@ function buildProviderForm(config?: AuthProviderConfig): ProviderFormState {
     allowedAudiences: csvJoin(config?.allowedAudiences),
     scopes: csvJoin(config?.scopes),
     metadataJson: JSON.stringify(config?.metadata ?? {}, null, 2),
+  };
+}
+
+function buildAdminPolicyDraft(policy?: AdminInteractionPolicy | null): AdminPolicyDraft {
+  return {
+    roomsEnabled: policy?.roomsEnabled ?? false,
+    presenceEnabled: policy?.presenceEnabled ?? false,
+    therapistParticipationAllowed: policy?.therapistParticipationAllowed ?? false,
   };
 }
 
@@ -457,6 +502,7 @@ export function AdminDashboard() {
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
   const [moderationCases, setModerationCases] = useState<ModerationCase[]>([]);
+  const [presenceRecords, setPresenceRecords] = useState<AdminPresenceRecord[]>([]);
   const [careTeamFilters, setCareTeamFilters] = useState<CareTeamFilters>({
     status: '',
     parentApprovalStatus: '',
@@ -478,6 +524,12 @@ export function AdminDashboard() {
     severity: '',
     sourceType: '',
   });
+  const [presenceFilters, setPresenceFilters] = useState<PresenceFilters>({
+    roomId: '',
+    minorRole: '',
+    actorRole: '',
+    accessSource: '',
+  });
   const [incidentDraft, setIncidentDraft] = useState<IncidentDraft>({
     severity: 'medium',
     sourceType: 'care_team',
@@ -488,6 +540,11 @@ export function AdminDashboard() {
     sourceType: 'care_team',
     policyCode: 'guardian-review-required',
   });
+  const [policyTargetMinorId, setPolicyTargetMinorId] = useState('');
+  const [adminPolicy, setAdminPolicy] = useState<AdminInteractionPolicy | null>(null);
+  const [adminPolicyDraft, setAdminPolicyDraft] = useState<AdminPolicyDraft>(
+    buildAdminPolicyDraft(),
+  );
   const [incidentEdits, setIncidentEdits] = useState<
     Record<string, { severity?: string; status?: string }>
   >({});
@@ -519,14 +576,16 @@ export function AdminDashboard() {
       (item) => item.status === 'open' || item.status === 'triaged',
     ).length;
     const flaggedMedia = mediaJobs.filter((job) => job.reviewRequired).length;
+    const livePresence = presenceRecords.length;
 
     return [
       ['Care-team pendente', pendingCareTeam],
       ['Incidentes abertos', openIncidents],
       ['Moderacao ativa', openModeration],
       ['OCR/biometria em revisao', flaggedMedia],
+      ['Presenca ativa', livePresence],
     ];
-  }, [careTeamMemberships, incidents, mediaJobs, moderationCases]);
+  }, [careTeamMemberships, incidents, mediaJobs, moderationCases, presenceRecords]);
 
   async function loadDashboard(activeToken: string) {
     const [
@@ -540,6 +599,8 @@ export function AdminDashboard() {
       auditResponse,
       incidentsResponse,
       moderationResponse,
+      presenceResponse,
+      policyResponse,
     ] = await Promise.all([
       apiRequest<AdminOverview>('/admin/overview', activeToken),
       apiRequest<Realtime>('/admin/realtime', activeToken),
@@ -563,6 +624,16 @@ export function AdminDashboard() {
         `/moderation/cases${buildQuery(moderationFilters)}`,
         activeToken,
       ),
+      apiRequest<AdminPresenceRecord[]>(
+        `/admin/rooms/presence${buildQuery(presenceFilters)}`,
+        activeToken,
+      ),
+      policyTargetMinorId.trim()
+        ? apiRequest<AdminInteractionPolicy>(
+            `/admin/interaction-policies/${encodeURIComponent(policyTargetMinorId.trim())}`,
+            activeToken,
+          )
+        : Promise.resolve(null),
     ]);
 
     setOverview(overviewResponse);
@@ -580,6 +651,9 @@ export function AdminDashboard() {
     setAuditEvents(auditResponse);
     setIncidents(incidentsResponse);
     setModerationCases(moderationResponse);
+    setPresenceRecords(presenceResponse);
+    setAdminPolicy(policyResponse);
+    setAdminPolicyDraft(buildAdminPolicyDraft(policyResponse));
   }
 
   useEffect(() => {
@@ -727,6 +801,117 @@ export function AdminDashboard() {
     }
   }
 
+  async function loadAdminPolicy(minorProfileId: string) {
+    if (!token) {
+      return;
+    }
+
+    const trimmed = minorProfileId.trim();
+    if (!trimmed) {
+      setAdminPolicy(null);
+      setAdminPolicyDraft(buildAdminPolicyDraft());
+      setPolicyTargetMinorId('');
+      return;
+    }
+
+    setBusyAction('policy-load');
+    setError(null);
+    try {
+      const response = await apiRequest<AdminInteractionPolicy>(
+        `/admin/interaction-policies/${encodeURIComponent(trimmed)}`,
+        token,
+      );
+      setPolicyTargetMinorId(trimmed);
+      setAdminPolicy(response);
+      setAdminPolicyDraft(buildAdminPolicyDraft(response));
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function saveAdminPolicy() {
+    if (!token || !policyTargetMinorId.trim()) {
+      return;
+    }
+
+    setBusyAction('policy-save');
+    setError(null);
+    try {
+      const response = await apiRequest<AdminInteractionPolicy>(
+        `/admin/interaction-policies/${encodeURIComponent(policyTargetMinorId.trim())}`,
+        token,
+        {
+          method: 'PATCH',
+          body: JSON.stringify(adminPolicyDraft),
+        },
+      );
+      setAdminPolicy(response);
+      setAdminPolicyDraft(buildAdminPolicyDraft(response));
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function openIncidentFromPresence(record: AdminPresenceRecord) {
+    if (!token) {
+      return;
+    }
+
+    setBusyAction(`presence-incident-${record.roomId}-${record.actorRole}`);
+    setError(null);
+    try {
+      await apiRequest('/incidents', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          severity: 'medium',
+          sourceType: 'presence_runtime',
+          sourceId: `${record.roomId}:${record.minorProfileId}:${record.actorRole}`,
+          summary: `Runtime monitorado em ${record.roomTitle} para ${record.minorRole} via ${record.accessSource}`,
+        }),
+      });
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function openModerationFromPresence(record: AdminPresenceRecord) {
+    if (!token) {
+      return;
+    }
+
+    setBusyAction(`presence-moderation-${record.roomId}-${record.actorRole}`);
+    setError(null);
+    try {
+      await apiRequest('/moderation/cases', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          severity: 'medium',
+          sourceType: 'presence_runtime',
+          sourceId: `${record.roomId}:${record.minorProfileId}:${record.actorRole}`,
+          policyCode: 'runtime-monitoring-review',
+          humanReviewRequired: true,
+          aiDecision: {
+            disposition: 'hold',
+            accessSource: record.accessSource,
+          },
+        }),
+      });
+      await loadDashboard(token);
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusyAction('');
+    }
+  }
+
   async function createIncident() {
     if (!token) {
       return;
@@ -844,6 +1029,10 @@ export function AdminDashboard() {
     window.localStorage.removeItem('leggau-admin-token');
     setToken(null);
     setError(null);
+    setAdminPolicy(null);
+    setAdminPolicyDraft(buildAdminPolicyDraft());
+    setPolicyTargetMinorId('');
+    setPresenceRecords([]);
   }
 
   if (!token) {
@@ -885,8 +1074,8 @@ export function AdminDashboard() {
           <div>
             <h1>Leggau Admin</h1>
             <p className="muted">
-              Governanca operacional da Fase C: provedores sociais, care-team,
-              auditoria, incidentes, moderacao e verificacao documental.
+              Governanca operacional da Fase E: provedores sociais, care-team,
+              auditoria, incidentes, moderacao, policy override e runtime monitorado.
             </p>
           </div>
           <div className="actionRow">
@@ -1132,6 +1321,270 @@ export function AdminDashboard() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="panel stack">
+        <div className="row spread">
+          <div>
+            <h2>Runtime monitorado</h2>
+            <p className="muted">
+              Presenca ativa por sala com filtros operacionais e atalhos para abrir
+              incidente, moderacao e override emergencial de policy.
+            </p>
+          </div>
+          <button type="button" onClick={() => void refreshDashboard()}>
+            Atualizar runtime
+          </button>
+        </div>
+        <div className="filterBar">
+          <label className="field smallField">
+            <span>Sala</span>
+            <input
+              value={presenceFilters.roomId}
+              onChange={(event) =>
+                setPresenceFilters((current) => ({
+                  ...current,
+                  roomId: event.target.value,
+                }))
+              }
+              placeholder="focus-lab"
+            />
+          </label>
+          <label className="field smallField">
+            <span>Papel do menor</span>
+            <select
+              value={presenceFilters.minorRole}
+              onChange={(event) =>
+                setPresenceFilters((current) => ({
+                  ...current,
+                  minorRole: event.target.value,
+                }))
+              }
+            >
+              <option value="">Todos</option>
+              <option value="child">Child</option>
+              <option value="adolescent">Adolescent</option>
+            </select>
+          </label>
+          <label className="field smallField">
+            <span>Ator</span>
+            <select
+              value={presenceFilters.actorRole}
+              onChange={(event) =>
+                setPresenceFilters((current) => ({
+                  ...current,
+                  actorRole: event.target.value,
+                }))
+              }
+            >
+              <option value="">Todos</option>
+              <option value="parent_guardian">Parent guardian</option>
+              <option value="therapist">Therapist</option>
+            </select>
+          </label>
+          <label className="field smallField">
+            <span>Origem</span>
+            <select
+              value={presenceFilters.accessSource}
+              onChange={(event) =>
+                setPresenceFilters((current) => ({
+                  ...current,
+                  accessSource: event.target.value,
+                }))
+              }
+            >
+              <option value="">Todas</option>
+              <option value="guardian_link">Guardian link</option>
+              <option value="care_team">Care team</option>
+              <option value="unlinked">Unlinked</option>
+            </select>
+          </label>
+          <button type="button" onClick={() => void refreshDashboard()}>
+            Aplicar filtros
+          </button>
+        </div>
+        <div className="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Sala</th>
+                <th>Contexto</th>
+                <th>Heartbeat</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {presenceRecords.length ? (
+                presenceRecords.map((record) => (
+                  <tr key={`${record.roomId}-${record.minorProfileId}-${record.actorRole}`}>
+                    <td>
+                      <strong>{record.roomTitle}</strong>
+                      <div className="tableMeta">{record.roomId}</div>
+                    </td>
+                    <td>
+                      <div className="stackCompact">
+                        <span>Menor {compactId(record.minorProfileId)} · {slugToLabel(record.minorRole)}</span>
+                        <span>Ator {slugToLabel(record.actorRole)} · shell {slugToLabel(record.activeShell)}</span>
+                        <span>Origem {slugToLabel(record.accessSource)}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="stackCompact">
+                        <span>Entrou {formatDate(record.joinedAt)}</span>
+                        <span>Ultimo heartbeat {formatDate(record.lastHeartbeatAt)}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="actionColumn">
+                        <button
+                          type="button"
+                          disabled={busyAction === 'policy-load'}
+                          onClick={() => void loadAdminPolicy(record.minorProfileId)}
+                        >
+                          Abrir policy
+                        </button>
+                        <button
+                          type="button"
+                          className="secondaryButton"
+                          disabled={busyAction === `presence-incident-${record.roomId}-${record.actorRole}`}
+                          onClick={() => void openIncidentFromPresence(record)}
+                        >
+                          {busyAction === `presence-incident-${record.roomId}-${record.actorRole}`
+                            ? 'Abrindo...'
+                            : 'Incidente'}
+                        </button>
+                        <button
+                          type="button"
+                          className="secondaryButton"
+                          disabled={busyAction === `presence-moderation-${record.roomId}-${record.actorRole}`}
+                          onClick={() => void openModerationFromPresence(record)}
+                        >
+                          {busyAction === `presence-moderation-${record.roomId}-${record.actorRole}`
+                            ? 'Abrindo...'
+                            : 'Moderacao'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4}>
+                    <div className="emptyState">
+                      Nenhuma presenca ativa no runtime com os filtros atuais.
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="panel stack">
+        <div className="row spread">
+          <div>
+            <h2>Override emergencial de policy</h2>
+            <p className="muted">
+              Use somente quando o admin precisar endurecer ou liberar gates com
+              trilha auditavel completa.
+            </p>
+          </div>
+        </div>
+        <div className="filterBar">
+          <label className="field grow">
+            <span>Minor profile ID</span>
+            <input
+              value={policyTargetMinorId}
+              onChange={(event) => setPolicyTargetMinorId(event.target.value)}
+              placeholder="UUID do menor"
+            />
+          </label>
+          <button type="button" onClick={() => void loadAdminPolicy(policyTargetMinorId)}>
+            {busyAction === 'policy-load' ? 'Carregando...' : 'Carregar policy'}
+          </button>
+        </div>
+        {adminPolicy ? (
+          <div className="stack">
+            <div className="grid3 responsive">
+              <div className="miniCard">
+                <span className="microLabel">Perfil</span>
+                <strong>{adminPolicy.minorRole}</strong>
+                <span>{adminPolicy.minorProfileId}</span>
+              </div>
+              <div className="miniCard">
+                <span className="microLabel">Faixa</span>
+                <strong>{adminPolicy.ageBand}</strong>
+                <span>Origem {adminPolicy.accessSource ?? 'admin'}</span>
+              </div>
+              <div className="miniCard">
+                <span className="microLabel">Mensageria</span>
+                <strong>{slugToLabel(adminPolicy.messagingMode)}</strong>
+                <span>Segue invisivel/bloqueada nesta fase.</span>
+              </div>
+            </div>
+            <div className="provider-grid">
+              <label className="field">
+                <span>Rooms enabled</span>
+                <select
+                  value={adminPolicyDraft.roomsEnabled ? 'true' : 'false'}
+                  onChange={(event) =>
+                    setAdminPolicyDraft((current) => ({
+                      ...current,
+                      roomsEnabled: event.target.value === 'true',
+                    }))
+                  }
+                >
+                  <option value="true">Sim</option>
+                  <option value="false">Nao</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>Presence enabled</span>
+                <select
+                  value={adminPolicyDraft.presenceEnabled ? 'true' : 'false'}
+                  onChange={(event) =>
+                    setAdminPolicyDraft((current) => ({
+                      ...current,
+                      presenceEnabled: event.target.value === 'true',
+                    }))
+                  }
+                >
+                  <option value="true">Sim</option>
+                  <option value="false">Nao</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>Therapist participation</span>
+                <select
+                  value={adminPolicyDraft.therapistParticipationAllowed ? 'true' : 'false'}
+                  onChange={(event) =>
+                    setAdminPolicyDraft((current) => ({
+                      ...current,
+                      therapistParticipationAllowed: event.target.value === 'true',
+                    }))
+                  }
+                >
+                  <option value="false">Nao</option>
+                  <option value="true">Sim</option>
+                </select>
+              </label>
+            </div>
+            <div className="row spread">
+              <p className="muted">
+                Overrides emergenciais ficam auditados no namespace admin de interaction
+                policy.
+              </p>
+              <button type="button" onClick={() => void saveAdminPolicy()}>
+                {busyAction === 'policy-save' ? 'Salvando...' : 'Salvar override'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="emptyState">
+            Carregue um minor profile para revisar ou ajustar a policy efetiva.
+          </div>
+        )}
       </section>
 
       <section className="panel stack">

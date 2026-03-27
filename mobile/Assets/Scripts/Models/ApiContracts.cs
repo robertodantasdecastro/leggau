@@ -87,6 +87,33 @@ namespace Leggau.Models
     }
 
     [Serializable]
+    public class PolicySnapshotRecord
+    {
+        public string minorProfileId;
+        public string minorRole;
+        public string ageBand;
+        public bool roomsEnabled;
+        public bool presenceEnabled;
+        public string messagingMode;
+        public bool therapistParticipationAllowed;
+    }
+
+    [Serializable]
+    public class RoomAccessRequirementsRecord
+    {
+        public string guardianLinkStatus;
+        public string careTeamStatus;
+        public string parentApprovalStatus;
+        public string adminApprovalStatus;
+        public string presenceApprovalStatus;
+        public string therapistLinkingStatus;
+        public PolicySnapshotRecord policySnapshot;
+        public string accessSource;
+        public string[] blockedBy;
+        public string blockedReason;
+    }
+
+    [Serializable]
     public class MonitoredRoomRecord
     {
         public string id;
@@ -103,6 +130,7 @@ namespace Leggau.Models
     {
         public string participantKey;
         public string minorProfileId;
+        public string minorRole;
         public string actorRole;
         public string activeShell;
         public string accessSource;
@@ -113,6 +141,9 @@ namespace Leggau.Models
     [Serializable]
     public class PresenceStateRecord
     {
+        public bool allowed;
+        public string reason;
+        public RoomAccessRequirementsRecord requirements;
         public string roomId;
         public string roomTitle;
         public string minorProfileId;
@@ -131,6 +162,7 @@ namespace Leggau.Models
         public bool presenceEnabled;
         public string activeRoomId;
         public MonitoredRoomRecord[] items;
+        public RoomAccessRequirementsRecord requirements;
     }
 
     [Serializable]

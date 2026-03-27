@@ -107,3 +107,9 @@
   - `GET /api/rooms`, `POST /api/rooms/:id/join`, `POST /api/rooms/:id/leave`, `POST /api/presence/heartbeat` e `GET /api/presence/:roomId`
   - acesso a `rooms/presence` depende de `GuardianLink` ativo ou `CareTeamMembership` ativo e aprovado
   - no runtime atual, presenca monitorada continua efemera em memoria do processo da API, adequada para validacao e evolucao do produto nesta fase
+- A segunda fatia da Fase E agora tambem esta ativa:
+  - `presence_enabled` virou gate rigido para qualquer uso de `rooms/presence`
+  - participacao terapeutica agora exige `CareTeamMembership` ativo + aprovacao admin + `therapist_linking` ativo + `therapistParticipationAllowed=true`
+  - `GET/PATCH /api/interaction-policies/:minorProfileId` agora respeita matriz de autorizacao com guardian-write e therapist-read-only
+  - `GET/PATCH /api/admin/interaction-policies/:minorProfileId` e `GET /api/admin/rooms/presence` agora fecham a governanca operacional do runtime
+  - portal e admin agora consomem `requirements`, `blockedBy`, `accessSource` e snapshots de policy para explicar gates sem falha generica

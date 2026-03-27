@@ -190,9 +190,11 @@
   - age-profile presentation system on top of the already-compatible Phase B backend
   - policy-aware shell gating driven by `interaction-policies`
   - persisted minor selection and shell restoration
-- Phase E is now in progress for mobile through the first monitored-interaction slice:
+- Phase E is now in progress for mobile through the first two monitored-interaction slices:
   - monitored room surfaces now live inside `Bootstrap.unity`
   - policy-governed presence and room affordances now resolve after shell selection
+  - `presence_enabled` now acts as a hard runtime gate while `therapist_linking` now gates therapist participation
+  - blocked room access no longer breaks bootstrap readiness; the child shell still reaches `state=ready` and explains the missing gate
   - compatibility remains intact with the adult web/admin governance layer
 - The Unity workspace had to be reopened on `2026-03-26` through the canonical `-projectPath` flow after a temporary nested project folder appeared under `mobile/`; that stray folder was removed
 - The Phase D runtime now:
@@ -219,6 +221,9 @@
   - `RefreshMonitoredInteractions`, `JoinFirstAvailableRoom`, `LeaveActiveRoom` and `SendPresenceHeartbeat` now exist in `LeggauAppBootstrap`
   - monitored room catalog, active room and presence snapshot now persist through `LeggauLocalSessionStore`
   - the runtime probe now reports `activeRoomId`, `availableRoomCount` and `presenceCount`
+- The second monitored-interaction slice now also validates:
+  - `child` shell with `presence_enabled` revoked still reaches `state=ready` with `availableRoomCount=0`
+  - restoring the approval reopens the healthy child shell path with `availableRoomCount=1`
 - Local validation script: `scripts/check-gau-runtime-catalog.sh`
 - Unity Hub diagnosis on `2026-03-25` found the root cause of the failed editor install: not enough disk space for the default `/Applications` destination
 - `~/Library/Application Support/UnityHub/secondaryInstallPath.json` now points to `/Volumes/SSDExterno/Desenvolvimento/Leggau/.data/tooling/unity/editors`

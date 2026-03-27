@@ -9,8 +9,11 @@ export class InteractionPoliciesController {
   constructor(private readonly interactionPoliciesService: InteractionPoliciesService) {}
 
   @Get(':minorProfileId')
-  get(@Param('minorProfileId') minorProfileId: string) {
-    return this.interactionPoliciesService.getByMinor(minorProfileId);
+  get(
+    @Param('minorProfileId') minorProfileId: string,
+    @Req() request: { appSession: { subjectId: string; actorRole: string } },
+  ) {
+    return this.interactionPoliciesService.getByMinor(minorProfileId, request.appSession);
   }
 
   @Patch(':minorProfileId')
@@ -26,4 +29,3 @@ export class InteractionPoliciesController {
     );
   }
 }
-

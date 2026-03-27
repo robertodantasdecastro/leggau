@@ -536,6 +536,23 @@ namespace Leggau.UI
                 builder.AppendLine(session.RoomCatalogMessage);
             }
 
+            if (session.RoomRequirements != null)
+            {
+                builder.AppendLine($"Gate presence_enabled: {session.RoomRequirements.presenceApprovalStatus}");
+
+                if (!string.IsNullOrWhiteSpace(session.RoomRequirements.therapistLinkingStatus) &&
+                    session.RoomRequirements.therapistLinkingStatus != "missing")
+                {
+                    builder.AppendLine($"Gate therapist_linking: {session.RoomRequirements.therapistLinkingStatus}");
+                }
+
+                if (session.RoomRequirements.blockedBy != null &&
+                    session.RoomRequirements.blockedBy.Length > 0)
+                {
+                    builder.AppendLine($"Bloqueios: {string.Join(", ", session.RoomRequirements.blockedBy)}");
+                }
+            }
+
             if (session.SelectedMinorPolicy == null)
             {
                 return builder.ToString();
@@ -544,6 +561,12 @@ namespace Leggau.UI
             if (!session.SelectedMinorPolicy.roomsEnabled)
             {
                 builder.AppendLine("A policy atual esconde qualquer entrada em salas estruturadas.");
+                return builder.ToString();
+            }
+
+            if (!session.RoomsAllowed && session.RoomRequirements != null)
+            {
+                builder.AppendLine("O shell continua pronto, mas as salas ficam bloqueadas ate o responsavel liberar o gate em /pais.");
                 return builder.ToString();
             }
 

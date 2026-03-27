@@ -12,6 +12,7 @@ Implement the Unity mobile frontend for Android and iOS.
 - Keep runtime behavior compatible with the current backend contract.
 - Own the policy-aware presentation layer for `child` and `adolescent`.
 - Present monitored room and monitored presence affordances when policy allows them.
+- Keep the shell healthy when monitored runtime is blocked by guardian approvals, especially `presence_enabled`.
 - Store large Unity outputs under `.data/mobile/`.
 
 ## Directories

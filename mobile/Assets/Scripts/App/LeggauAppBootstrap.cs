@@ -1132,7 +1132,9 @@ namespace Leggau.App
 
             if (!requestFailed && !nonBlocking)
             {
-                dashboardPresenter?.SetStatus($"Salas monitoradas atualizadas via {apiClient.ActiveBaseUrl}.");
+                dashboardPresenter?.SetStatus(sessionState.RoomsAllowed
+                    ? $"Salas monitoradas atualizadas via {apiClient.ActiveBaseUrl}."
+                    : ResolveRuntimeBlockedMessage());
             }
 
             if (manageBusyState)
@@ -1156,11 +1158,18 @@ namespace Leggau.App
                 yield break;
             }
 
+            if (!sessionState.RoomsAllowed && !sessionState.HasAvailableRooms)
+            {
+                dashboardPresenter?.SetStatus(ResolveRuntimeBlockedMessage());
+                yield break;
+            }
+
             if (!sessionState.HasAvailableRooms)
             {
                 yield return RefreshMonitoredInteractionsRoutine(true, false);
                 if (!sessionState.HasAvailableRooms)
                 {
+                    dashboardPresenter?.SetStatus(ResolveRuntimeBlockedMessage());
                     yield break;
                 }
             }
@@ -1270,7 +1279,7 @@ namespace Leggau.App
 
             if (sessionState.SelectedMinorPolicy == null || !sessionState.SelectedMinorPolicy.presenceEnabled)
             {
-                dashboardPresenter?.SetStatus("A policy atual nao permite presenca monitorada para este menor.");
+                dashboardPresenter?.SetStatus(ResolveRuntimeBlockedMessage());
                 yield break;
             }
 
@@ -1364,8 +1373,36 @@ namespace Leggau.App
 
             if (!requestFailed && updateStatus)
             {
-                dashboardPresenter?.SetStatus($"Presenca monitorada atualizada para {sessionState.ActiveRoom?.title ?? roomId}.");
+                dashboardPresenter?.SetStatus(sessionState.ActivePresence != null && !sessionState.ActivePresence.allowed
+                    ? ResolvePresenceBlockedMessage()
+                    : $"Presenca monitorada atualizada para {sessionState.ActiveRoom?.title ?? roomId}.");
             }
+        }
+
+        private string ResolveRuntimeBlockedMessage()
+        {
+            if (!string.IsNullOrWhiteSpace(sessionState.RoomCatalogMessage))
+            {
+                return sessionState.RoomCatalogMessage;
+            }
+
+            if (sessionState.RoomRequirements != null &&
+                !string.IsNullOrWhiteSpace(sessionState.RoomRequirements.blockedReason))
+            {
+                return sessionState.RoomRequirements.blockedReason;
+            }
+
+            return "As salas monitoradas ainda nao estao liberadas para este menor. Ajuste os gates em /pais.";
+        }
+
+        private string ResolvePresenceBlockedMessage()
+        {
+            if (sessionState.ActivePresence != null && !string.IsNullOrWhiteSpace(sessionState.ActivePresence.reason))
+            {
+                return sessionState.ActivePresence.reason;
+            }
+
+            return ResolveRuntimeBlockedMessage();
         }
 
         private void ApplyDevelopmentDefaults(AppEnvironment environment, string targetShell)

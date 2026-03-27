@@ -187,9 +187,12 @@ As of `2026-03-26`:
   - the age-profile presentation system now differentiates `6-9`, `10-12` and `13-17`
   - the runtime now persists `SelectedMinor`, `ResolvedAgeBand`, `ActiveShell` and the resolved policy snapshot
   - the VM-backed probe now validates both `child` and `adolescent` shells at `state=ready`
-- Phase E is now in progress through the first monitored-interaction slice:
+- Phase E is now in progress through the first two monitored-interaction slices:
   - backend now exposes `rooms` and `presence` routes on top of the policy-aware multiactor runtime
   - Unity now consumes monitored room catalog and monitored presence state inside the same `Bootstrap.unity`
+  - `presence_enabled` is now a hard gate for room listing, join and heartbeat
+  - therapist runtime access now also requires active `therapist_linking` and `therapistParticipationAllowed=true`
+  - admin now owns emergency policy override and live runtime visibility through `/api/admin/interaction-policies/:minorProfileId` and `/api/admin/rooms/presence`
   - adult web/admin remain in maintenance and continued polish while supervision and moderation grow around the monitored runtime
 - Mac toolchain status:
   - Docker: ready

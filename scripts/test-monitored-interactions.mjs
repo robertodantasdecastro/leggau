@@ -83,8 +83,32 @@ async function ensureMinor(role, token) {
   return created;
 }
 
+async function ensurePresenceApproval(token, minorProfileId) {
+  const approvals = await request(
+    `/parent-approvals?targetId=${encodeURIComponent(minorProfileId)}&approvalType=presence_enabled`,
+    {
+      headers: authHeaders(token),
+    },
+  );
+
+  if ((approvals ?? []).some((approval) => approval.status === 'active')) {
+    return;
+  }
+
+  await request('/parent-approvals', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({
+      approvalType: 'presence_enabled',
+      targetId: minorProfileId,
+      metadata: { source: 'test-monitored-interactions' },
+    }),
+  });
+}
+
 async function testMinor(role, token) {
   const minor = await ensureMinor(role, token);
+  await ensurePresenceApproval(token, minor.id);
   const policy = await request(`/interaction-policies/${minor.id}`, {
     headers: authHeaders(token),
   });

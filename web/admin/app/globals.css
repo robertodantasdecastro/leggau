@@ -57,6 +57,10 @@ body {
   gap: 16px;
 }
 
+.grow {
+  flex: 1 1 280px;
+}
+
 .row {
   display: flex;
   gap: 12px;
@@ -72,6 +76,30 @@ body {
   border-radius: 20px;
   padding: 18px;
   background: white;
+}
+
+.miniCard {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: rgba(17, 103, 177, 0.03);
+  display: grid;
+  gap: 6px;
+}
+
+.microLabel {
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.emptyState {
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  color: var(--muted);
+  background: rgba(86, 112, 143, 0.05);
 }
 
 .metric {
